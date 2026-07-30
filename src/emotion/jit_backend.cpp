@@ -78,7 +78,7 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 			(this->*(data.ptr))(data);
 			block.instructions++;
 
-			// account for delay slot in end_pc
+			// account for delay slot
 			end_pc += 4;
 			break;
 		}
@@ -120,15 +120,27 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		// SPECIAL
 		case 0b000000: {
 			switch (data.funct) {
-				case 0b000000: { data.ptr = &JitBackend::SLL; break; }
+				case 0b000000: { data.ptr = &JitBackend::SLL; break; }		// SLL
+				case 0b101011: { data.ptr = &JitBackend::SLTU; break; }		// SLTU
+				case 0b101101: { data.ptr = &JitBackend::DADDU; break; }	// DADDU
+
+				default: {
+					error_log("unknown special opcode {:06b} {:08x}", data.funct, instruction);
+					exit(1);
+				}
 			}
 
 			break;
 		}
-		
+
+		// normal
 		case 0b001111: { data.ptr = &JitBackend::LUI; break; }		// LUI
 		case 0b001001: { data.ptr = &JitBackend::ADDIU; break; }	// ADDIU
 		case 0b011111: { data.ptr = &JitBackend::SQ; break; }		// SQ
+
+		// branch
+		case 0b000101: { data.ptr = &JitBackend::BNE; data.type = InstructionType::Branch; break; }	// BNE
+		case 0b000011: { data.ptr = &JitBackend::JAL; data.type = InstructionType::Branch; break; }	// JAL
 
 		default: {
 			error_log("unknown opcode {:06b} {:08x}", op, instruction);

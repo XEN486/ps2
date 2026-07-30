@@ -7,6 +7,11 @@ using namespace asmjit;
 bool JitX64::InitJit(R5900* cpu) {
 	if (!JitBackend::InitJit(cpu)) return false;
 	if (m_CodeHolder.attach(&cc) != Error::kOk) return false;
+
+#ifdef ENABLE_ASMJIT_LOGGING
+	m_Logger.set_flags(FormatFlags::kHexImms | FormatFlags::kHexOffsets | FormatFlags::kRegCasts);
+	cc.add_diagnostic_options(DiagnosticOptions::kRAAnnotate | DiagnosticOptions::kRADebugAll);
+#endif
 	return true;
 }
 

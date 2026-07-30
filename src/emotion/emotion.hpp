@@ -94,6 +94,10 @@ namespace EmotionEngine::MIPS {
 		virtual void ADDIU(InstructionData& data) = 0;
 		virtual void SLL(InstructionData& data) = 0;
 		virtual void SQ(InstructionData& data) = 0;
+		virtual void SLTU(InstructionData& data) = 0;
+		virtual void JAL(InstructionData& data) = 0;
+		virtual void BNE(InstructionData& data) = 0;
+		virtual void DADDU(InstructionData& data) = 0;
 
 	protected:
 		R5900* m_R5900;

@@ -28,6 +28,10 @@ namespace EmotionEngine::MIPS {
 		void ADDIU(InstructionData& data) override;
 		void SLL(InstructionData& data) override;
 		void SQ(InstructionData& data) override;
+		void SLTU(InstructionData& data) override;
+		void JAL(InstructionData& data) override;
+		void BNE(InstructionData& data) override;
+		void DADDU(InstructionData& data) override;
 
 	private:
 		asmjit::InvokeNode* EmitExternalCall(uintptr_t address, const asmjit::FuncSignature& sig);
@@ -38,7 +42,7 @@ namespace EmotionEngine::MIPS {
 		void EmitWriteVirtualMemory128(asmjit::x86::Gp& address, asmjit::x86::Vec& val);
 
 		template <typename T> constexpr void EmitLoadRegister(T reg, RegisterSize size, u8 index);
-		template <typename T> constexpr void EmitStoreRegister(RegisterSize size, u8 index, T reg, bool sign_extend = true);
+		template <typename T> constexpr void EmitStoreRegister(RegisterSize size, u8 index, T reg, bool sign_extend);
 		template <typename Dst, typename Src> void EmitReadVirtualMemory32(Dst ret, Src address);
 		template <typename Dst, typename Src> void EmitWriteVirtualMemory32(Dst address, Src value);
 		template <typename T> void EmitJump(T address);

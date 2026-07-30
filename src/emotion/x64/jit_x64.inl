@@ -104,6 +104,5 @@ namespace EmotionEngine::MIPS {
 	template <typename T>
 	void JitX64::EmitJump(T address) {
 		cc.mov(asmjit::x86::dword_ptr(r5900, offsetof(R5900, next_pc)), address);
-		cc.ret();
 	}
 }

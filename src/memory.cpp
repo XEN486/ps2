@@ -11,7 +11,7 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 		return *(reinterpret_cast<u32*>(&m_Memory[address]));
 	}
 
-	error_log("unknown physical address {:08x}", address);
+	//error_log("unknown physical address {:08x}", address);
 	return 0;
 }
 
