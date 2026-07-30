@@ -1,5 +1,5 @@
-#ifndef RECOMPILER_BASE_HPP
-#define RECOMPILER_BASE_HPP
+#ifndef EMOTION_HPP
+#define EMOTION_HPP
 
 #include "../memory.hpp"
 #include "../utils.hpp"

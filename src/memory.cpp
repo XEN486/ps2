@@ -6,7 +6,7 @@
 u32 Memory::ReadVirtualMemory32(u32 address) {
 	address = VirtualToPhysical(address);
 
-	// boot rom / first 256 bytes of cartridge
+	// main memory
 	if (address <= 0x1ffffff) {
 		return *(reinterpret_cast<u32*>(&m_Memory[address]));
 	}
@@ -18,6 +18,7 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 void Memory::WriteVirtualMemory32(u32 address, u32 dword) {
 	address = VirtualToPhysical(address);
 
+	// main memory
 	if (address <= 0x1ffffff) {
 		*(reinterpret_cast<u32*>(&m_Memory[address])) = dword;
 		m_JitBackend->Invalidate(address);
@@ -30,7 +31,7 @@ void Memory::WriteVirtualMemory32(u32 address, u32 dword) {
 u16 Memory::ReadVirtualMemory16(u32 address) {
 	address = VirtualToPhysical(address);
 
-	// boot rom / first 256 bytes of cartridge
+	// main memory
 	if (address <= 0x1ffffff) {
 		return *(reinterpret_cast<u16*>(&m_Memory[address]));
 	}
@@ -42,6 +43,7 @@ u16 Memory::ReadVirtualMemory16(u32 address) {
 void Memory::WriteVirtualMemory16(u32 address, u16 word) {
 	address = VirtualToPhysical(address);
 
+	// main memory
 	if (address <= 0x1ffffff) {
 		*(reinterpret_cast<u16*>(&m_Memory[address])) = word;
 		m_JitBackend->Invalidate(address);

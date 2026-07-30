@@ -1,5 +1,5 @@
-#ifndef RECOMPILER_X64_HPP
-#define RECOMPILER_X64_HPP
+#ifndef JIT_X64_HPP
+#define JIT_X64_HPP
 
 #include "../emotion.hpp"
 
