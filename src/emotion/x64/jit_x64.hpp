@@ -27,27 +27,40 @@ namespace EmotionEngine::MIPS {
 		void LUI(InstructionData& data) override;
 		void ADDIU(InstructionData& data) override;
 		void SLL(InstructionData& data) override;
-
+		void SQ(InstructionData& data) override;
 
 	private:
 		asmjit::InvokeNode* EmitExternalCall(uintptr_t address, const asmjit::FuncSignature& sig);
+
+		void EmitLoadRegister128(asmjit::x86::Vec& reg, u8 index);
+		void EmitStoreRegister128(u8 index, asmjit::x86::Vec& reg);
+		void EmitReadVirtualMemory128(asmjit::x86::Vec& ret, asmjit::x86::Gp& address);
+		void EmitWriteVirtualMemory128(asmjit::x86::Gp& address, asmjit::x86::Vec& val);
 
 		template <typename T> constexpr void EmitLoadRegister(T reg, RegisterSize size, u8 index);
 		template <typename T> constexpr void EmitStoreRegister(RegisterSize size, u8 index, T reg, bool sign_extend = true);
 		template <typename Dst, typename Src> void EmitReadVirtualMemory32(Dst ret, Src address);
 		template <typename Dst, typename Src> void EmitWriteVirtualMemory32(Dst address, Src value);
-		template <typename Dst, typename Src> void EmitReadVirtualMemory16(Dst ret, Src address);
-		template <typename Dst, typename Src> void EmitWriteVirtualMemory16(Dst address, Src value);
 		template <typename T> void EmitJump(T address);
 
 	private:
 		asmjit::x86::Compiler cc;
 		asmjit::x86::Gp r5900;
-		asmjit::x86::Gp scratch1;
-		asmjit::x86::Gp scratch2;
-		asmjit::x86::Gp scratch3;
-		asmjit::x86::Gp scratch4;
-		asmjit::x86::Gp temp;
+
+		// scratch registers
+		asmjit::x86::Gp s1;
+		asmjit::x86::Gp s2;
+		asmjit::x86::Gp s3;
+		asmjit::x86::Gp s4;
+
+		// temp registers (overwritable by Emit*)
+		asmjit::x86::Gp t1;
+
+		// vector registers
+		asmjit::x86::Vec v1;
+		asmjit::x86::Vec v2;
+		asmjit::x86::Vec v3;
+		asmjit::x86::Vec v4;
 	};
 }
 

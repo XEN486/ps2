@@ -9,9 +9,9 @@ void JitX64::LUI(InstructionData& data) {
 }
 
 void JitX64::ADDIU(InstructionData& data) {
-	EmitLoadRegister(scratch1, R32, data.rs);				// scratch1 <- rs
-	cc.add(scratch1.r32(), (i16)data.imm);					// scratch1 += imm (signed)
-	EmitStoreRegister(R64, data.rt, scratch1.r32());	// rt <- scratch1
+	EmitLoadRegister(s1, R32, data.rs);			// s1 <- rs
+	cc.add(s1.r32(), (i16)data.imm);			// s1 += imm (signed)
+	EmitStoreRegister(R64, data.rt, s1.r32());	// rt <- s1
 }
 
 void JitX64::SLL(InstructionData& data) {
@@ -20,8 +20,18 @@ void JitX64::SLL(InstructionData& data) {
 		return;
 	}
 
-	debug_log("{}, {}", data.rt, data.rd);
-	EmitLoadRegister(scratch1, R32, data.rt);
-	cc.shl(scratch1, data.sa);
-	EmitStoreRegister(R64, data.rd, scratch1.r32());
+	EmitLoadRegister(s1, R32, data.rt);
+	cc.shl(s1, data.sa);
+	EmitStoreRegister(R64, data.rd, s1.r32());
+}
+
+void JitX64::SQ(InstructionData& data) {
+	// vaddr = s1
+	// base = rs
+	EmitLoadRegister(s1, R32, data.rs);		// vaddr <- base
+	cc.add(s1.r32(), (i16)data.imm);		// vaddr += (i16)imm
+	cc.and_(s1.r32(), 0xfffffff0);			// vaddr &= 0xfffffff0
+	
+	EmitLoadRegister128(v1, data.rt);		// v1 <- gpr[rt].128
+	EmitWriteVirtualMemory128(s1, v1);		// vaddr <- v1
 }

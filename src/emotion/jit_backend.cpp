@@ -125,8 +125,10 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 
 			break;
 		}
+		
 		case 0b001111: { data.ptr = &JitBackend::LUI; break; }		// LUI
 		case 0b001001: { data.ptr = &JitBackend::ADDIU; break; }	// ADDIU
+		case 0b011111: { data.ptr = &JitBackend::SQ; break; }		// SQ
 
 		default: {
 			error_log("unknown opcode {:06b} {:08x}", op, instruction);

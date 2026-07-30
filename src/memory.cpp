@@ -27,28 +27,3 @@ void Memory::WriteVirtualMemory32(u32 address, u32 dword) {
 
 	error_log("unknown physical address {:08x}", address);
 }
-
-u16 Memory::ReadVirtualMemory16(u32 address) {
-	address = VirtualToPhysical(address);
-
-	// main memory
-	if (address <= 0x1ffffff) {
-		return *(reinterpret_cast<u16*>(&m_Memory[address]));
-	}
-
-	error_log("unknown physical address {:08x}", address);
-	return 0;
-}
-
-void Memory::WriteVirtualMemory16(u32 address, u16 word) {
-	address = VirtualToPhysical(address);
-
-	// main memory
-	if (address <= 0x1ffffff) {
-		*(reinterpret_cast<u16*>(&m_Memory[address])) = word;
-		m_JitBackend->Invalidate(address);
-		return;
-	}
-
-	error_log("unknown physical address {:08x}", address);
-}

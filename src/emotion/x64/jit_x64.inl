@@ -33,8 +33,8 @@ namespace EmotionEngine::MIPS {
 		if constexpr (std::is_same_v<T, asmjit::x86::Gp>) {
 			if (sign_extend) {
 				assert(reg.is_gp32());
-				cc.movsxd(temp, reg);
-				cc.mov(asmjit::x86::ptr(r5900, index * sizeof(GPR), size), temp);
+				cc.movsxd(t1, reg);
+				cc.mov(asmjit::x86::ptr(r5900, index * sizeof(GPR), size), t1);
 				return;
 			}
 		} 
@@ -42,8 +42,8 @@ namespace EmotionEngine::MIPS {
 		// reg = imm
 		else if constexpr (std::is_same_v<T, u32>) {
 			if (sign_extend) {
-				cc.movabs(temp, (u64)(i32)reg);
-				cc.mov(asmjit::x86::ptr(r5900, index * sizeof(GPR), size), temp);
+				cc.movabs(t1, (u64)(i32)reg);
+				cc.mov(asmjit::x86::ptr(r5900, index * sizeof(GPR), size), t1);
 				return;
 			}
 		}
@@ -57,6 +57,12 @@ namespace EmotionEngine::MIPS {
 
 	template <typename Dst, typename Src>
 	void JitX64::EmitReadVirtualMemory32(Dst ret, Src address) {
+		// optimization: read from main memory without calling external function
+		if (std::is_same_v<address, u32> && Memory::VirtualToPhysical(address) <= 0x1fffffff) {
+			cc.mov(ret, asmjit::x86::dword_ptr(reinterpret_cast<uintptr_t>(&Memory::m_Memory + Memory::VirtualToPhysical(address))));
+			return;
+		}
+
 		asmjit::x86::Gp value = cc.new_gp32("value");
 		asmjit::InvokeNode* node = EmitExternalCall(
 			reinterpret_cast<uintptr_t>(&Memory::ReadVirtualMemory32),
@@ -80,6 +86,12 @@ namespace EmotionEngine::MIPS {
 
 	template <typename Dst, typename Src>
 	void JitX64::EmitWriteVirtualMemory32(Dst address, Src value) {
+		// optimization: write to main memory without calling external function
+		if (std::is_same_v<address, u32> && Memory::VirtualToPhysical(address) <= 0x1fffffff) {
+			cc.mov(asmjit::x86::dword_ptr(reinterpret_cast<uintptr_t>(&Memory::m_Memory + Memory::VirtualToPhysical(address))), value);
+			return;
+		}
+
 		asmjit::InvokeNode* node = EmitExternalCall(
 			reinterpret_cast<uintptr_t>(&Memory::WriteVirtualMemory32),
 			asmjit::FuncSignature::build<void, u32, u32>()
@@ -87,30 +99,6 @@ namespace EmotionEngine::MIPS {
 
 		node->set_arg(0, address);
 		node->set_arg(1, value);
-	}
-
-	template <typename Dst, typename Src>
-	void JitX64::EmitReadVirtualMemory16(Dst ret, Src address) {
-		asmjit::x86::Gp value = cc.new_gp16("value");
-		asmjit::InvokeNode* node = EmitExternalCall(
-			reinterpret_cast<uintptr_t>(&Memory::ReadVirtualMemory16),
-			asmjit::FuncSignature::build<u16, u32>()
-		);
-
-		node->set_arg(0, address);
-		node->set_ret(0, value);
-		cc.mov(ret.r16(), value);
-	}
-
-	template <typename Dst, typename Src>
-	void JitX64::EmitWriteVirtualMemory16(Dst address, Src value) {
-		asmjit::InvokeNode* node = EmitExternalCall(
-			reinterpret_cast<uintptr_t>(&Memory::WriteVirtualMemory16),
-			asmjit::FuncSignature::build<void, u32, u16>()
-		);
-
-		node->set_arg(0, address);
-		node->set_arg(1, value.r16());
 	}
 
 	template <typename T>

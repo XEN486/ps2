@@ -28,19 +28,15 @@ public:
 	static u32 ReadVirtualMemory32(u32 address);
 	static void WriteVirtualMemory32(u32 address, u32 dword);
 
-	static u16 ReadVirtualMemory16(u32 address);
-	static void WriteVirtualMemory16(u32 address, u16 word);
-
 	static void Release() {
 		free(m_Memory);
 	}
 
+	inline static u8* m_Memory;
+
 private:
 	inline static EmotionEngine::MIPS::JitBackend* m_JitBackend;
-	inline static u8* m_Memory;
 	inline static bool m_ExposeBootROM;
-
-	friend class ElfFile;
 };
 
 #endif
