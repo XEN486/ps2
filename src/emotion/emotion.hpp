@@ -59,7 +59,15 @@ namespace EmotionEngine::MIPS {
 	class JitBackend;
 	struct InstructionData {
 		InstructionType type;
-		void (JitBackend::*ptr)();
+		void (JitBackend::*ptr)(InstructionData&);
+
+		u8 rs;
+		u8 rt;
+		u8 rd;
+		u8 sa;
+		u8 funct;
+		u16 imm;
+		u32 addr;
 	};
 
 	class JitBackend {
@@ -71,7 +79,7 @@ namespace EmotionEngine::MIPS {
 		CompiledBlock& GetOrCompileBlock(u32 pc);
 		
 	protected:
-		u32 Fetch() {
+		[[nodiscard]] u32 Fetch() {
 			u32 value = Memory::ReadVirtualMemory32(m_CompilePC);
 			m_CompilePC += 4;
 			return value;
@@ -81,9 +89,10 @@ namespace EmotionEngine::MIPS {
 		virtual void EmitBeginBlock() = 0;
 		virtual void EmitEndBlock() = 0;
 		
-		// --- instructions ---
-		//virtual void Nop() = 0;
-		virtual void test() = 0;
+	protected:
+		virtual void LUI(InstructionData& data) = 0;
+		virtual void ADDIU(InstructionData& data) = 0;
+		virtual void SLL(InstructionData& data) = 0;
 
 	protected:
 		R5900* m_R5900;
@@ -97,7 +106,8 @@ namespace EmotionEngine::MIPS {
 
 	private:
 		CompiledBlock& RecompileBlock(u32 pc);
-		InstructionData AnalyzeOp(u32 opcode);
+		inline InstructionData AnalyzeOp(u32 opcode);
+		void DecodeOp(InstructionData& data, u32 instruction);
 		//void RecompileOp(u32 opcode, u32 old_pc);
 
 	private:

@@ -27,7 +27,10 @@ size_t EE::RunOnce() {
 }
 
 void EE::Reset() {
-	m_R5900.regs[0].reg_u128 = 0;
+	for (u8 i = 0; i < 32; i++) {
+		m_R5900.regs[i].reg_u128 = 0;
+	}
+	
 	m_R5900.pc = 0xbfc00000;
 }
 

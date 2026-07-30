@@ -63,7 +63,7 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 
 		InstructionData data = AnalyzeOp(Fetch());
 		if (data.type == InstructionType::Normal) {
-			(this->*(data.ptr))();
+			(this->*(data.ptr))(data);
 			block.instructions++;
 			continue;
 		}
@@ -71,11 +71,11 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 		else if (data.type == InstructionType::Branch) {
 			// recompile branch delay slot first
 			InstructionData delay_slot = AnalyzeOp(Fetch());
-			(this->*(delay_slot.ptr))();
+			(this->*(delay_slot.ptr))(delay_slot);
 			block.instructions++;
 
 			// recompile branch and break out of this loop
-			(this->*(data.ptr))();
+			(this->*(data.ptr))(data);
 			block.instructions++;
 
 			// account for delay slot in end_pc
@@ -110,31 +110,46 @@ CompiledBlock& JitBackend::GetOrCompileBlock(u32 pc) {
     return RecompileBlock(pc);
 }
 
-InstructionData JitBackend::AnalyzeOp(u32 opcode) {
-	switch (opcode) {
-		case 0: {
-			return InstructionData {
-				InstructionType::Branch,
-				&JitBackend::test,
-			};
+inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
+	InstructionData data;
+	data.type = InstructionType::Normal;
+	DecodeOp(data, instruction);
+
+	u8 op = (instruction >> 26) & 0b111111;
+	switch (op) {
+		// SPECIAL
+		case 0b000000: {
+			switch (data.funct) {
+				case 0b000000: { data.ptr = &JitBackend::SLL; break; }
+			}
+
+			break;
 		}
+		case 0b001111: { data.ptr = &JitBackend::LUI; break; }		// LUI
+		case 0b001001: { data.ptr = &JitBackend::ADDIU; break; }	// ADDIU
+
 		default: {
-			error_log("unknown opcode {:08x}", opcode);
+			error_log("unknown opcode {:06b} {:08x}", op, instruction);
 			exit(1);
 		}
 	}
+	
+	return data;
 }
 
-/*
-void JitBackend::RecompileOp(u32 opcode, u32 old_pc) {
-	switch (opcode) {
-		case 0: {
-			return test();
-		}
-		default: {
-			error_log("unknown opcode {:08x} [pc={:08x}]", opcode, old_pc);
-			exit(1);
-		}
-	}
+void JitBackend::DecodeOp(InstructionData& data, u32 instruction) {
+	// R-type and I-type
+	data.rs = (instruction >> 21) & 0b11111;
+	data.rt = (instruction >> 16) & 0b11111;
+
+	// R-type
+	data.rd = (instruction >> 11) & 0b11111;
+	data.sa = (instruction >> 6) & 0b11111;
+	data.funct = (instruction >> 0) & 0b111111;
+	
+	// I-type
+	data.imm = instruction & 0xffff;
+
+	// J-type
+	data.addr = instruction & 0x3ffffff;
 }
-*/
