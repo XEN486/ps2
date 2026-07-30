@@ -1,0 +1,8 @@
+#ifndef CONFIG_HPP
+#define CONFIG_HPP
+
+#define ENABLE_SELF_MODIFYING_CODE
+#define ENABLE_LOGGING
+#define ENABLE_ASMJIT_LOGGING
+
+#endif

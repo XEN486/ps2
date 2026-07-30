@@ -1,0 +1,125 @@
+#ifndef RECOMPILER_BASE_HPP
+#define RECOMPILER_BASE_HPP
+
+#include "../memory.hpp"
+#include "../utils.hpp"
+
+#include <asmjit/core.h>
+#include <unordered_map>
+#include <vector>
+
+namespace EmotionEngine::MIPS {
+	union GPR {
+		GPR() : reg_u128(0) {}
+		u128	reg_u128;
+		i128	reg_i128;
+		u64		reg_u64[2];
+		i64		reg_i64[2];
+		u32		reg_u32[4];
+		i32		reg_i32[4];
+		u16		reg_u16[8];
+		i16		reg_i16[8];
+		u8		reg_u8[16];
+		i8		reg_i8[16];
+	};
+
+	struct R5900 {
+		// 32 GPRs (128-bit)
+		GPR regs[32];
+
+		// special registers
+		u32 pc;
+		u64 hi;
+		u64 lo;
+		u64 hi1;
+		u64 lo1;
+
+		// stuff for jit
+		u32 next_pc;
+	};
+
+	using BlockFunc = void (*)(R5900*);
+
+	struct CompiledBlock {
+		bool valid = false;		// block has been compiled
+		size_t execution_count;	// number of times this block has been executed
+		size_t instructions;	// number of instructions in block
+		u32 start_pc;		// start address of the block
+		u32 end_pc;		// end address of the block
+		u32 after_end_pc;	// instruction after the block ends
+		BlockFunc fn;			// function pointer to recompiled code
+	};
+
+	enum class InstructionType {
+		Normal,
+		Branch,
+		// BranchLikely, etc. later
+	};
+
+	class JitBackend;
+	struct InstructionData {
+		InstructionType type;
+		void (JitBackend::*ptr)();
+	};
+
+	class JitBackend {
+	public:
+		virtual bool InitJit(R5900* cpu);
+		void Release();
+		void Invalidate(u32 pc);
+
+		CompiledBlock& GetOrCompileBlock(u32 pc);
+		
+	protected:
+		u32 Fetch() {
+			u32 value = Memory::ReadVirtualMemory32(m_CompilePC);
+			m_CompilePC += 4;
+			return value;
+		}
+
+	protected:
+		virtual void EmitBeginBlock() = 0;
+		virtual void EmitEndBlock() = 0;
+		
+		// --- instructions ---
+		//virtual void Nop() = 0;
+		virtual void test() = 0;
+
+	protected:
+		R5900* m_R5900;
+
+		asmjit::JitRuntime m_Runtime;
+		asmjit::CodeHolder m_CodeHolder;
+		asmjit::FileLogger m_Logger;
+
+		// PC used internally by the jit to track where it is in mips code
+		u32 m_CompilePC;
+
+	private:
+		CompiledBlock& RecompileBlock(u32 pc);
+		InstructionData AnalyzeOp(u32 opcode);
+		//void RecompileOp(u32 opcode, u32 old_pc);
+
+	private:
+		std::unordered_map<u32, CompiledBlock> m_BlockCache {};
+	};
+}
+
+namespace EmotionEngine {
+	class EE {
+	public:
+		EE(MIPS::JitBackend* jit);
+		MIPS::R5900& GetR5900() { return m_R5900; }
+
+		void Reset();
+		size_t RunOnce();
+		void Release();
+
+	private:
+		MIPS::R5900 m_R5900;
+		MIPS::JitBackend* m_JitBackend;
+	};
+}
+
+
+#endif
