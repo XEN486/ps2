@@ -113,3 +113,21 @@ void JitX64::LW(InstructionData& data) {
 	EmitReadVirtualMemory32(s2, s1);					// s2 <- [vaddr]
 	EmitStoreRegister(R64, data.rt, s2.r32(), true);	// rt <- data
 }
+
+void JitX64::SD(InstructionData& data) {
+	// base = rs
+	EmitLoadRegister(s1, R32, data.rs);					// vaddr <- base
+	if (data.imm) cc.add(s1.r32(), (i16)data.imm);		// vaddr += (i16)imm
+	
+	EmitLoadRegister(s2, R64, data.rt);					// s2 <- rt
+	EmitWriteVirtualMemory64(s1, s2);					// [vaddr] <- rt
+}
+
+void JitX64::SW(InstructionData& data) {
+	// base = rs
+	EmitLoadRegister(s1, R32, data.rs);					// vaddr <- base
+	if (data.imm) cc.add(s1.r32(), (i16)data.imm);		// vaddr += (i16)imm
+	
+	EmitLoadRegister(s2, R32, data.rt);					// s2 <- rt
+	EmitWriteVirtualMemory32(s1, s2);					// [vaddr] <- rt
+}

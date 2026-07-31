@@ -113,6 +113,8 @@ namespace EmotionEngine::MIPS {
 		virtual void JR(InstructionData& data) = 0;
 		virtual void EI(InstructionData& data) = 0;
 		virtual void LW(InstructionData& data) = 0;
+		virtual void SD(InstructionData& data) = 0;
+		virtual void SW(InstructionData& data) = 0;
 
 	protected:
 		constexpr void VirtualToPhysical(u32& address) {

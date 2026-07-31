@@ -155,6 +155,8 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b011111: { data.ptr = &JitBackend::SQ; break; }		// SQ
 		case 0b010000: { data.ptr = &JitBackend::EI; break; }		// EI
 		case 0b100011: { data.ptr = &JitBackend::LW; break; }		// LW
+		case 0b111111: { data.ptr = &JitBackend::SD; break; }		// SD
+		case 0b101011: { data.ptr = &JitBackend::SW; break; }		// SW
 
 		// branch
 		case 0b000101: { data.ptr = &JitBackend::BNE; data.type = InstructionType::Branch; break; }	// BNE
