@@ -19,9 +19,9 @@ size_t EE::RunOnce() {
 	block.fn(&m_R5900);
 	m_R5900.pc = m_R5900.next_pc;
 
-	if (block.execution_count == 1) {
-		debug_log("execute new block {:04x}->{:04x} [{} instructions]", block.start_pc, block.end_pc, block.instructions);
-	}
+	//if (block.execution_count == 1) {
+	//	debug_log("execute new block {:04x}->{:04x} [{} instructions]", block.start_pc, block.end_pc, block.instructions);
+	//}
 
 	return block.instructions;
 }

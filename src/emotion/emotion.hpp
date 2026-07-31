@@ -23,16 +23,26 @@ namespace EmotionEngine::MIPS {
 		i8		reg_i8[16];
 	};
 
+	enum AbiNames {
+		zero, at,
+		v0, v1,
+		a0, a1, a2, a3,
+		t0, t1, t2, t3, t4, t5, t6, t7,
+		s0, s1, s2, s3, s4, s5, s6, s7,
+		t8, t9,
+		k0, k1,
+		gp, sp, fp,
+		ra
+	};
+
 	struct R5900 {
 		// 32 GPRs (128-bit)
 		GPR regs[32];
 
 		// special registers
 		u32 pc;
-		u64 hi;
-		u64 lo;
-		u64 hi1;
-		u64 lo1;
+		u64 hi[2]; // hi[0] = hi, hi[1] = hi1
+		u64 lo[2]; // hi[0] = lo, lo[1] = lo1
 
 		// stuff for jit
 		u32 next_pc;
@@ -53,6 +63,7 @@ namespace EmotionEngine::MIPS {
 	enum class InstructionType {
 		Normal,
 		Branch,
+		Syscall,
 		// BranchLikely, etc. later
 	};
 
@@ -98,6 +109,7 @@ namespace EmotionEngine::MIPS {
 		virtual void JAL(InstructionData& data) = 0;
 		virtual void BNE(InstructionData& data) = 0;
 		virtual void DADDU(InstructionData& data) = 0;
+		virtual void SYSCALL(InstructionData& data) = 0;
 
 	protected:
 		R5900* m_R5900;
@@ -113,7 +125,6 @@ namespace EmotionEngine::MIPS {
 		CompiledBlock& RecompileBlock(u32 pc);
 		inline InstructionData AnalyzeOp(u32 opcode);
 		void DecodeOp(InstructionData& data, u32 instruction);
-		//void RecompileOp(u32 opcode, u32 old_pc);
 
 	private:
 		std::unordered_map<u32, CompiledBlock> m_BlockCache {};

@@ -32,6 +32,7 @@ namespace EmotionEngine::MIPS {
 		void JAL(InstructionData& data) override;
 		void BNE(InstructionData& data) override;
 		void DADDU(InstructionData& data) override;
+		void SYSCALL(InstructionData& data) override;
 
 	private:
 		asmjit::InvokeNode* EmitExternalCall(uintptr_t address, const asmjit::FuncSignature& sig);

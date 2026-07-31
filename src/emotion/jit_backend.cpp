@@ -82,6 +82,14 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 			end_pc += 4;
 			break;
 		}
+
+		else if (data.type == InstructionType::Syscall) {
+			(this->*(data.ptr))(data);
+			block.instructions++;
+
+			// end the block early
+			break;
+		}
 	}
 	EmitEndBlock();
 
@@ -123,6 +131,9 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				case 0b000000: { data.ptr = &JitBackend::SLL; break; }		// SLL
 				case 0b101011: { data.ptr = &JitBackend::SLTU; break; }		// SLTU
 				case 0b101101: { data.ptr = &JitBackend::DADDU; break; }	// DADDU
+
+				// system call (HLE for now)
+				case 0b001100: { data.ptr = &JitBackend::SYSCALL; data.type = InstructionType::Syscall; break; }
 
 				default: {
 					error_log("unknown special opcode {:06b} {:08x}", data.funct, instruction);

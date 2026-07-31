@@ -1,4 +1,5 @@
 #include "jit_x64.hpp"
+#include "../../hle/bios.hpp"
 
 using namespace EmotionEngine::MIPS;
 using namespace asmjit;
@@ -78,6 +79,16 @@ void JitX64::BNE(InstructionData& data) {
 void JitX64::DADDU(InstructionData& data) {
 	EmitLoadRegister(s1, R64, data.rs);					// s1 <- rs
 	EmitLoadRegister(s2, R64, data.rt);					// s2 <- rt
-	cc.add(s1, s2);										// s1 += imm (signed)
+	cc.add(s1, s2);										// s1 += s2
 	EmitStoreRegister(R64, data.rd, s1.r64(), false);	// rd <- s1
+}
+
+void JitX64::SYSCALL(InstructionData& data) {
+	// TODO: LLE emulation of BIOS
+	InvokeNode* node = EmitExternalCall(
+		reinterpret_cast<uintptr_t>(&HLE::Bios::EESysCall),
+		FuncSignature::build<void, R5900*>()
+	);
+
+	node->set_arg(0, m_R5900);
 }
