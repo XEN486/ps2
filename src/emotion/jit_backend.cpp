@@ -8,7 +8,7 @@ using namespace asmjit;
 
 bool JitBackend::InitJit(R5900* cpu) {
 	m_R5900 = cpu;
-	m_Logger.set_file(stdout);
+	m_Logger.set_file(fopen("asmjit.log", "w"));
 
 	Error err = m_CodeHolder.init(m_Runtime.environment(), m_Runtime.cpu_features());
 
@@ -109,6 +109,8 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 }
 
 CompiledBlock& JitBackend::GetOrCompileBlock(u32 pc) {
+	VirtualToPhysical(pc);
+
     auto it = m_BlockCache.find(pc);
     if (it != m_BlockCache.end() && it->second.valid) {
 		return it->second;
@@ -135,6 +137,9 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				// system call (HLE for now)
 				case 0b001100: { data.ptr = &JitBackend::SYSCALL; data.type = InstructionType::Syscall; break; }
 
+				// branch
+				case 0b001000: { data.ptr = &JitBackend::JR; data.type = InstructionType::Branch; break; }
+
 				default: {
 					error_log("unknown special opcode {:06b} {:08x}", data.funct, instruction);
 					exit(1);
@@ -148,6 +153,8 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b001111: { data.ptr = &JitBackend::LUI; break; }		// LUI
 		case 0b001001: { data.ptr = &JitBackend::ADDIU; break; }	// ADDIU
 		case 0b011111: { data.ptr = &JitBackend::SQ; break; }		// SQ
+		case 0b010000: { data.ptr = &JitBackend::EI; break; }		// EI
+		case 0b100011: { data.ptr = &JitBackend::LW; break; }		// LW
 
 		// branch
 		case 0b000101: { data.ptr = &JitBackend::BNE; data.type = InstructionType::Branch; break; }	// BNE

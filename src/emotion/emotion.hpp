@@ -23,7 +23,7 @@ namespace EmotionEngine::MIPS {
 		i8		reg_i8[16];
 	};
 
-	enum AbiNames {
+	enum class AbiNames : uint8_t {
 		zero, at,
 		v0, v1,
 		a0, a1, a2, a3,
@@ -48,7 +48,7 @@ namespace EmotionEngine::MIPS {
 		u32 next_pc;
 	};
 
-	using BlockFunc = void (*)(R5900*);
+	using BlockFunc = void (*)();
 
 	struct CompiledBlock {
 		bool valid = false;		// block has been compiled
@@ -110,6 +110,14 @@ namespace EmotionEngine::MIPS {
 		virtual void BNE(InstructionData& data) = 0;
 		virtual void DADDU(InstructionData& data) = 0;
 		virtual void SYSCALL(InstructionData& data) = 0;
+		virtual void JR(InstructionData& data) = 0;
+		virtual void EI(InstructionData& data) = 0;
+		virtual void LW(InstructionData& data) = 0;
+
+	protected:
+		constexpr void VirtualToPhysical(u32& address) {
+			address &= 0x1fffffff;
+		}
 
 	protected:
 		R5900* m_R5900;

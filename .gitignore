@@ -1,4 +1,4 @@
 build/
 demo1.txt
-log.txt
+asmjit.log
 *.elf

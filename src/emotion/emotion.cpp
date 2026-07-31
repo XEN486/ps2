@@ -16,7 +16,7 @@ size_t EE::RunOnce() {
 	block.execution_count++;
 
 	m_R5900.next_pc = block.after_end_pc;
-	block.fn(&m_R5900);
+	block.fn();
 	m_R5900.pc = m_R5900.next_pc;
 
 	//if (block.execution_count == 1) {

@@ -92,3 +92,24 @@ void JitX64::SYSCALL(InstructionData& data) {
 
 	node->set_arg(0, m_R5900);
 }
+
+void JitX64::JR(InstructionData& data) {
+	EmitLoadRegister(s1, R32, data.rs);	// s1 <- rs
+	EmitJump(s1);						// pc <- s1
+
+	// TODO: use the register pre delay-slot
+	// TODO: Exception(AddressError);
+}
+
+void JitX64::EI(InstructionData& data) {
+	// TODO: implement interrupts
+}
+
+void JitX64::LW(InstructionData& data) {
+	// base = rs
+	EmitLoadRegister(s1, R32, data.rs);					// vaddr <- base
+	if (data.imm) cc.add(s1.r32(), (i16)data.imm);		// vaddr += (i16)imm
+	
+	EmitReadVirtualMemory32(s2, s1);					// s2 <- [vaddr]
+	EmitStoreRegister(R64, data.rt, s2.r32(), true);	// rt <- data
+}

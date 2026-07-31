@@ -13,16 +13,14 @@ namespace EmotionEngine::MIPS {
 	class JitBackend;
 }
 
+#define RDRAM_END 0x01ffffff
+
 // memory map
 class Memory {
 public:
 	static void Initialize(EmotionEngine::MIPS::JitBackend* backend) {
 		m_JitBackend = backend;
 		m_Memory = static_cast<u8*>(calloc(1, 0x2000000)); // 32MiB
-	}
-
-	static constexpr u32 VirtualToPhysical(u32 vaddr) {
-		return vaddr & 0x1fffffff;
 	}
 
 	static u32 ReadVirtualMemory32(u32 address);
