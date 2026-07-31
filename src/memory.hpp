@@ -23,6 +23,9 @@ public:
 		m_Memory = static_cast<u8*>(calloc(1, 0x2000000)); // 32MiB
 	}
 
+	static u64 ReadVirtualMemory64(u32 address);
+	static void WriteVirtualMemory64(u32 address, u64 qword);
+
 	static u32 ReadVirtualMemory32(u32 address);
 	static void WriteVirtualMemory32(u32 address, u32 dword);
 

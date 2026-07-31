@@ -23,3 +23,14 @@ void Memory::WriteVirtualMemory32(u32 address, u32 dword) {
 
 	error_log("unknown physical address {:08x}", address);
 }
+
+u64 Memory::ReadVirtualMemory64(u32 address) {
+	u32 lo = ReadVirtualMemory32(address);
+	u32 hi = ReadVirtualMemory32(address + 1);
+	return (hi << 32) | lo;
+}
+
+void Memory::WriteVirtualMemory64(u32 address, u64 qword) {
+	WriteVirtualMemory32(address, qword & 0xffffffff);
+	WriteVirtualMemory32(address + 1, (qword >> 32) & 0xffffffff);
+}

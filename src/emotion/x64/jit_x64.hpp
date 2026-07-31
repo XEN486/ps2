@@ -37,7 +37,6 @@ namespace EmotionEngine::MIPS {
 		void EI(InstructionData& data) override;
 		void LW(InstructionData& data) override;
 
-
 	private:
 		asmjit::InvokeNode* EmitExternalCall(uintptr_t address, const asmjit::FuncSignature& sig);
 
@@ -47,6 +46,12 @@ namespace EmotionEngine::MIPS {
 		void EmitReadVirtualMemory128(asmjit::x86::Vec& ret, asmjit::x86::Gp& address);
 		void EmitWriteVirtualMemory128(asmjit::x86::Gp& address, asmjit::x86::Vec& val);
 
+		void EmitReadVirtualMemory64(asmjit::x86::Gp& ret, asmjit::x86::Gp& address);
+		void EmitWriteVirtualMemory64(asmjit::x86::Gp& address, asmjit::x86::Gp& value);
+
+		void EmitReadVirtualMemory64(asmjit::x86::Gp& ret, u32 address);
+		void EmitWriteVirtualMemory64(u32 address, asmjit::x86::Gp& value);
+		
 		void EmitReadVirtualMemory32(asmjit::x86::Gp& ret, asmjit::x86::Gp& address);
 		void EmitWriteVirtualMemory32(asmjit::x86::Gp& address, asmjit::x86::Gp& value);
 
