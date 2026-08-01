@@ -49,6 +49,11 @@ namespace EmotionEngine::MIPS {
 		void DSRL(InstructionData& data) override;
 		void ANDI(InstructionData& data) override;
 		void LBU(InstructionData& data) override;
+		void SRL(InstructionData& data) override;
+		void DSLL(InstructionData& data) override;
+		void OR(InstructionData& data) override;
+		void DSLL32(InstructionData& data) override;
+		void BEQ(InstructionData& data) override;
 
 	private:
 		asmjit::InvokeNode* EmitExternalCall(uintptr_t address, const asmjit::FuncSignature& sig);

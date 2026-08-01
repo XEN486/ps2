@@ -216,3 +216,49 @@ void JitX64::LBU(InstructionData& data) {
 	EmitReadVirtualMemory8(s2.r8(), s1);					// s2 <- [vaddr]
 	EmitStoreRegister(R64, data.rt, s2, false);				// rt <- data
 }
+
+void JitX64::SRL(InstructionData& data) {
+	EmitLoadRegister(s1, R32, data.rt);						// s1 <- rt
+	cc.shr(s1.r32(), data.sa);								// s1 >> sa (logical)
+	EmitStoreRegister(R64, data.rd, s1.r32(), true);		// rd <- s1
+}
+
+void JitX64::DSLL(InstructionData& data) {
+	EmitLoadRegister(s1, R64, data.rt);						// s1 <- rt
+	cc.shl(s1, data.sa);									// s1 << sa (logical)
+	EmitStoreRegister(R64, data.rd, s1, false);				// rd <- s1
+}
+
+void JitX64::OR(InstructionData& data) {
+	EmitLoadRegister(s1, R64, data.rs);						// s1 <- rs
+	EmitLoadRegister(s2, R64, data.rt);						// s2 <- rt
+	cc.or_(s1, s2);											// s1 |= s2
+	EmitStoreRegister(R64, data.rd, s1, false);				// rd <- s1
+}
+
+void JitX64::DSLL32(InstructionData& data) {
+	EmitLoadRegister(s1, R64, data.rt);						// s1 <- rt
+	cc.shl(s1, data.sa + 32);								// s1 << (sa + 32) (logical)
+	EmitStoreRegister(R64, data.rd, s1, false);				// rd <- s1
+}
+
+void JitX64::BEQ(InstructionData& data) {
+	// optimization: rs == rt -> forced branch
+	if (data.rs == data.rt) {
+		EmitJump((m_CompilePC - 4) + (i32)((i16)data.imm << 2));
+		return;
+	}
+
+	// compare rs and rt
+    EmitLoadRegister(s1, R64, data.rs);
+    EmitLoadRegister(s2, R64, data.rt);
+
+	Label exit_beq = cc.new_label();
+    cc.cmp(s1, s2);
+	cc.j(x86::CondCode::kNotEqual, exit_beq);
+
+	// PC is after the branch delay slot so we have to go back 1 instruction to use it as a base for the branch
+	EmitJump((m_CompilePC - 4) + (i32)((i16)data.imm << 2));
+
+	cc.bind(exit_beq);
+}
