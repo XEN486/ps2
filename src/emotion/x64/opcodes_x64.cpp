@@ -1,7 +1,7 @@
 #include "jit_x64.hpp"
 #include "../../hle/bios.hpp"
 
-using namespace EmotionEngine::MIPS;
+using namespace EmotionEngine::Core;
 using namespace asmjit;
 
 void JitX64::LUI(InstructionData& data) {
@@ -269,5 +269,5 @@ void JitX64::SB(InstructionData& data) {
 	if (data.imm) cc.add(s1.r32(), (u32)(i16)data.imm);		// vaddr += (i16)imm
 	
 	EmitLoadRegister(s2, R8, data.rt);						// s2 <- rt
-	EmitWriteVirtualMemory8(s1.r32(), s2.r8());					// [vaddr] <- rt
+	EmitWriteVirtualMemory8(s1, s2.r8());					// [vaddr] <- rt
 }

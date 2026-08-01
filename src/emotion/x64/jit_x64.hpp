@@ -7,7 +7,7 @@
 #include <type_traits>
 #include <asmjit/x86.h>
 
-namespace EmotionEngine::MIPS {
+namespace EmotionEngine::Core {
 	enum RegisterSize {
 		R64	= 8, // lo 64-bit
 		R32	= 4, // lo 32-bit

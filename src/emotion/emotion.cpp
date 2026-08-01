@@ -4,7 +4,7 @@
 
 using namespace EmotionEngine;
 
-EE::EE(MIPS::JitBackend* backend) : m_JitBackend(backend) {
+EE::EE(Core::JitBackend* backend) : m_JitBackend(backend) {
 	if (!m_JitBackend->InitJit(&m_R5900)) {
 		error_log("failed to initialize backend");
 		exit(1);
@@ -12,7 +12,7 @@ EE::EE(MIPS::JitBackend* backend) : m_JitBackend(backend) {
 }
 
 size_t EE::RunOnce() {
-	MIPS::CompiledBlock& block = m_JitBackend->GetOrCompileBlock(m_R5900.pc);
+	Core::CompiledBlock& block = m_JitBackend->GetOrCompileBlock(m_R5900.pc);
 	block.execution_count++;
 
 	m_R5900.next_pc = block.after_end_pc;

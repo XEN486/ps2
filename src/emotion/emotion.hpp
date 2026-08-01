@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace EmotionEngine::MIPS {
+namespace EmotionEngine::Core {
 	union GPR {
 		GPR() : reg_u128(0) {}
 		u128	reg_u128;
@@ -172,16 +172,16 @@ namespace EmotionEngine::MIPS {
 namespace EmotionEngine {
 	class EE {
 	public:
-		EE(MIPS::JitBackend* jit);
-		MIPS::R5900& GetR5900() { return m_R5900; }
+		EE(Core::JitBackend* jit);
+		Core::R5900& GetR5900() { return m_R5900; }
 
 		void Reset();
 		size_t RunOnce();
 		void Release();
 
 	private:
-		MIPS::R5900 m_R5900;
-		MIPS::JitBackend* m_JitBackend;
+		Core::R5900 m_R5900;
+		Core::JitBackend* m_JitBackend;
 	};
 }
 

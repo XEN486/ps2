@@ -3,7 +3,7 @@
 #include "../config.hpp"
 
 #include <asmjit/x86.h>
-using namespace EmotionEngine::MIPS;
+using namespace EmotionEngine::Core;
 using namespace asmjit;
 
 bool JitBackend::InitJit(R5900* cpu) {

@@ -9,7 +9,7 @@
 #include "utils.hpp"
 
 // forward declaration
-namespace EmotionEngine::MIPS {
+namespace EmotionEngine::Core {
 	class JitBackend;
 }
 
@@ -18,7 +18,7 @@ namespace EmotionEngine::MIPS {
 // memory map
 class Memory {
 public:
-	static void Initialize(EmotionEngine::MIPS::JitBackend* backend) {
+	static void Initialize(EmotionEngine::Core::JitBackend* backend) {
 		m_JitBackend = backend;
 		m_Memory = static_cast<u8*>(calloc(1, 0x2000000)); // 32MiB
 	}
@@ -36,7 +36,7 @@ public:
 	inline static u8* m_Memory;
 
 private:
-	inline static EmotionEngine::MIPS::JitBackend* m_JitBackend;
+	inline static EmotionEngine::Core::JitBackend* m_JitBackend;
 	inline static bool m_ExposeBootROM;
 };
 

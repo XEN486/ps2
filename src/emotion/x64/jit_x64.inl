@@ -1,7 +1,7 @@
 #include "jit_x64.hpp"
 #include "../../memory.hpp"
 
-namespace EmotionEngine::MIPS {
+namespace EmotionEngine::Core {
 	template <typename T>
 	constexpr void JitX64::EmitLoadRegister(T reg, RegisterSize size, u8 index) {
 		// always read zero for r0

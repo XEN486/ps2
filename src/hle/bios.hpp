@@ -15,7 +15,7 @@ namespace HLE {
 	// HLE BIOS
 	class Bios {
 	public:
-		static void EESysCall(EmotionEngine::MIPS::R5900* r5900);
+		static void EESysCall(EmotionEngine::Core::R5900* r5900);
 
 	private:
 		inline static u32 m_ThreadSP;

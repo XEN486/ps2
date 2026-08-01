@@ -1,7 +1,7 @@
 #include "jit_x64.hpp"
 #include "../../config.hpp"
 
-using namespace EmotionEngine::MIPS;
+using namespace EmotionEngine::Core;
 using namespace asmjit;
 
 bool JitX64::InitJit(R5900* cpu) {

@@ -4,7 +4,7 @@
 #include "elf.hpp"
 
 int main() {
-	EmotionEngine::MIPS::JitX64 backend;
+	EmotionEngine::Core::JitX64 backend;
 	Memory::Initialize(&backend);
 
 	EmotionEngine::EE cpu(&backend);

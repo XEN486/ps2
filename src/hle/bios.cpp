@@ -1,5 +1,5 @@
 #include "bios.hpp"
-using namespace EmotionEngine::MIPS;
+using namespace EmotionEngine::Core;
 using namespace HLE;
 
 void Bios::EESysCall(R5900* r5900) {
