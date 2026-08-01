@@ -51,6 +51,12 @@ namespace EmotionEngine::Core {
 
 			cc.mov(asmjit::x86::ptr(r5900, index * sizeof(GPR), size), reg);
 		}
+
+		// reg = imm64
+		else if constexpr (std::is_same_v<T, u64>) {
+			assert(!sign_extend);
+			cc.mov(asmjit::x86::ptr(r5900, index * sizeof(GPR), size), reg);
+		}
 		
 		else {
 			assert(!sign_extend);

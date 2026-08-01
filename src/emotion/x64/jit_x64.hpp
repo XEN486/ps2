@@ -58,6 +58,7 @@ namespace EmotionEngine::Core {
 		void SWC1(InstructionData& data) override;
 		void SLTIU(InstructionData& data) override;
 		void DIVU(InstructionData& data) override;
+		void MFHI(InstructionData& data) override;
 
 	private:
 		asmjit::InvokeNode* EmitExternalCall(uintptr_t address, const asmjit::FuncSignature& sig);

@@ -151,7 +151,8 @@ namespace EmotionEngine::Core {
 		virtual void SWC1(InstructionData& data) = 0;
 		virtual void SLTIU(InstructionData& data) = 0;
 		virtual void DIVU(InstructionData& data) = 0;
-		
+		virtual void MFHI(InstructionData& data) = 0;
+
 	protected:
 		constexpr void VirtualToPhysical(u32& address) {
 			address &= 0x1fffffff;

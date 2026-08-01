@@ -342,3 +342,7 @@ void JitX64::DIVU(InstructionData& data) {
 
 	cc.bind(done);
 }
+
+void JitX64::MFHI(InstructionData& data) {
+	EmitStoreRegister(R64, data.rd, m_R5900->hi, false);
+}

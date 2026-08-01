@@ -142,6 +142,7 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				case 0b100101: { data.ptr = &JitBackend::OR; break; }		// OR
 				case 0b111100: { data.ptr = &JitBackend::DSLL32; break; }	// DSLL32
 				case 0b011011: { data.ptr = &JitBackend::DIVU; break; }		// DIVU
+				case 0b010000: { data.ptr = &JitBackend::MFHI; break; }		// MFHI
 
 				// system call (HLE for now)
 				case 0b001100: { data.ptr = &JitBackend::SYSCALL; break; }
