@@ -141,9 +141,10 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				case 0b111000: { data.ptr = &JitBackend::DSLL; break; }		// DSLL
 				case 0b100101: { data.ptr = &JitBackend::OR; break; }		// OR
 				case 0b111100: { data.ptr = &JitBackend::DSLL32; break; }	// DSLL32
+				case 0b011011: { data.ptr = &JitBackend::DIVU; break; }		// DIVU
 
 				// system call (HLE for now)
-				case 0b001100: { data.ptr = &JitBackend::SYSCALL; data.type = InstructionType::Syscall; break; }
+				case 0b001100: { data.ptr = &JitBackend::SYSCALL; break; }
 
 				// sync (ends the block)
 				case 0b001111: { data.ptr = &JitBackend::SYNC; data.type = InstructionType::Sync; break; }
@@ -175,6 +176,7 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b001100: { data.ptr = &JitBackend::ANDI; break; }		// ANDI
 		case 0b100100: { data.ptr = &JitBackend::LBU; break; }		// LBU
 		case 0b101000: { data.ptr = &JitBackend::SB; break; }		// SB
+		case 0b001011: { data.ptr = &JitBackend::SLTIU; break; }	// SLTIU
 
 		// cop1
 		case 0b111001: { data.ptr = &JitBackend::SWC1; break; }		// SWC1

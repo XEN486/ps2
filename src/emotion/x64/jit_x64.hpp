@@ -56,6 +56,8 @@ namespace EmotionEngine::Core {
 		void BEQ(InstructionData& data) override;
 		void SB(InstructionData& data) override;
 		void SWC1(InstructionData& data) override;
+		void SLTIU(InstructionData& data) override;
+		void DIVU(InstructionData& data) override;
 
 	private:
 		asmjit::InvokeNode* EmitExternalCall(uintptr_t address, const asmjit::FuncSignature& sig);

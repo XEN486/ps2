@@ -275,8 +275,70 @@ void JitX64::SB(InstructionData& data) {
 void JitX64::SWC1(InstructionData& data) {
 	// base = rs
 	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
-	if (data.imm) cc.add(s1.r32(), (u32)(i16)data.imm);		// vaddr += (i16)imm
+	if (data.imm) cc.add(s1.r32(), (i16)data.imm);		// vaddr += (i16)imm
 
 	EmitLoadFPR(s2.r32(), data.rt);							// s2 <- ft
 	EmitWriteVirtualMemory32(s1, s2.r32());					// [vaddr] <- rt
+}
+
+void JitX64::SLTIU(InstructionData& data) {
+	// compare rs and imm
+    EmitLoadRegister(s1, R64, data.rs);
+    cc.cmp(s1, (u32)(i16)data.imm);
+
+    // s1 < imm (unsigned) -> s1 = 1, else s1 = 0
+    cc.setb(s1.r8());
+    cc.movzx(s1, s1.r8()); // zero extend to 64-bit
+
+	// rt <- s1
+    EmitStoreRegister(R64, data.rt, s1, false);
+}
+
+void JitX64::DIVU(InstructionData& data) {
+	EmitLoadRegister(s1, R32, data.rs);
+	EmitLoadRegister(s2, R32, data.rt);
+
+	Label div = cc.new_label();
+	Label done = cc.new_label();
+
+	// check if we are dividing by zero
+	cc.test(s2.r32(), s2.r32());
+	cc.jnz(div);
+
+	// set division by zero results
+	EmitStoreSpecialRegister(SpecialRegName::HI, s1.r32()); // HI <- numerator
+	cc.mov(s1.r32(), 0xffffffff);
+	EmitStoreSpecialRegister(SpecialRegName::LO, s1.r32());	// LO <- 0xffffffff
+	cc.jmp(done);
+
+	// proper division
+	cc.bind(div);
+	cc.push(x86::rax);										// rs and quotient result
+	cc.push(x86::rbx);										// r5900 could be overwritten so we save it here
+	cc.push(x86::rcx);										// rt
+	cc.push(x86::rdx);										// remainder result
+
+	cc.mov(x86::rbx, r5900);								// save r5900 as if it was in rax, rcx or rdx it would get corrupted
+
+	cc.xor_(x86::edx, x86::edx);							// edx <- 0
+	cc.mov(x86::eax, s1.r32());								// eax <- s1
+	cc.mov(x86::ecx, s2.r32());								// ecx <- s2
+
+	// cc.div() doesnt support implicit form
+	cc.emit(x86::Inst::kIdDiv, x86::ecx);					// eax <- (eax / ecx), edx <- (eax % ecx)
+
+	cc.movsxd(x86::rax, x86::eax);							// rax <- sign_extend(eax)
+	cc.movsxd(x86::rdx, x86::edx);							// rdx <- sign_extend(rdx)
+
+	// store result
+	cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, hi)), x86::rax);
+	cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, lo)), x86::rdx);
+
+	// restore registers
+	cc.pop(x86::rdx);
+	cc.pop(x86::rcx);
+	cc.pop(x86::rbx);
+	cc.pop(x86::rax);
+
+	cc.bind(done);
 }
