@@ -44,7 +44,7 @@ namespace EmotionEngine::Core {
 
 	struct R5900 {
 		// 32 GPRs (128-bit)
-		GPR regs[32];
+		GPR gpr[32];
 
 		// special registers
 		u32 pc;
