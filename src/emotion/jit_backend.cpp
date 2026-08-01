@@ -133,6 +133,8 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				case 0b000000: { data.ptr = &JitBackend::SLL; break; }		// SLL
 				case 0b101011: { data.ptr = &JitBackend::SLTU; break; }		// SLTU
 				case 0b101101: { data.ptr = &JitBackend::DADDU; break; }	// DADDU
+				case 0b011000: { data.ptr = &JitBackend::MULT; break; }		// MULT
+				case 0b100001: { data.ptr = &JitBackend::ADDU; break; }		// ADDU
 
 				// system call (HLE for now)
 				case 0b001100: { data.ptr = &JitBackend::SYSCALL; data.type = InstructionType::Syscall; break; }
@@ -157,6 +159,8 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b100011: { data.ptr = &JitBackend::LW; break; }		// LW
 		case 0b111111: { data.ptr = &JitBackend::SD; break; }		// SD
 		case 0b101011: { data.ptr = &JitBackend::SW; break; }		// SW
+		case 0b100101: { data.ptr = &JitBackend::LHU; break; }		// LHU
+		case 0b101001: { data.ptr = &JitBackend::SH; break; }		// SH
 
 		// branch
 		case 0b000101: { data.ptr = &JitBackend::BNE; data.type = InstructionType::Branch; break; }	// BNE

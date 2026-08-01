@@ -63,11 +63,11 @@ void JitX64::EmitStoreRegister128(u8 index, asmjit::x86::Vec& reg) {
 	cc.movdqu(asmjit::x86::oword_ptr(r5900, index * sizeof(GPR)), reg);
 }
 
-void JitX64::EmitReadVirtualMemory128(asmjit::x86::Vec& ret, asmjit::x86::Gp& address) {
+void JitX64::EmitReadVirtualMemory128(asmjit::x86::Vec& ret, const asmjit::x86::Gp& address) {
 	EmitVirtualToPhysical(address);
 
 	// only allow 128-bit reads from main memory
-	cc.cmp(address, RDRAM_END);
+	cc.cmp(address, RDRAM_LAST_ADDR);
 
 	Label outside_main_memory = cc.new_label();
 	Label end = cc.new_label();
@@ -75,7 +75,7 @@ void JitX64::EmitReadVirtualMemory128(asmjit::x86::Vec& ret, asmjit::x86::Gp& ad
 	cc.j(x86::CondCode::kA, outside_main_memory);
 
 	// t1 <- &(main_memory[address])
-	cc.mov(t1, Memory::m_Memory);
+	cc.movabs(t1, Memory::m_Memory);
 	cc.add(t1, address);
 
 	// ret <- *t1
@@ -84,17 +84,17 @@ void JitX64::EmitReadVirtualMemory128(asmjit::x86::Vec& ret, asmjit::x86::Gp& ad
 
 	cc.bind(outside_main_memory); {
 		cc.int3();
+		cc.nop();
 	}
 
 	cc.bind(end);
-
 }
 
-void JitX64::EmitWriteVirtualMemory128(asmjit::x86::Gp& address, asmjit::x86::Vec& val) {
+void JitX64::EmitWriteVirtualMemory128(const asmjit::x86::Gp& address, asmjit::x86::Vec& val) {
 	EmitVirtualToPhysical(address);
 
 	// only allow 128-bit writes to main memory
-	cc.cmp(address, RDRAM_END);
+	cc.cmp(address, RDRAM_LAST_ADDR);
 
 	Label outside_main_memory = cc.new_label();
 	Label end = cc.new_label();
@@ -102,7 +102,7 @@ void JitX64::EmitWriteVirtualMemory128(asmjit::x86::Gp& address, asmjit::x86::Ve
 	cc.j(x86::CondCode::kA, outside_main_memory);
 
 	// t1 <- &(main_memory[address])
-	cc.mov(t1, Memory::m_Memory);
+	cc.movabs(t1, Memory::m_Memory);
 	cc.add(t1, address);
 
 	// ret <- *t1
@@ -111,23 +111,25 @@ void JitX64::EmitWriteVirtualMemory128(asmjit::x86::Gp& address, asmjit::x86::Ve
 
 	cc.bind(outside_main_memory); {
 		cc.int3();
+		cc.nop();
 	}
 
 	cc.bind(end);
 }
 
-void JitX64::EmitVirtualToPhysical(asmjit::x86::Gp& address) {
+void JitX64::EmitVirtualToPhysical(const asmjit::x86::Gp& address) {
 	cc.and_(address, 0x1fffffff);
 }
 
-void JitX64::EmitReadVirtualMemory64(asmjit::x86::Gp& ret, asmjit::x86::Gp& address) {
+void JitX64::EmitReadVirtualMemory64(const asmjit::x86::Gp& ret, const asmjit::x86::Gp& address) {
+	assert(ret.is_gp64());
 	EmitVirtualToPhysical(address);
 
 	Label not_main_memory = cc.new_label();
 	Label end = cc.new_label();
 
 	// read from main memory
-	cc.cmp(address, RDRAM_END);
+	cc.cmp(address, RDRAM_LAST_ADDR);
 	cc.j(x86::CondCode::kA, not_main_memory); {
 		cc.movabs(t1, reinterpret_cast<uintptr_t>(Memory::m_Memory));	// t1 <- main memory
 		cc.add(t1, address);											// t1 += address
@@ -149,14 +151,15 @@ void JitX64::EmitReadVirtualMemory64(asmjit::x86::Gp& ret, asmjit::x86::Gp& addr
 	cc.bind(end);
 }
 
-void JitX64::EmitWriteVirtualMemory64(asmjit::x86::Gp& address, asmjit::x86::Gp& value) {
+void JitX64::EmitWriteVirtualMemory64(const asmjit::x86::Gp& address, const asmjit::x86::Gp& value) {
+	assert(value.is_gp64());
 	EmitVirtualToPhysical(address);
 
 	Label not_main_memory = cc.new_label();
 	Label end = cc.new_label();
 
 	// write to main memory
-	cc.cmp(address, RDRAM_END);
+	cc.cmp(address, RDRAM_LAST_ADDR);
 	cc.j(x86::CondCode::kA, not_main_memory); {
 		cc.movabs(t1, reinterpret_cast<uintptr_t>(Memory::m_Memory));	// t1 <- main memory
 		cc.add(t1, address);											// t1 += address
@@ -178,29 +181,31 @@ void JitX64::EmitWriteVirtualMemory64(asmjit::x86::Gp& address, asmjit::x86::Gp&
 	cc.bind(end);
 }
 
-void JitX64::EmitReadVirtualMemory64(asmjit::x86::Gp& ret, u32 address) {
+void JitX64::EmitReadVirtualMemory64(const asmjit::x86::Gp& ret, u32 address) {
+	assert(ret.is_gp64());
 	VirtualToPhysical(address);
 
 	// optimization: read from main memory without calling external function
-	if (address <= RDRAM_END) {
+	if (address <= RDRAM_LAST_ADDR) {
 		cc.mov(ret, asmjit::x86::qword_ptr(reinterpret_cast<uintptr_t>(Memory::m_Memory + address)));
 		return;
 	}
 
 	asmjit::InvokeNode* node = EmitExternalCall(
 		reinterpret_cast<uintptr_t>(&Memory::ReadVirtualMemory64),
-		asmjit::FuncSignature::build<u32, u32>()
+		asmjit::FuncSignature::build<u64, u32>()
 	);
 
 	node->set_arg(0, address);
 	node->set_ret(0, ret);
 }
 
-void JitX64::EmitWriteVirtualMemory64(u32 address, asmjit::x86::Gp& value) {
+void JitX64::EmitWriteVirtualMemory64(u32 address, const asmjit::x86::Gp& value) {
+	assert(value.is_gp64());
 	VirtualToPhysical(address);
 
 	// optimization: read from main memory without calling external function
-	if (address <= RDRAM_END) {
+	if (address <= RDRAM_LAST_ADDR) {
 		cc.mov(asmjit::x86::qword_ptr(reinterpret_cast<uintptr_t>(Memory::m_Memory + address)), value);
 		return;
 	}
@@ -214,7 +219,8 @@ void JitX64::EmitWriteVirtualMemory64(u32 address, asmjit::x86::Gp& value) {
 	node->set_arg(1, value);
 }
 
-void JitX64::EmitReadVirtualMemory32(asmjit::x86::Gp& ret, asmjit::x86::Gp& address) {
+void JitX64::EmitReadVirtualMemory32(const asmjit::x86::Gp& ret, const asmjit::x86::Gp& address) {
+	assert(ret.is_gp32());
 	EmitVirtualToPhysical(address);
 
 	asmjit::x86::Gp value = cc.new_gp32("value");
@@ -222,7 +228,7 @@ void JitX64::EmitReadVirtualMemory32(asmjit::x86::Gp& ret, asmjit::x86::Gp& addr
 	Label end = cc.new_label();
 
 	// read from main memory
-	cc.cmp(address, RDRAM_END);
+	cc.cmp(address, RDRAM_LAST_ADDR);
 	cc.j(x86::CondCode::kA, not_main_memory); {
 		cc.movabs(t1, reinterpret_cast<uintptr_t>(Memory::m_Memory));	// t1 <- main memory
 		cc.add(t1, address);											// t1 += address
@@ -246,14 +252,15 @@ void JitX64::EmitReadVirtualMemory32(asmjit::x86::Gp& ret, asmjit::x86::Gp& addr
 	cc.bind(end);
 }
 
-void JitX64::EmitWriteVirtualMemory32(asmjit::x86::Gp& address, asmjit::x86::Gp& value) {
+void JitX64::EmitWriteVirtualMemory32(const asmjit::x86::Gp& address, const asmjit::x86::Gp& value) {
+	assert(value.is_gp32());
 	EmitVirtualToPhysical(address);
 
 	Label not_main_memory = cc.new_label();
 	Label end = cc.new_label();
 
 	// write to main memory
-	cc.cmp(address, RDRAM_END);
+	cc.cmp(address, RDRAM_LAST_ADDR);
 	cc.j(x86::CondCode::kA, not_main_memory); {
 		cc.movabs(t1, reinterpret_cast<uintptr_t>(Memory::m_Memory));	// t1 <- main memory
 		cc.add(t1, address);											// t1 += address
@@ -275,12 +282,13 @@ void JitX64::EmitWriteVirtualMemory32(asmjit::x86::Gp& address, asmjit::x86::Gp&
 	cc.bind(end);
 }
 
-void JitX64::EmitReadVirtualMemory32(asmjit::x86::Gp& ret, u32 address) {
+void JitX64::EmitReadVirtualMemory32(const asmjit::x86::Gp& ret, u32 address) {
+	assert(ret.is_gp32());
 	asmjit::x86::Gp value = cc.new_gp32("value");
 	VirtualToPhysical(address);
 
 	// optimization: read from main memory without calling external function
-	if (address <= RDRAM_END) {
+	if (address <= RDRAM_LAST_ADDR) {
 		cc.mov(value, asmjit::x86::dword_ptr(reinterpret_cast<uintptr_t>(Memory::m_Memory + address)));
 		EmitWrite32To64Preserved(ret, value);
 		return;
@@ -296,11 +304,12 @@ void JitX64::EmitReadVirtualMemory32(asmjit::x86::Gp& ret, u32 address) {
 	EmitWrite32To64Preserved(ret, value);
 }
 
-void JitX64::EmitWriteVirtualMemory32(u32 address, asmjit::x86::Gp& value) {
+void JitX64::EmitWriteVirtualMemory32(u32 address, const asmjit::x86::Gp& value) {
+	assert(value.is_gp32());
 	VirtualToPhysical(address);
 
 	// optimization: read from main memory without calling external function
-	if (address <= RDRAM_END) {
+	if (address <= RDRAM_LAST_ADDR) {
 		cc.mov(asmjit::x86::dword_ptr(reinterpret_cast<uintptr_t>(Memory::m_Memory + address)), value.r32());
 		return;
 	}
@@ -314,27 +323,29 @@ void JitX64::EmitWriteVirtualMemory32(u32 address, asmjit::x86::Gp& value) {
 	node->set_arg(1, value.r32());
 }
 
-void JitX64::EmitWrite32To64Preserved(asmjit::x86::Gp& dst, asmjit::x86::Gp& src) {
+void JitX64::EmitWrite32To64Preserved(const asmjit::x86::Gp& dst, const asmjit::x86::Gp& src) {
+	assert(!src.is_gp64());
+
 	// writing to lo dword of a 64-bit register clears the hi dword too
 	// so we have to do this
 	if (dst.is_gp64()) {
 		asmjit::x86::Gp mask = cc.new_gp64("mask");
 		cc.movabs(mask, 0xffffffff00000000);
 		cc.and_(dst, mask);
-		cc.or_(dst, src.r32());
+		cc.or_(dst, src);
 	} else {
-		cc.mov(dst, src.r32());
+		cc.mov(dst, src);
 	}
 }
 
-void JitX64::EmitReadVirtualMemory16(asmjit::x86::Gp& ret, asmjit::x86::Gp& address) {
+void JitX64::EmitReadVirtualMemory16(const asmjit::x86::Gp& ret, const asmjit::x86::Gp& address) {
 	EmitVirtualToPhysical(address);
 
 	Label not_main_memory = cc.new_label();
 	Label end = cc.new_label();
 
 	// read from main memory
-	cc.cmp(address, RDRAM_END);
+	cc.cmp(address, RDRAM_LAST_ADDR);
 	cc.j(x86::CondCode::kA, not_main_memory); {
 		cc.movabs(t1, reinterpret_cast<uintptr_t>(Memory::m_Memory));	// t1 <- main memory
 		cc.add(t1, address);											// t1 += address
@@ -346,23 +357,24 @@ void JitX64::EmitReadVirtualMemory16(asmjit::x86::Gp& ret, asmjit::x86::Gp& addr
 	// not in main memory (trap)
 	cc.bind(not_main_memory); {
 		cc.int3();
+		cc.nop();
 	}
 
 	cc.bind(end);
 }
 
-void JitX64::EmitWriteVirtualMemory16(asmjit::x86::Gp& address, asmjit::x86::Gp& value) {
+void JitX64::EmitWriteVirtualMemory16(const asmjit::x86::Gp& address, const asmjit::x86::Gp& value) {
 	EmitVirtualToPhysical(address);
 
 	Label not_main_memory = cc.new_label();
 	Label end = cc.new_label();
 
 	// write to main memory
-	cc.cmp(address, RDRAM_END);
+	cc.cmp(address, RDRAM_LAST_ADDR);
 	cc.j(x86::CondCode::kA, not_main_memory); {
 		cc.movabs(t1, reinterpret_cast<uintptr_t>(Memory::m_Memory));	// t1 <- main memory
 		cc.add(t1, address);											// t1 += address
-		cc.mov(asmjit::x86::word_ptr(t1), value.r16());				// [t1] <- value
+		cc.mov(asmjit::x86::word_ptr(t1), value.r16());					// [t1] <- value
 
 		cc.jmp(end);
 	}
@@ -370,21 +382,39 @@ void JitX64::EmitWriteVirtualMemory16(asmjit::x86::Gp& address, asmjit::x86::Gp&
 	// not in main memory (trap)
 	cc.bind(not_main_memory); {
 		cc.int3();
+		cc.nop();
 	}
 
 	cc.bind(end);
 }
 
-void JitX64::EmitReadVirtualMemory16(asmjit::x86::Gp& ret, u32 address) {
+void JitX64::EmitReadVirtualMemory16(const asmjit::x86::Gp& ret, u32 address) {
 	VirtualToPhysical(address);
 
-	assert(address <= RDRAM_END);
+	assert(address <= RDRAM_LAST_ADDR);
 	cc.mov(ret.r16(), asmjit::x86::word_ptr(reinterpret_cast<uintptr_t>(Memory::m_Memory + address)));
 }
 
-void JitX64::EmitWriteVirtualMemory16(u32 address, asmjit::x86::Gp& value) {
+void JitX64::EmitWriteVirtualMemory16(u32 address, const asmjit::x86::Gp& value) {
 	VirtualToPhysical(address);
 
-	assert(address <= RDRAM_END);
+	assert(address <= RDRAM_LAST_ADDR);
 	cc.mov(asmjit::x86::word_ptr(reinterpret_cast<uintptr_t>(Memory::m_Memory + address)), value.r16());
+}
+
+void JitX64::EmitStoreSpecialRegister(SpecialRegName dst, const asmjit::x86::Gp& src) {
+	asmjit::x86::Mem ptr;
+	switch (dst) {
+		case SpecialRegName::HI: { ptr = x86::qword_ptr(r5900, offsetof(R5900, hi)); break; };
+		case SpecialRegName::LO: { ptr = x86::qword_ptr(r5900, offsetof(R5900, lo)); break; };
+		case SpecialRegName::HI1: { ptr = x86::qword_ptr(r5900, offsetof(R5900, hi1)); break; };
+		case SpecialRegName::LO1: { ptr = x86::qword_ptr(r5900, offsetof(R5900, lo1)); break; };
+	}
+
+	if (src.is_gp32()) {
+		cc.movsxd(t1, src);
+		cc.mov(ptr, t1);
+	} else {
+		cc.mov(ptr, src);
+	}
 }

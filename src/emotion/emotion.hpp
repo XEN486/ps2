@@ -35,14 +35,24 @@ namespace EmotionEngine::MIPS {
 		ra
 	};
 
+	enum class SpecialRegName {
+		HI,
+		LO,
+		HI1,
+		LO1,
+	};
+
 	struct R5900 {
 		// 32 GPRs (128-bit)
 		GPR regs[32];
 
 		// special registers
 		u32 pc;
-		u64 hi[2]; // hi[0] = hi, hi[1] = hi1
-		u64 lo[2]; // hi[0] = lo, lo[1] = lo1
+
+		u64 hi = 0;
+		u64 lo = 0;
+		u64 hi1 = 0;
+		u64 lo1 = 0;
 
 		// stuff for jit
 		u32 next_pc;
@@ -115,6 +125,10 @@ namespace EmotionEngine::MIPS {
 		virtual void LW(InstructionData& data) = 0;
 		virtual void SD(InstructionData& data) = 0;
 		virtual void SW(InstructionData& data) = 0;
+		virtual void MULT(InstructionData& data) = 0;
+		virtual void ADDU(InstructionData& data) = 0;
+		virtual void LHU(InstructionData& data) = 0;
+		virtual void SH(InstructionData& data) = 0;
 
 	protected:
 		constexpr void VirtualToPhysical(u32& address) {

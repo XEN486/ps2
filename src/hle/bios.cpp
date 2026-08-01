@@ -10,7 +10,7 @@ void Bios::EESysCall(R5900* r5900) {
 			int stack_size = r5900->regs[(u8)AbiNames::a2].reg_i32[0];
 
 			if (stack == 0xffffffff) {
-				m_ThreadSP = (RDRAM_END - stack_size);
+				m_ThreadSP = (RDRAM_LAST_ADDR - stack_size);
 			} else {
 				m_ThreadSP = stack + stack_size;
 			}

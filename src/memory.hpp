@@ -13,7 +13,7 @@ namespace EmotionEngine::MIPS {
 	class JitBackend;
 }
 
-#define RDRAM_END 0x01ffffff
+#define RDRAM_LAST_ADDR 0x01ffffff
 
 // memory map
 class Memory {

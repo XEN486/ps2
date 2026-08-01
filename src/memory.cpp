@@ -5,7 +5,7 @@
 
 u32 Memory::ReadVirtualMemory32(u32 address) {
 	// main memory
-	if (address <= RDRAM_END) {
+	if (address <= RDRAM_LAST_ADDR) {
 		return *(reinterpret_cast<u32*>(&m_Memory[address]));
 	}
 
@@ -15,7 +15,7 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 
 void Memory::WriteVirtualMemory32(u32 address, u32 dword) {
 	// main memory
-	if (address <= RDRAM_END) {
+	if (address <= RDRAM_LAST_ADDR) {
 		*(reinterpret_cast<u32*>(&m_Memory[address])) = dword;
 		m_JitBackend->Invalidate(address);
 		return;

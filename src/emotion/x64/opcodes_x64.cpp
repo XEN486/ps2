@@ -10,9 +10,9 @@ void JitX64::LUI(InstructionData& data) {
 }
 
 void JitX64::ADDIU(InstructionData& data) {
-	EmitLoadRegister(s1, R32, data.rs);					// s1 <- rs
-	if (data.imm) cc.add(s1.r32(), (i16)data.imm);		// s1 += imm (signed)
-	EmitStoreRegister(R64, data.rt, s1.r32(), true);	// rt <- s1
+	EmitLoadRegister(s1, R32, data.rs);						// s1 <- rs
+	if (data.imm) cc.add(s1.r32(), (u32)(i16)data.imm);		// s1 += imm (signed)
+	EmitStoreRegister(R64, data.rt, s1.r32(), true);		// rt <- s1
 }
 
 void JitX64::SLL(InstructionData& data) {
@@ -29,12 +29,12 @@ void JitX64::SLL(InstructionData& data) {
 void JitX64::SQ(InstructionData& data) {
 	// vaddr = s1
 	// base = rs
-	EmitLoadRegister(s1, R32, data.rs);				// vaddr <- base
-	if (data.imm) cc.add(s1.r32(), (i16)data.imm);	// vaddr += (i16)imm
-	cc.and_(s1.r32(), 0xfffffff0);					// vaddr &= 0xfffffff0
+	EmitLoadRegister(s1, R32, data.rs);					// vaddr <- base
+	if (data.imm) cc.add(s1.r32(), (u32)(i16)data.imm);	// vaddr += (i16)imm
+	cc.and_(s1.r32(), 0xfffffff0);						// vaddr &= 0xfffffff0
 	
-	EmitLoadRegister128(v1, data.rt);				// v1 <- gpr[rt].128
-	EmitWriteVirtualMemory128(s1, v1);				// vaddr <- v1
+	EmitLoadRegister128(v1, data.rt);					// v1 <- gpr[rt].128
+	EmitWriteVirtualMemory128(s1, v1);					// vaddr <- v1
 }
 
 void JitX64::SLTU(InstructionData& data) {
@@ -107,27 +107,65 @@ void JitX64::EI(InstructionData& data) {
 
 void JitX64::LW(InstructionData& data) {
 	// base = rs
-	EmitLoadRegister(s1, R32, data.rs);					// vaddr <- base
-	if (data.imm) cc.add(s1.r32(), (i16)data.imm);		// vaddr += (i16)imm
+	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
+	if (data.imm) cc.add(s1.r32(), (u32)(i16)data.imm);		// vaddr += (i16)imm
 	
-	EmitReadVirtualMemory32(s2, s1);					// s2 <- [vaddr]
-	EmitStoreRegister(R64, data.rt, s2.r32(), true);	// rt <- data
+	EmitReadVirtualMemory32(s2.r32(), s1);					// s2 <- [vaddr]
+	EmitStoreRegister(R64, data.rt, s2.r32(), true);		// rt <- data
 }
 
 void JitX64::SD(InstructionData& data) {
 	// base = rs
-	EmitLoadRegister(s1, R32, data.rs);					// vaddr <- base
-	if (data.imm) cc.add(s1.r32(), (i16)data.imm);		// vaddr += (i16)imm
+	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
+	if (data.imm) cc.add(s1.r32(), (u32)(i16)data.imm);		// vaddr += (i16)imm
 	
-	EmitLoadRegister(s2, R64, data.rt);					// s2 <- rt
-	EmitWriteVirtualMemory64(s1, s2);					// [vaddr] <- rt
+	EmitLoadRegister(s2, R64, data.rt);						// s2 <- rt
+	EmitWriteVirtualMemory64(s1, s2);						// [vaddr] <- rt
 }
 
 void JitX64::SW(InstructionData& data) {
 	// base = rs
-	EmitLoadRegister(s1, R32, data.rs);					// vaddr <- base
-	if (data.imm) cc.add(s1.r32(), (i16)data.imm);		// vaddr += (i16)imm
+	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
+	if (data.imm) cc.add(s1.r32(), (u32)(i16)data.imm);		// vaddr += (i16)imm
 	
+	EmitLoadRegister(s2, R32, data.rt);						// s2 <- rt
+	EmitWriteVirtualMemory32(s1, s2.r32());					// [vaddr] <- rt
+}
+
+void JitX64::MULT(InstructionData& data) {
+	EmitLoadRegister(s1, R32, data.rs);						// s1 <- rs
+	EmitLoadRegister(s2, R32, data.rt);						// s2 <- rt
+
+	cc.movsxd(s1, s1.r32());								// s1 <- sign_extend(s1)
+	cc.movsxd(s2, s2.r32());								// s2 <- sign_extend(s2)
+	cc.imul(s1, s2);										// s1 *= s2
+
+	EmitStoreSpecialRegister(SpecialRegName::LO, s1.r32());	// LO <- s1.r32
+	cc.sar(s1, 32);											// s1 >> 32
+	EmitStoreSpecialRegister(SpecialRegName::HI, s1.r32());	// HI <- s1.r32
+}
+
+void JitX64::ADDU(InstructionData& data) {
+	EmitLoadRegister(s1, R32, data.rs);					// s1 <- rs
 	EmitLoadRegister(s2, R32, data.rt);					// s2 <- rt
-	EmitWriteVirtualMemory32(s1, s2);					// [vaddr] <- rt
+	cc.add(s1.r32(), s2.r32());							// s1 += s2
+	EmitStoreRegister(R64, data.rd, s1.r32(), true);	// rd <- s1
+}
+
+void JitX64::LHU(InstructionData& data) {
+	// base = rs
+	EmitLoadRegister(s1, R32, data.rs);					// vaddr <- base
+	if (data.imm) cc.add(s1.r32(), (u32)(i16)data.imm);		// vaddr += (i16)imm
+	
+	EmitReadVirtualMemory16(s2.r16(), s1);				// s2 <- [vaddr]
+	EmitStoreRegister(R64, data.rt, s2, false);			// rt <- data
+}
+
+void JitX64::SH(InstructionData& data) {
+	// base = rs
+	EmitLoadRegister(s1, R32, data.rs);					// vaddr <- base
+	if (data.imm) cc.add(s1.r32(), (u32)(i16)data.imm);		// vaddr += (i16)imm
+	
+	EmitLoadRegister(s2.r16(), R16, data.rt);			// s2 <- rt
+	EmitWriteVirtualMemory16(s1, s2);					// [vaddr] <- rt
 }
