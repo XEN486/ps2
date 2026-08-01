@@ -19,6 +19,10 @@ bool JitBackend::InitJit(R5900* cpu) {
 	return err == Error::kOk;
 }
 
+void JitBackend::Reset() {
+	m_InBranchDelay = false;
+}
+
 void JitBackend::Release() {
 	for (auto& element : m_BlockCache) {
 		CompiledBlock& block = element.second;
@@ -56,10 +60,24 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 	bool do_recompile = true;
 
 	EmitBeginBlock();
-	bool compile_delay_slot = false;
 
 	while (true) {
 		end_pc = m_CompilePC;
+
+		// recompile the delay slot when the branch is finished
+		if (m_InBranchDelay) {
+			// branch likely instructions are able to cancel the delay slot
+			if (m_R5900->cancel_delay) {
+				m_InBranchDelay = false;
+				continue;
+			}
+
+			(this->*(m_BranchDelay.ptr))(m_BranchDelay);
+			block.instructions++;
+
+			m_InBranchDelay = false;
+			continue;
+		}
 
 		InstructionData data = AnalyzeOp(Fetch());
 		if (data.type == InstructionType::Normal) {
@@ -69,10 +87,8 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 		}
 
 		else if (data.type == InstructionType::Branch) {
-			// recompile branch delay slot first
-			InstructionData delay_slot = AnalyzeOp(Fetch());
-			(this->*(delay_slot.ptr))(delay_slot);
-			block.instructions++;
+			// analyze and store branch delay slot first
+			m_BranchDelay = AnalyzeOp(Fetch());
 
 			// recompile branch and break out of this loop
 			(this->*(data.ptr))(data);
@@ -80,6 +96,7 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 
 			// account for delay slot
 			end_pc += 4;
+			m_InBranchDelay = true;
 			break;
 		}
 

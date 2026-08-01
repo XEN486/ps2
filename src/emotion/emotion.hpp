@@ -60,6 +60,7 @@ namespace EmotionEngine::Core {
 		// stuff for jit
 		u32 pc;
 		u32 next_pc;
+		bool cancel_delay;
 	};
 
 
@@ -80,7 +81,6 @@ namespace EmotionEngine::Core {
 		Branch,
 		Syscall,
 		Sync
-		// BranchLikely, etc. later
 	};
 
 	class JitBackend;
@@ -100,6 +100,8 @@ namespace EmotionEngine::Core {
 	class JitBackend {
 	public:
 		virtual bool InitJit(R5900* cpu);
+		void Reset();
+		
 		void Release();
 		void Invalidate(u32 pc);
 
@@ -175,6 +177,8 @@ namespace EmotionEngine::Core {
 
 	private:
 		std::unordered_map<u32, CompiledBlock> m_BlockCache {};
+		InstructionData m_BranchDelay;
+		bool m_InBranchDelay;
 	};
 }
 

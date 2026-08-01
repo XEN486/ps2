@@ -18,6 +18,7 @@ namespace EmotionEngine::Core {
 	class JitX64 : public JitBackend {
 	public:
 		bool InitJit(R5900* cpu) override;
+		void Reset();
 
 	protected:
 		void EmitBeginBlock() override;
