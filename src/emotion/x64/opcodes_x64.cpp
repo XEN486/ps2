@@ -207,3 +207,12 @@ void JitX64::ANDI(InstructionData& data) {
 	if (data.imm) cc.and_(s1, (u16)data.imm);				// s1 &= imm
 	EmitStoreRegister(R64, data.rt, s1, false);				// rt <- s1
 }
+
+void JitX64::LBU(InstructionData& data) {
+	// base = rs
+	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
+	if (data.imm) cc.add(s1.r32(), (u32)(i16)data.imm);		// vaddr += (i16)imm
+	
+	EmitReadVirtualMemory8(s2.r8(), s1);					// s2 <- [vaddr]
+	EmitStoreRegister(R64, data.rt, s2, false);				// rt <- data
+}

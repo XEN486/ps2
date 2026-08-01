@@ -5,6 +5,16 @@ using namespace HLE;
 void Bios::EESysCall(R5900* r5900) {
 	u8 syscall_no = r5900->regs[(u8)AbiNames::v1].reg_u8[0];
 	switch (syscall_no) {
+		case SetGsCrt: {
+			bool interlaced = r5900->regs[(u8)AbiNames::a0].reg_u64[0];
+			int display_mode = r5900->regs[(u8)AbiNames::a1].reg_i32[0];
+			bool frame = r5900->regs[(u8)AbiNames::a2].reg_u64[0];
+
+			// TODO: implement GS
+			debug_log("SetGsCrt({}, 0x{:08x}, {})", interlaced, display_mode, frame);
+			break;
+		};
+
 		case InitMainThread: {
 			u32 stack = r5900->regs[(u8)AbiNames::a1].reg_u32[0];
 			int stack_size = r5900->regs[(u8)AbiNames::a2].reg_i32[0];
@@ -37,8 +47,17 @@ void Bios::EESysCall(R5900* r5900) {
 
 		case FlushCache: {
 			int mode = r5900->regs[(u8)AbiNames::a0].reg_i32[0];
+
 			// TODO: invalidate JIT blocks here?
 			debug_log("FlushCache({})", mode);
+			break;
+		}
+
+		case GsSetIMR: {
+			uint64_t imr = r5900->regs[(u8)AbiNames::a0].reg_u64[0];
+
+			// TODO: implement GS
+			debug_log("GsSetIMR(0x{:016x})", imr);
 			break;
 		}
 

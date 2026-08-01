@@ -48,6 +48,7 @@ namespace EmotionEngine::MIPS {
 		void LD(InstructionData& data) override;
 		void DSRL(InstructionData& data) override;
 		void ANDI(InstructionData& data) override;
+		void LBU(InstructionData& data) override;
 
 	private:
 		asmjit::InvokeNode* EmitExternalCall(uintptr_t address, const asmjit::FuncSignature& sig);
@@ -75,6 +76,12 @@ namespace EmotionEngine::MIPS {
 
 		void EmitReadVirtualMemory16(const asmjit::x86::Gp& ret, u32 address);
 		void EmitWriteVirtualMemory16(u32 address, const asmjit::x86::Gp& value);
+
+		void EmitReadVirtualMemory8(const asmjit::x86::Gp& ret, const asmjit::x86::Gp& address);
+		void EmitWriteVirtualMemory8(const asmjit::x86::Gp& address, const asmjit::x86::Gp& value);
+
+		void EmitReadVirtualMemory8(const asmjit::x86::Gp& ret, u32 address);
+		void EmitWriteVirtualMemory8(u32 address, const asmjit::x86::Gp& value);
 
 		template <typename T> constexpr void EmitLoadRegister(T reg, RegisterSize size, u8 index);
 		template <typename T> constexpr void EmitStoreRegister(RegisterSize size, u8 index, T reg, bool sign_extend);

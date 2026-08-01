@@ -5,9 +5,11 @@
 
 namespace HLE {
 	enum EESyscalls {
+		SetGsCrt		= 0x02,
 		InitMainThread	= 0x3c,
 		InitHeap		= 0x3d,
 		FlushCache		= 0x64,
+		GsSetIMR		= 0x71,
 	};
 
 	// HLE BIOS

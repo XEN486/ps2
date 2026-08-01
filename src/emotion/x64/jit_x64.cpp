@@ -402,6 +402,70 @@ void JitX64::EmitWriteVirtualMemory16(u32 address, const asmjit::x86::Gp& value)
 	cc.mov(asmjit::x86::word_ptr(reinterpret_cast<uintptr_t>(Memory::m_Memory + address)), value.r16());
 }
 
+void JitX64::EmitReadVirtualMemory8(const asmjit::x86::Gp& ret, const asmjit::x86::Gp& address) {
+	EmitVirtualToPhysical(address);
+
+	Label not_main_memory = cc.new_label();
+	Label end = cc.new_label();
+
+	// read from main memory
+	cc.cmp(address, RDRAM_LAST_ADDR);
+	cc.j(x86::CondCode::kA, not_main_memory); {
+		cc.movabs(t1, reinterpret_cast<uintptr_t>(Memory::m_Memory));	// t1 <- main memory
+		cc.add(t1, address);											// t1 += address
+		cc.mov(ret.r8(), asmjit::x86::byte_ptr(t1));					// value <- [t1]
+
+		cc.jmp(end);
+	}
+
+	// not in main memory (trap)
+	cc.bind(not_main_memory); {
+		cc.int3();
+		cc.nop();
+	}
+
+	cc.bind(end);
+}
+
+void JitX64::EmitWriteVirtualMemory8(const asmjit::x86::Gp& address, const asmjit::x86::Gp& value) {
+	EmitVirtualToPhysical(address);
+
+	Label not_main_memory = cc.new_label();
+	Label end = cc.new_label();
+
+	// write to main memory
+	cc.cmp(address, RDRAM_LAST_ADDR);
+	cc.j(x86::CondCode::kA, not_main_memory); {
+		cc.movabs(t1, reinterpret_cast<uintptr_t>(Memory::m_Memory));	// t1 <- main memory
+		cc.add(t1, address);											// t1 += address
+		cc.mov(asmjit::x86::byte_ptr(t1), value.r8());					// [t1] <- value
+
+		cc.jmp(end);
+	}
+
+	// not in main memory (trap)
+	cc.bind(not_main_memory); {
+		cc.int3();
+		cc.nop();
+	}
+
+	cc.bind(end);
+}
+
+void JitX64::EmitReadVirtualMemory8(const asmjit::x86::Gp& ret, u32 address) {
+	VirtualToPhysical(address);
+
+	assert(address <= RDRAM_LAST_ADDR);
+	cc.mov(ret.r8(), asmjit::x86::byte_ptr(reinterpret_cast<uintptr_t>(Memory::m_Memory + address)));
+}
+
+void JitX64::EmitWriteVirtualMemory8(u32 address, const asmjit::x86::Gp& value) {
+	VirtualToPhysical(address);
+
+	assert(address <= RDRAM_LAST_ADDR);
+	cc.mov(asmjit::x86::byte_ptr(reinterpret_cast<uintptr_t>(Memory::m_Memory + address)), value.r8());
+}
+
 void JitX64::EmitStoreSpecialRegister(SpecialRegName dst, const asmjit::x86::Gp& src) {
 	asmjit::x86::Mem ptr;
 	switch (dst) {
