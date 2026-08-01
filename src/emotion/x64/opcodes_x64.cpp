@@ -271,3 +271,12 @@ void JitX64::SB(InstructionData& data) {
 	EmitLoadRegister(s2, R8, data.rt);						// s2 <- rt
 	EmitWriteVirtualMemory8(s1, s2.r8());					// [vaddr] <- rt
 }
+
+void JitX64::SWC1(InstructionData& data) {
+	// base = rs
+	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
+	if (data.imm) cc.add(s1.r32(), (u32)(i16)data.imm);		// vaddr += (i16)imm
+
+	EmitLoadFPR(s2.r32(), data.rt);							// s2 <- ft
+	EmitWriteVirtualMemory32(s1, s2.r32());					// [vaddr] <- rt
+}

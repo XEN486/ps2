@@ -55,6 +55,7 @@ namespace EmotionEngine::Core {
 		void DSLL32(InstructionData& data) override;
 		void BEQ(InstructionData& data) override;
 		void SB(InstructionData& data) override;
+		void SWC1(InstructionData& data) override;
 
 	private:
 		asmjit::InvokeNode* EmitExternalCall(uintptr_t address, const asmjit::FuncSignature& sig);
@@ -97,6 +98,12 @@ namespace EmotionEngine::Core {
 		void EmitWrite32To64Preserved(const asmjit::x86::Gp& dst, const asmjit::x86::Gp& src);
 
 		void EmitStoreSpecialRegister(SpecialRegName dst, const asmjit::x86::Gp& src);
+
+		void EmitLoadFPR(const asmjit::x86::Vec& ret, u8 index);
+		void EmitStoreFPR(u8 index, const asmjit::x86::Vec& src);
+
+		void EmitLoadFPR(const asmjit::x86::Gp& ret, u8 index);
+		void EmitStoreFPR(u8 index, const asmjit::x86::Gp& src);
 
 	private:
 		asmjit::x86::Compiler cc;

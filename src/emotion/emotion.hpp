@@ -47,16 +47,21 @@ namespace EmotionEngine::Core {
 		GPR gpr[32];
 
 		// special registers
-		u32 pc;
-
 		u64 hi = 0;
 		u64 lo = 0;
 		u64 hi1 = 0;
 		u64 lo1 = 0;
 
+		// cop1 registers
+		float fpr[32];
+		u32 fcr[32];
+		float acc;
+
 		// stuff for jit
+		u32 pc;
 		u32 next_pc;
 	};
+
 
 	using BlockFunc = void (*)();
 
@@ -143,6 +148,7 @@ namespace EmotionEngine::Core {
 		virtual void DSLL32(InstructionData& data) = 0;
 		virtual void BEQ(InstructionData& data) = 0;
 		virtual void SB(InstructionData& data) = 0;
+		virtual void SWC1(InstructionData& data) = 0;
 
 	protected:
 		constexpr void VirtualToPhysical(u32& address) {

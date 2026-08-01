@@ -30,6 +30,10 @@ void EE::Reset() {
 	for (u8 i = 0; i < 32; i++) {
 		m_R5900.gpr[i].reg_u128 = 0;
 	}
+
+	for (u8 i = 0; i < 32; i++) {
+		m_R5900.fpr[i] = 0.0f;
+	}
 	
 	m_R5900.pc = 0xbfc00000;
 }

@@ -482,3 +482,20 @@ void JitX64::EmitStoreSpecialRegister(SpecialRegName dst, const asmjit::x86::Gp&
 		cc.mov(ptr, src);
 	}
 }
+
+void JitX64::EmitLoadFPR(const asmjit::x86::Vec& ret, u8 index) {
+	cc.movss(ret, asmjit::x86::dword_ptr(r5900, offsetof(R5900, fpr) + (index * sizeof(float))));
+}
+
+void JitX64::EmitStoreFPR(u8 index, const asmjit::x86::Vec& src) {
+	cc.movss(asmjit::x86::dword_ptr(r5900, offsetof(R5900, fpr) + (index * sizeof(float))), src);
+}
+
+
+void JitX64::EmitLoadFPR(const asmjit::x86::Gp& ret, u8 index) {
+	cc.mov(ret, asmjit::x86::dword_ptr(r5900, offsetof(R5900, fpr) + (index * sizeof(float))));
+}
+
+void JitX64::EmitStoreFPR(u8 index, const asmjit::x86::Gp& src) {
+	cc.mov(asmjit::x86::dword_ptr(r5900, offsetof(R5900, fpr) + (index * sizeof(float))), src);
+}
