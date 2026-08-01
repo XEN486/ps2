@@ -146,10 +146,10 @@ void JitX64::MULT(InstructionData& data) {
 }
 
 void JitX64::ADDU(InstructionData& data) {
-	EmitLoadRegister(s1, R32, data.rs);					// s1 <- rs
-	EmitLoadRegister(s2, R32, data.rt);					// s2 <- rt
-	cc.add(s1.r32(), s2.r32());							// s1 += s2
-	EmitStoreRegister(R64, data.rd, s1.r32(), true);	// rd <- s1
+	EmitLoadRegister(s1, R32, data.rs);						// s1 <- rs
+	EmitLoadRegister(s2, R32, data.rt);						// s2 <- rt
+	cc.add(s1.r32(), s2.r32());								// s1 += s2
+	EmitStoreRegister(R64, data.rd, s1.r32(), true);		// rd <- s1
 }
 
 void JitX64::LHU(InstructionData& data) {
@@ -177,12 +177,33 @@ void JitX64::ORI(InstructionData& data) {
 }
 
 void JitX64::AND(InstructionData& data) {
-	EmitLoadRegister(s1, R64, data.rs);			// s1 <- rs
-	EmitLoadRegister(s2, R64, data.rt);			// s2 <- rt
-	cc.and_(s1, s2);							// s1 &= s2
-	EmitStoreRegister(R64, data.rd, s1, false);	// rd <- s1
+	EmitLoadRegister(s1, R64, data.rs);						// s1 <- rs
+	EmitLoadRegister(s2, R64, data.rt);						// s2 <- rt
+	cc.and_(s1, s2);										// s1 &= s2
+	EmitStoreRegister(R64, data.rd, s1, false);				// rd <- s1
 }
 
 void JitX64::SYNC(InstructionData& data) {
 	// this instruction is handled by the backend
+}
+
+void JitX64::LD(InstructionData& data) {
+	// base = rs
+	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
+	if (data.imm) cc.add(s1.r32(), (u32)(i16)data.imm);		// vaddr += (i16)imm
+	
+	EmitReadVirtualMemory64(s2, s1);						// s2 <- [vaddr]
+	EmitStoreRegister(R64, data.rt, s2, false);				// rt <- data
+}
+
+void JitX64::DSRL(InstructionData& data) {
+	EmitLoadRegister(s1, R64, data.rt);						// s1 <- rt
+	cc.shr(s1, data.sa);									// s1 >> sa (logical)
+	EmitStoreRegister(R64, data.rd, s1, false);				// rd <- s1
+}
+
+void JitX64::ANDI(InstructionData& data) {
+	EmitLoadRegister(s1, R64, data.rs);						// s1 <- rs
+	if (data.imm) cc.and_(s1, (u16)data.imm);				// s1 &= imm
+	EmitStoreRegister(R64, data.rt, s1, false);				// rt <- s1
 }

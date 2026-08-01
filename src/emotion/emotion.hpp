@@ -133,6 +133,9 @@ namespace EmotionEngine::MIPS {
 		virtual void ORI(InstructionData& data) = 0;
 		virtual void AND(InstructionData& data) = 0;
 		virtual void SYNC(InstructionData& data) = 0;
+		virtual void LD(InstructionData& data) = 0;
+		virtual void DSRL(InstructionData& data) = 0;
+		virtual void ANDI(InstructionData& data) = 0;
 
 	protected:
 		constexpr void VirtualToPhysical(u32& address) {

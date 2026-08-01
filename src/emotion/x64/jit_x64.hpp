@@ -45,6 +45,9 @@ namespace EmotionEngine::MIPS {
 		void ORI(InstructionData& data) override;
 		void AND(InstructionData& data) override;
 		void SYNC(InstructionData& data) override;
+		void LD(InstructionData& data) override;
+		void DSRL(InstructionData& data) override;
+		void ANDI(InstructionData& data) override;
 
 	private:
 		asmjit::InvokeNode* EmitExternalCall(uintptr_t address, const asmjit::FuncSignature& sig);
