@@ -262,3 +262,12 @@ void JitX64::BEQ(InstructionData& data) {
 
 	cc.bind(exit_beq);
 }
+
+void JitX64::SB(InstructionData& data) {
+	// base = rs
+	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
+	if (data.imm) cc.add(s1.r32(), (u32)(i16)data.imm);		// vaddr += (i16)imm
+	
+	EmitLoadRegister(s2, R8, data.rt);						// s2 <- rt
+	EmitWriteVirtualMemory8(s1.r32(), s2.r8());					// [vaddr] <- rt
+}

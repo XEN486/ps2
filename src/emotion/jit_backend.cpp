@@ -174,6 +174,7 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b110111: { data.ptr = &JitBackend::LD; break; }		// LD
 		case 0b001100: { data.ptr = &JitBackend::ANDI; break; }		// ANDI
 		case 0b100100: { data.ptr = &JitBackend::LBU; break; }		// LBU
+		case 0b101000: { data.ptr = &JitBackend::SB; break; }		// SB
 
 		// branch
 		case 0b000101: { data.ptr = &JitBackend::BNE; data.type = InstructionType::Branch; break; }	// BNE

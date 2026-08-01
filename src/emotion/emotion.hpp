@@ -142,6 +142,7 @@ namespace EmotionEngine::MIPS {
 		virtual void OR(InstructionData& data) = 0;
 		virtual void DSLL32(InstructionData& data) = 0;
 		virtual void BEQ(InstructionData& data) = 0;
+		virtual void SB(InstructionData& data) = 0;
 
 	protected:
 		constexpr void VirtualToPhysical(u32& address) {
