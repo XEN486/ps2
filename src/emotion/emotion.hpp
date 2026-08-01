@@ -74,6 +74,7 @@ namespace EmotionEngine::MIPS {
 		Normal,
 		Branch,
 		Syscall,
+		Sync
 		// BranchLikely, etc. later
 	};
 
@@ -129,6 +130,9 @@ namespace EmotionEngine::MIPS {
 		virtual void ADDU(InstructionData& data) = 0;
 		virtual void LHU(InstructionData& data) = 0;
 		virtual void SH(InstructionData& data) = 0;
+		virtual void ORI(InstructionData& data) = 0;
+		virtual void AND(InstructionData& data) = 0;
+		virtual void SYNC(InstructionData& data) = 0;
 
 	protected:
 		constexpr void VirtualToPhysical(u32& address) {

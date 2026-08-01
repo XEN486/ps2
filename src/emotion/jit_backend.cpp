@@ -83,11 +83,11 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 			break;
 		}
 
-		else if (data.type == InstructionType::Syscall) {
+		// end the block early if this is a syscall or sync instruction
+		else if (data.type == InstructionType::Syscall || data.type == InstructionType::Sync) {
 			(this->*(data.ptr))(data);
 			block.instructions++;
 
-			// end the block early
 			break;
 		}
 	}
@@ -135,9 +135,13 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				case 0b101101: { data.ptr = &JitBackend::DADDU; break; }	// DADDU
 				case 0b011000: { data.ptr = &JitBackend::MULT; break; }		// MULT
 				case 0b100001: { data.ptr = &JitBackend::ADDU; break; }		// ADDU
+				case 0b100100: { data.ptr = &JitBackend::AND; break; }		// AND
 
 				// system call (HLE for now)
 				case 0b001100: { data.ptr = &JitBackend::SYSCALL; data.type = InstructionType::Syscall; break; }
+
+				// sync (ends the block)
+				case 0b001111: { data.ptr = &JitBackend::SYNC; data.type = InstructionType::Sync; break; }
 
 				// branch
 				case 0b001000: { data.ptr = &JitBackend::JR; data.type = InstructionType::Branch; break; }
@@ -161,6 +165,7 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b101011: { data.ptr = &JitBackend::SW; break; }		// SW
 		case 0b100101: { data.ptr = &JitBackend::LHU; break; }		// LHU
 		case 0b101001: { data.ptr = &JitBackend::SH; break; }		// SH
+		case 0b001101: { data.ptr = &JitBackend::ORI; break; }		// ORI
 
 		// branch
 		case 0b000101: { data.ptr = &JitBackend::BNE; data.type = InstructionType::Branch; break; }	// BNE
