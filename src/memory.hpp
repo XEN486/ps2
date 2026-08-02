@@ -24,10 +24,10 @@ public:
 	}
 
 	static u64 ReadVirtualMemory64(u32 address);
-	static void WriteVirtualMemory64(u32 address, u64 qword);
+	static void WriteVirtualMemory64(u32 address, u64 dword);
 
 	static u32 ReadVirtualMemory32(u32 address);
-	static void WriteVirtualMemory32(u32 address, u32 dword);
+	static void WriteVirtualMemory32(u32 address, u32 word);
 
 	static void Release() {
 		free(m_Memory);

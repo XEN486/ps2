@@ -13,15 +13,15 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 	return 0;
 }
 
-void Memory::WriteVirtualMemory32(u32 address, u32 dword) {
+void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 	// main memory
 	if (address <= RDRAM_LAST_ADDR) {
-		*(reinterpret_cast<u32*>(&m_Memory[address])) = dword;
+		*(reinterpret_cast<u32*>(&m_Memory[address])) = word;
 		m_JitBackend->Invalidate(address);
 		return;
 	}
 
-	error_log("{:08x} -> unknown physical address {:08x}", dword, address);
+	error_log("{:08x} -> unknown physical address {:08x}", word, address);
 }
 
 u64 Memory::ReadVirtualMemory64(u32 address) {
@@ -30,7 +30,7 @@ u64 Memory::ReadVirtualMemory64(u32 address) {
 	return ((u64)hi << 32) | lo;
 }
 
-void Memory::WriteVirtualMemory64(u32 address, u64 qword) {
-	WriteVirtualMemory32(address, qword & 0xffffffff);
-	WriteVirtualMemory32(address + 1, (qword >> 32) & 0xffffffff);
+void Memory::WriteVirtualMemory64(u32 address, u64 dword) {
+	WriteVirtualMemory32(address, dword & 0xffffffff);
+	WriteVirtualMemory32(address + 1, (dword >> 32) & 0xffffffff);
 }
