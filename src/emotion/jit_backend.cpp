@@ -172,6 +172,19 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 			break;
 		}
 
+		// REGIMM
+		case 0b000001: {
+			switch (data.rt) {
+				case 0b00000: { data.ptr = &JitBackend::BLTZ; break; }									// BLTZ
+				
+				default: {
+					error_log("unknown regimm opcode {:05b} {:08x}", data.rt, data.funct);
+					exit(1);
+				}
+			}
+			break;
+		}
+
 		// normal
 		case 0b001111: { data.ptr = &JitBackend::LUI; break; }											// LUI
 		case 0b001001: { data.ptr = &JitBackend::ADDIU; break; }										// ADDIU

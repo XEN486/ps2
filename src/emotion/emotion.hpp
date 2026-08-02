@@ -157,6 +157,7 @@ namespace EmotionEngine::Core {
 		virtual void DIVU(InstructionData& data) = 0;
 		virtual void MFHI(InstructionData& data) = 0;
 		virtual void BREAK(InstructionData& data) = 0;
+		virtual void BLTZ(InstructionData& data) = 0;
 
 	protected:
 		constexpr void VirtualToPhysical(u32& address) {

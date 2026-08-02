@@ -72,10 +72,10 @@ void JitX64::BNE(InstructionData& data) {
     cc.cmp(s1, s2);
 	cc.j(x86::CondCode::kEqual, exit_bne);
 
-	EmitBranchDelay();
-
 	// PC is after the branch delay slot so we have to go back 1 instruction to use it as a base for the branch
 	EmitJump((m_CompilePC - 4) + (i32)((i16)data.imm << 2));
+	EmitBranchDelay();
+	cc.jmp(end);
 
 	cc.bind(exit_bne);
 	if (!data.likely) {
@@ -271,8 +271,8 @@ void JitX64::DSLL32(InstructionData& data) {
 void JitX64::BEQ(InstructionData& data) {
 	// optimization: rs == rt -> forced branch
 	if (data.rs == data.rt) {
-		EmitBranchDelay();
 		EmitJump((m_CompilePC - 4) + (i32)((i16)data.imm << 2));
+		EmitBranchDelay();
 		return;
 	}
 
@@ -286,10 +286,10 @@ void JitX64::BEQ(InstructionData& data) {
     cc.cmp(s1, s2);
 	cc.j(x86::CondCode::kNotEqual, exit_beq);
 
-	EmitBranchDelay();
-
 	// PC is after the branch delay slot so we have to go back 1 instruction to use it as a base for the branch
 	EmitJump((m_CompilePC - 4) + (i32)((i16)data.imm << 2));
+	EmitBranchDelay();
+	cc.jmp(end);
 
 	cc.bind(exit_beq);
 	if (!data.likely) {
@@ -386,4 +386,26 @@ void JitX64::MFHI(InstructionData& data) {
 
 void JitX64::BREAK(InstructionData& data) {
 	cc.int3();
+}
+
+void JitX64::BLTZ(InstructionData& data) {
+    EmitLoadRegister(s1, R64, data.rs);
+
+	Label exit_bltz = cc.new_label();
+	Label end = cc.new_label();
+
+    cc.cmp(s1, 0);
+	cc.j(x86::CondCode::kL, exit_bltz);
+
+	// PC is after the branch delay slot so we have to go back 1 instruction to use it as a base for the branch
+	EmitJump((m_CompilePC - 4) + (i32)((i16)data.imm << 2));
+	EmitBranchDelay();
+	cc.jmp(end);
+
+	cc.bind(exit_bltz);
+	if (!data.likely) {
+		EmitBranchDelay();
+	}
+
+	cc.bind(end);
 }
