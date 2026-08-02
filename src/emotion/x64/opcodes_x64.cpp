@@ -448,3 +448,24 @@ void JitX64::MFC1(InstructionData& data) {
 	EmitLoadFPR(s1.r32(), data.rd);
 	EmitStoreRegister(R64, data.rt, s1.r32(), true);
 }
+
+void JitX64::DIVs(InstructionData& data) {
+	// TODO: flags
+	EmitLoadFPR(v1, data.rd);								// v1 <- fs
+	EmitLoadFPR(v2, data.rt);								// v2 <- ft
+	cc.vdivss(v1, v1, v2);									// v1 /= v2
+	EmitStoreFPR(data.sa, v1);								// fd <- v1
+}
+
+void JitX64::MOVs(InstructionData& data) {
+	EmitLoadFPR(s1.r32(), data.rd);							// s1 <- fs
+	EmitStoreFPR(data.sa, s1.r32());						// fd <- s1
+}
+
+void JitX64::MULs(InstructionData& data) {
+	// TODO: flags
+	EmitLoadFPR(v1, data.rd);								// v1 <- fs
+	EmitLoadFPR(v2, data.rt);								// v2 <- ft
+	cc.vmulss(v1, v1, v2);									// v1 /= v2
+	EmitStoreFPR(data.sa, v1);								// fd <- v1
+}

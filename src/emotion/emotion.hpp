@@ -163,6 +163,9 @@ namespace EmotionEngine::Core {
 		virtual void CVTws(InstructionData& data) = 0;
 		virtual void MTC1(InstructionData& data) = 0;
 		virtual void MFC1(InstructionData& data) = 0;
+		virtual void DIVs(InstructionData& data) = 0;
+		virtual void MOVs(InstructionData& data) = 0;
+		virtual void MULs(InstructionData& data) = 0;
 
 	protected:
 		constexpr void VirtualToPhysical(u32& address) {

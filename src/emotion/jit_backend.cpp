@@ -204,8 +204,12 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 					
 					break;
 				}
-				case 0b100000: { data.ptr = &JitBackend::CVTsw; break; }
-				case 0b100100: { data.ptr = &JitBackend::CVTws; break; }
+
+				case 0b100000: { data.ptr = &JitBackend::CVTsw; break; }								// CVT.s.w
+				case 0b100100: { data.ptr = &JitBackend::CVTws; break; }								// CVT.w.s
+				case 0b000011: { data.ptr = &JitBackend::DIVs; break; }									// DIV.s
+				case 0b000110: { data.ptr = &JitBackend::MOVs; break; }									// MOV.s
+				case 0b000010: { data.ptr = &JitBackend::MULs; break; }									// MUL.s
 
 				default: {
 					error_log("unknown cop1 opcode {:06b} {:08x}", data.funct, instruction);
