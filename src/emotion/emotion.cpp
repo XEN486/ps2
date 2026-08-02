@@ -38,7 +38,6 @@ void EE::Reset() {
 	m_R5900.pc = 0xbfc00000;
 
 	m_JitBackend->Reset();
-	m_R5900.cancel_delay = false;
 }
 
 void EE::Release() {

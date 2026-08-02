@@ -66,15 +66,6 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 
 		// recompile the delay slot when the branch is finished
 		if (m_InBranchDelay) {
-			// branch likely instructions are able to cancel the delay slot
-			if (m_R5900->cancel_delay) {
-				m_InBranchDelay = false;
-				continue;
-			}
-
-			(this->*(m_BranchDelay.ptr))(m_BranchDelay);
-			block.instructions++;
-
 			m_InBranchDelay = false;
 			continue;
 		}
@@ -140,6 +131,7 @@ CompiledBlock& JitBackend::GetOrCompileBlock(u32 pc) {
 inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 	InstructionData data;
 	data.type = InstructionType::Normal;
+	data.likely = false;
 	DecodeOp(data, instruction);
 
 	u8 op = (instruction >> 26) & 0b111111;
@@ -147,22 +139,23 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		// SPECIAL
 		case 0b000000: {
 			switch (data.funct) {
-				case 0b000000: { data.ptr = &JitBackend::SLL; break; }		// SLL
-				case 0b101011: { data.ptr = &JitBackend::SLTU; break; }		// SLTU
-				case 0b101101: { data.ptr = &JitBackend::DADDU; break; }	// DADDU
-				case 0b011000: { data.ptr = &JitBackend::MULT; break; }		// MULT
-				case 0b100001: { data.ptr = &JitBackend::ADDU; break; }		// ADDU
-				case 0b100100: { data.ptr = &JitBackend::AND; break; }		// AND
-				case 0b111010: { data.ptr = &JitBackend::DSRL; break; }		// DSRL
-				case 0b000010: { data.ptr = &JitBackend::SRL; break; }		// SRL
-				case 0b111000: { data.ptr = &JitBackend::DSLL; break; }		// DSLL
-				case 0b100101: { data.ptr = &JitBackend::OR; break; }		// OR
-				case 0b111100: { data.ptr = &JitBackend::DSLL32; break; }	// DSLL32
-				case 0b011011: { data.ptr = &JitBackend::DIVU; break; }		// DIVU
-				case 0b010000: { data.ptr = &JitBackend::MFHI; break; }		// MFHI
+				case 0b000000: { data.ptr = &JitBackend::SLL; break; }									// SLL
+				case 0b101011: { data.ptr = &JitBackend::SLTU; break; }									// SLTU
+				case 0b101101: { data.ptr = &JitBackend::DADDU; break; }								// DADDU
+				case 0b011000: { data.ptr = &JitBackend::MULT; break; }									// MULT
+				case 0b100001: { data.ptr = &JitBackend::ADDU; break; }									// ADDU
+				case 0b100100: { data.ptr = &JitBackend::AND; break; }									// AND
+				case 0b111010: { data.ptr = &JitBackend::DSRL; break; }									// DSRL
+				case 0b000010: { data.ptr = &JitBackend::SRL; break; }									// SRL
+				case 0b111000: { data.ptr = &JitBackend::DSLL; break; }									// DSLL
+				case 0b100101: { data.ptr = &JitBackend::OR; break; }									// OR
+				case 0b111100: { data.ptr = &JitBackend::DSLL32; break; }								// DSLL32
+				case 0b011011: { data.ptr = &JitBackend::DIVU; break; }									// DIVU
+				case 0b010000: { data.ptr = &JitBackend::MFHI; break; }									// MFHI
+				case 0b001101: { data.ptr = &JitBackend::BREAK; break; }								// BREAK
 
 				// system call (HLE for now)
-				case 0b001100: { data.ptr = &JitBackend::SYSCALL; break; }
+				case 0b001100: { data.ptr = &JitBackend::SYSCALL; data.type = InstructionType::Syscall; break; }
 
 				// sync (ends the block)
 				case 0b001111: { data.ptr = &JitBackend::SYNC; data.type = InstructionType::Sync; break; }
@@ -180,31 +173,39 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		}
 
 		// normal
-		case 0b001111: { data.ptr = &JitBackend::LUI; break; }		// LUI
-		case 0b001001: { data.ptr = &JitBackend::ADDIU; break; }	// ADDIU
-		case 0b011111: { data.ptr = &JitBackend::SQ; break; }		// SQ
-		case 0b010000: { data.ptr = &JitBackend::EI; break; }		// EI
-		case 0b100011: { data.ptr = &JitBackend::LW; break; }		// LW
-		case 0b111111: { data.ptr = &JitBackend::SD; break; }		// SD
-		case 0b101011: { data.ptr = &JitBackend::SW; break; }		// SW
-		case 0b100101: { data.ptr = &JitBackend::LHU; break; }		// LHU
-		case 0b101001: { data.ptr = &JitBackend::SH; break; }		// SH
-		case 0b001101: { data.ptr = &JitBackend::ORI; break; }		// ORI
-		case 0b110111: { data.ptr = &JitBackend::LD; break; }		// LD
-		case 0b001100: { data.ptr = &JitBackend::ANDI; break; }		// ANDI
-		case 0b100100: { data.ptr = &JitBackend::LBU; break; }		// LBU
-		case 0b101000: { data.ptr = &JitBackend::SB; break; }		// SB
-		case 0b001011: { data.ptr = &JitBackend::SLTIU; break; }	// SLTIU
+		case 0b001111: { data.ptr = &JitBackend::LUI; break; }											// LUI
+		case 0b001001: { data.ptr = &JitBackend::ADDIU; break; }										// ADDIU
+		case 0b011111: { data.ptr = &JitBackend::SQ; break; }											// SQ
+		case 0b010000: { data.ptr = &JitBackend::EI; break; }											// EI
+		case 0b100011: { data.ptr = &JitBackend::LW; break; }											// LW
+		case 0b111111: { data.ptr = &JitBackend::SD; break; }											// SD
+		case 0b101011: { data.ptr = &JitBackend::SW; break; }											// SW
+		case 0b100101: { data.ptr = &JitBackend::LHU; break; }											// LHU
+		case 0b101001: { data.ptr = &JitBackend::SH; break; }											// SH
+		case 0b001101: { data.ptr = &JitBackend::ORI; break; }											// ORI
+		case 0b110111: { data.ptr = &JitBackend::LD; break; }											// LD
+		case 0b001100: { data.ptr = &JitBackend::ANDI; break; }											// ANDI
+		case 0b100100: { data.ptr = &JitBackend::LBU; break; }											// LBU
+		case 0b101000: { data.ptr = &JitBackend::SB; break; }											// SB
+		case 0b001011: { data.ptr = &JitBackend::SLTIU; break; }										// SLTIU
 
 		// cop1
-		case 0b111001: { data.ptr = &JitBackend::SWC1; break; }		// SWC1
+		case 0b111001: { data.ptr = &JitBackend::SWC1; break; }											// SWC1
 
 		// branch
-		case 0b000101: { data.ptr = &JitBackend::BNE; data.type = InstructionType::Branch; break; }	// BNE
-		case 0b000100: { data.ptr = &JitBackend::BEQ; data.type = InstructionType::Branch; break; } // BEQ
+		case 0b000101: { data.ptr = &JitBackend::BNE; data.type = InstructionType::Branch; break; }		// BNE
+		case 0b000100: { data.ptr = &JitBackend::BEQ; data.type = InstructionType::Branch; break; } 	// BEQ
+
+		// BEQL
+		case 0b010100: {
+			data.ptr = &JitBackend::BEQ;
+			data.type = InstructionType::Branch;
+			data.likely = true;
+			break;
+		}
 
 		// jump
-		case 0b000011: { data.ptr = &JitBackend::JAL; data.type = InstructionType::Branch; break; }	// JAL
+		case 0b000011: { data.ptr = &JitBackend::JAL; data.type = InstructionType::Branch; break; }		// JAL
 
 		default: {
 			error_log("unknown opcode {:06b} {:08x}", op, instruction);
@@ -230,4 +231,8 @@ void JitBackend::DecodeOp(InstructionData& data, u32 instruction) {
 
 	// J-type
 	data.addr = instruction & 0x3ffffff;
+}
+
+void JitBackend::EmitBranchDelay() {
+	(this->*(m_BranchDelay.ptr))(m_BranchDelay);
 }

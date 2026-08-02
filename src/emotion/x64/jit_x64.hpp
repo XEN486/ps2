@@ -18,7 +18,6 @@ namespace EmotionEngine::Core {
 	class JitX64 : public JitBackend {
 	public:
 		bool InitJit(R5900* cpu) override;
-		void Reset();
 
 	protected:
 		void EmitBeginBlock() override;
@@ -60,6 +59,7 @@ namespace EmotionEngine::Core {
 		void SLTIU(InstructionData& data) override;
 		void DIVU(InstructionData& data) override;
 		void MFHI(InstructionData& data) override;
+		void BREAK(InstructionData& data) override;
 
 	private:
 		asmjit::InvokeNode* EmitExternalCall(uintptr_t address, const asmjit::FuncSignature& sig);

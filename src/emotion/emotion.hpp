@@ -47,10 +47,10 @@ namespace EmotionEngine::Core {
 		GPR gpr[32];
 
 		// special registers
-		u64 hi = 0;
-		u64 lo = 0;
-		u64 hi1 = 0;
-		u64 lo1 = 0;
+		u64 hi;
+		u64 lo;
+		u64 hi1;
+		u64 lo1;
 
 		// cop1 registers
 		float fpr[32];
@@ -60,7 +60,6 @@ namespace EmotionEngine::Core {
 		// stuff for jit
 		u32 pc;
 		u32 next_pc;
-		bool cancel_delay;
 	};
 
 
@@ -95,13 +94,15 @@ namespace EmotionEngine::Core {
 		u8 funct;
 		u16 imm;
 		u32 addr;
+
+		bool likely; // branch likely instruction
 	};
 
 	class JitBackend {
 	public:
 		virtual bool InitJit(R5900* cpu);
 		void Reset();
-		
+
 		void Release();
 		void Invalidate(u32 pc);
 
@@ -117,6 +118,7 @@ namespace EmotionEngine::Core {
 	protected:
 		virtual void EmitBeginBlock() = 0;
 		virtual void EmitEndBlock() = 0;
+		void EmitBranchDelay();
 		
 	protected:
 		virtual void LUI(InstructionData& data) = 0;
@@ -154,6 +156,7 @@ namespace EmotionEngine::Core {
 		virtual void SLTIU(InstructionData& data) = 0;
 		virtual void DIVU(InstructionData& data) = 0;
 		virtual void MFHI(InstructionData& data) = 0;
+		virtual void BREAK(InstructionData& data) = 0;
 
 	protected:
 		constexpr void VirtualToPhysical(u32& address) {
