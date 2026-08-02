@@ -36,6 +36,13 @@ void JitX64::EmitBeginBlock() {
 	v2 = cc.new_vec128("v2");
 	v3 = cc.new_vec128("v3");
 	v4 = cc.new_vec128("v4");
+
+	// set up MXCSR
+	cc.sub(x86::rsp, 8);							// allocate 8 bytes for old mxcsr (only 4 is necessary but we should keep alignment)
+	cc.vstmxcsr(x86::dword_ptr(x86::rsp));			// load old mxcsr
+	cc.or_(x86::dword_ptr(x86::rsp), 0x6000);		// set round toward zero bits
+	cc.vldmxcsr(x86::dword_ptr(x86::rsp));			// set old mxcsr
+	cc.add(x86::rsp, 8);							// deallocate bytes for old mxcsr
 }
 
 void JitX64::EmitEndBlock() {
