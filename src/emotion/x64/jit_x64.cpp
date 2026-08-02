@@ -51,16 +51,16 @@ InvokeNode* JitX64::EmitExternalCall(uintptr_t address, const FuncSignature& sig
 
 void JitX64::EmitLoadRegister128(asmjit::x86::Vec& reg, u8 index) {
 	if (index == 0) {
-		cc.pxor(reg, reg);
+		cc.vpxor(reg, reg, reg);
 		return;
 	}
 
-	cc.movdqu(reg, asmjit::x86::oword_ptr(r5900, index * sizeof(GPR)));
+	cc.vmovdqu(reg, asmjit::x86::oword_ptr(r5900, index * sizeof(GPR)));
 }
 
 void JitX64::EmitStoreRegister128(u8 index, asmjit::x86::Vec& reg) {
 	if (index == 0) return;
-	cc.movdqu(asmjit::x86::oword_ptr(r5900, index * sizeof(GPR)), reg);
+	cc.vmovdqu(asmjit::x86::oword_ptr(r5900, index * sizeof(GPR)), reg);
 }
 
 void JitX64::EmitReadVirtualMemory128(asmjit::x86::Vec& ret, const asmjit::x86::Gp& address) {
@@ -79,7 +79,7 @@ void JitX64::EmitReadVirtualMemory128(asmjit::x86::Vec& ret, const asmjit::x86::
 	cc.add(t1, address);
 
 	// ret <- *t1
-	cc.movdqu(ret, x86::oword_ptr(t1));
+	cc.vmovdqu(ret, x86::oword_ptr(t1));
 	cc.jmp(end);
 
 	cc.bind(outside_main_memory); {
@@ -106,7 +106,7 @@ void JitX64::EmitWriteVirtualMemory128(const asmjit::x86::Gp& address, asmjit::x
 	cc.add(t1, address);
 
 	// ret <- *t1
-	cc.movdqu(x86::oword_ptr(t1), val);
+	cc.vmovdqu(x86::oword_ptr(t1), val);
 	cc.jmp(end);
 
 	cc.bind(outside_main_memory); {
@@ -484,11 +484,11 @@ void JitX64::EmitStoreSpecialRegister(SpecialRegName dst, const asmjit::x86::Gp&
 }
 
 void JitX64::EmitLoadFPR(const asmjit::x86::Vec& ret, u8 index) {
-	cc.movss(ret, asmjit::x86::dword_ptr(r5900, offsetof(R5900, fpr) + (index * sizeof(float))));
+	cc.vmovss(ret, asmjit::x86::dword_ptr(r5900, offsetof(R5900, fpr) + (index * sizeof(float))));
 }
 
 void JitX64::EmitStoreFPR(u8 index, const asmjit::x86::Vec& src) {
-	cc.movss(asmjit::x86::dword_ptr(r5900, offsetof(R5900, fpr) + (index * sizeof(float))), src);
+	cc.vmovss(asmjit::x86::dword_ptr(r5900, offsetof(R5900, fpr) + (index * sizeof(float))), src);
 }
 
 
