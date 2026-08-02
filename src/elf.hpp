@@ -6,6 +6,7 @@
 
 #include <vector>
 
+/// @brief Structures and types used by the ELF32 file format.
 namespace Elf32 {
 	using Addr		= u32;
 	using Half		= u16;
@@ -73,6 +74,7 @@ namespace Elf32 {
 		MaskProc	= 0xf0000000,
 	};
 
+	/// @brief ELF32 header (ehdr).
 	struct ElfHeader {
 		unsigned char		e_ident[16];
 		ElfHeaderType		e_type;
@@ -90,6 +92,7 @@ namespace Elf32 {
 		Half				e_shstrndx;
 	};
 
+	/// @brief ELF32 program header (phdr).
 	struct ProgramHeader {
 		ProgramHeaderType	p_type;
 		Off					p_offset;
@@ -102,6 +105,7 @@ namespace Elf32 {
 	};
 }
 
+/// @brief Class to contain and load an ELF file into memory.
 class ElfFile {
 public:
 	ElfFile(std::filesystem::path path);

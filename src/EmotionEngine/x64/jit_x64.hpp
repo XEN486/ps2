@@ -15,6 +15,7 @@ namespace EmotionEngine::Core {
 		R8	= 1, // lo 8-bit
 	};
 
+	/// @brief MIPS -> x86_64 JIT recompiler.
 	class JitX64 : public JitBackend {
 	public:
 		bool InitJit(R5900* cpu) override;

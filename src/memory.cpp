@@ -3,7 +3,7 @@
 #include "utils.hpp"
 
 #include "EmotionEngine/emotion.hpp"
-#include "DMAC/dmac.hpp"
+#include "EmotionEngine/DMAC/dmac.hpp"
 
 u32 Memory::ReadVirtualMemory32(u32 address) {
 	// main memory

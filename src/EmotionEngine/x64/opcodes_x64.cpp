@@ -96,7 +96,7 @@ void JitX64::DADDU(InstructionData& data) {
 void JitX64::SYSCALL(InstructionData& data) {
 	// TODO: LLE emulation of BIOS
 	InvokeNode* node = EmitExternalCall(
-		reinterpret_cast<uintptr_t>(&HLE::Bios::EESysCall),
+		reinterpret_cast<uintptr_t>(&HLE::BIOS::EESysCall),
 		FuncSignature::build<void, R5900*>()
 	);
 

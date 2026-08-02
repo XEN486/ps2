@@ -1,7 +1,7 @@
 #include "dmac.hpp"
 #include <cassert>
 
-using namespace DMA;
+using namespace EmotionEngine::DMA;
 
 void DMAC::Reset() {
 	// clear out channels

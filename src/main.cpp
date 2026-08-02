@@ -1,6 +1,6 @@
 #include "EmotionEngine/x64/jit_x64.hpp"
 #include "EmotionEngine/emotion.hpp"
-#include "DMAC/dmac.hpp"
+#include "EmotionEngine/DMAC/dmac.hpp"
 #include "memory.hpp"
 #include "elf.hpp"
 
@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
 	}
 
 	EmotionEngine::Core::JitX64 backend;
-	DMA::DMAC dmac;
+	EmotionEngine::DMA::DMAC dmac;
 	Memory::Initialize(&backend, &dmac);
 
 	EmotionEngine::EE cpu(&backend);
@@ -34,5 +34,6 @@ int main(int argc, char** argv) {
 	}
 
 	cpu.Release();
+	Memory::Release();
 	return 0;
 }

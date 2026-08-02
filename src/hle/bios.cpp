@@ -2,7 +2,7 @@
 using namespace EmotionEngine::Core;
 using namespace HLE;
 
-void Bios::EESysCall(R5900* r5900) {
+void BIOS::EESysCall(R5900* r5900) {
 	u8 syscall_no = r5900->gpr[(u8)AbiNames::v1].reg_u8[0];
 	switch (syscall_no) {
 		case SetGsCrt: {

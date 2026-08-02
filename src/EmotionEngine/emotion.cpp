@@ -42,5 +42,4 @@ void EE::Reset() {
 
 void EE::Release() {
 	m_JitBackend->Release();
-	Memory::Release();
 }

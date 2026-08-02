@@ -1,9 +1,10 @@
 #ifndef DMAC_DMAC_HPP
 #define DMAC_DMAC_HPP
 
-#include "../utils.hpp"
+#include "../../utils.hpp"
 
-namespace DMA {
+/// @brief The EmotionEngine's DMA subsystem.
+namespace EmotionEngine::DMA {
 	enum ChannelID : u8 {
 		VIF0,
 		VIF1,
@@ -48,6 +49,7 @@ namespace DMA {
 		STR		= 0b100000000,
 	};
 
+	/// @brief Structure describing a DMA channel.
 	struct Channel {
 		ChannelID id;
 		u32 chcr;		// channel control
@@ -59,10 +61,12 @@ namespace DMA {
 		u32 sadr;		// channel scratchpad address
 	};
 
+	/// @brief Structure containing the DMA channels.
 	struct Channels {
 		Channel channels[10];
 	};
 
+	/// @brief Memory-mapped registers used to control the DMAC.
 	struct DmacRegisters {
 		u32 ctrl;
 		u32 stat;
@@ -73,6 +77,8 @@ namespace DMA {
 		u32 enable;
 	};
 
+	/// @brief The EmotionEngine's intelligent DMA controller.
+	/// The DMAC is used to access most of the system except for main memory.
 	class DMAC {
 	public:
 		void Reset();

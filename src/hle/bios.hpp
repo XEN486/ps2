@@ -3,6 +3,7 @@
 
 #include "../EmotionEngine/emotion.hpp"
 
+/// @brief Parts of the system emulated at a higher-level.
 namespace HLE {
 	enum EESyscalls {
 		SetGsCrt		= 0x02,
@@ -12,9 +13,11 @@ namespace HLE {
 		GsSetIMR		= 0x71,
 	};
 
-	// HLE BIOS
-	class Bios {
+	/// @brief High-level emulation of the PlayStation2's BIOS.
+	class BIOS {
 	public:
+		/// @brief Emulates a system call from the EmotionEngine.
+		/// @param r5900 Pointer to the MIPS CPU state.
 		static void EESysCall(EmotionEngine::Core::R5900* r5900);
 
 	private:
