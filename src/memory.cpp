@@ -1,7 +1,7 @@
 #include "memory.hpp"
 #include "elf.hpp"
 #include "utils.hpp"
-#include "emotion/emotion.hpp"
+#include "EmotionEngine/emotion.hpp"
 
 u32 Memory::ReadVirtualMemory32(u32 address) {
 	// main memory

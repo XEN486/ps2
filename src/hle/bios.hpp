@@ -1,7 +1,7 @@
 #ifndef HLE_BIOS_HPP
 #define HLE_BIOS_HPP
 
-#include "../emotion/emotion.hpp"
+#include "../EmotionEngine/emotion.hpp"
 
 namespace HLE {
 	enum EESyscalls {

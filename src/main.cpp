@@ -1,5 +1,5 @@
-#include "emotion/x64/jit_x64.hpp"
-#include "emotion/emotion.hpp"
+#include "EmotionEngine/x64/jit_x64.hpp"
+#include "EmotionEngine/emotion.hpp"
 #include "memory.hpp"
 #include "elf.hpp"
 

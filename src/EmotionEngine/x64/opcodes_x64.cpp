@@ -1,5 +1,5 @@
 #include "jit_x64.hpp"
-#include "../../hle/bios.hpp"
+#include "../../HLE/bios.hpp"
 
 using namespace EmotionEngine::Core;
 using namespace asmjit;

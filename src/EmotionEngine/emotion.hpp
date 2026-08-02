@@ -1,5 +1,5 @@
-#ifndef EMOTION_HPP
-#define EMOTION_HPP
+#ifndef EMOTIONENGINE_EMOTION_HPP
+#define EMOTIONENGINE_EMOTION_HPP
 
 #include "../memory.hpp"
 #include "../utils.hpp"
