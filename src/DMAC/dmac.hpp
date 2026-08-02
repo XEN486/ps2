@@ -2,6 +2,7 @@
 #define DMAC_DMAC_HPP
 
 #include "../utils.hpp"
+
 #include <unordered_map>
 
 namespace DMA {
@@ -16,6 +17,16 @@ namespace DMA {
 		SIF2		= 0xc8,
 		SPR_FROM	= 0xd0,
 		SPR_TO		= 0xd4,
+	};
+
+	enum class ChannelReg : u8 {
+		CHCR	= 0x00,
+		MADR	= 0x10,
+		TADR	= 0x30,
+		QWC		= 0x20,
+		ASR0	= 0x40,
+		ASR1	= 0x50,
+		SADR	= 0x80,
 	};
 
 	struct Channel {
@@ -46,9 +57,14 @@ namespace DMA {
 		u32 ReadMemory32(u32 address);
 
 	private:
+		void WriteToChannel(ChannelID channel, u32 address, u32 word);
+		u32 ReadFromChannel(ChannelID channel, u32 address);
+
+	private:
 		DmacRegisters m_Regs;
 		std::unordered_map<ChannelID, Channel> m_Channels;
 	};
 }
 
+#include "dmac.inl"
 #endif
