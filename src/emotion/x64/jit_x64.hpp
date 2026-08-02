@@ -61,6 +61,7 @@ namespace EmotionEngine::Core {
 		void MFHI(InstructionData& data) override;
 		void BREAK(InstructionData& data) override;
 		void BLTZ(InstructionData& data) override;
+		void LWC1(InstructionData& data) override;
 
 	private:
 		asmjit::InvokeNode* EmitExternalCall(uintptr_t address, const asmjit::FuncSignature& sig);

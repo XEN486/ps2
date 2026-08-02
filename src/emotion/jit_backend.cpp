@@ -176,7 +176,7 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b000001: {
 			switch (data.rt) {
 				case 0b00000: { data.ptr = &JitBackend::BLTZ; break; }									// BLTZ
-				
+
 				default: {
 					error_log("unknown regimm opcode {:05b} {:08x}", data.rt, data.funct);
 					exit(1);
@@ -204,6 +204,7 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 
 		// cop1
 		case 0b111001: { data.ptr = &JitBackend::SWC1; break; }											// SWC1
+		case 0b110001: { data.ptr = &JitBackend::LWC1; break; }											// LWC1
 
 		// branch
 		case 0b000101: { data.ptr = &JitBackend::BNE; data.type = InstructionType::Branch; break; }		// BNE
