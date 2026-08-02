@@ -3,6 +3,12 @@
 - https://psi-rockin.github.io/ps2tek
 - https://github.com/PSI-Rockin/DobieStation/wiki/Making-a-PS2-Emulator:-From-Bits-to-Pixels
 - https://www.copetti.org/writings/consoles/playstation-2/
+- ps2tut source code
+
+### ELF
+- https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html
+- https://github.com/torvalds/linux/blob/master/include/uapi/linux/elf.h
+- https://0xc0ffee.netlify.app/osdev/21-elf-loader-p1
 
 ### EE Core (R5900)
 - EE Core Instruction Set Manual
