@@ -385,7 +385,7 @@ void JitX64::MFHI(InstructionData& data) {
 }
 
 void JitX64::BREAK(InstructionData& data) {
-	cc.int3();
+	//cc.int3();
 }
 
 void JitX64::BLTZ(InstructionData& data) {
@@ -417,4 +417,34 @@ void JitX64::LWC1(InstructionData& data) {
 
 	EmitReadVirtualMemory32(s2.r32(), s1);					// s2 <- [vaddr]
 	EmitStoreFPR(data.rt, s2.r32());						// ft <- s2
+}
+
+void JitX64::CVTsw(InstructionData& data) {
+	// data.rd == fs
+	// v1 <- convert(fpr[fs])
+	cc.vcvtsi2ss(v1, v1, asmjit::x86::dword_ptr(r5900, offsetof(R5900, fpr) + (data.rd * sizeof(float))));
+
+	// data.sa == fd
+	// fps[fd] <- v1
+	EmitStoreFPR(data.sa, v1);
+}
+
+void JitX64::CVTws(InstructionData& data) {
+	// data.rd == fs
+	// s1 <- convert(fpr[fs])
+	cc.vcvtss2si(s1.r32(), asmjit::x86::dword_ptr(r5900, offsetof(R5900, fpr) + (data.rd * sizeof(float))));
+
+	// data.sa == fd
+	// fps[fd] <- s1
+	EmitStoreFPR(data.sa, s1.r32());
+}
+
+void JitX64::MTC1(InstructionData& data) {
+	EmitLoadRegister(s1.r32(), R32, data.rt);
+	EmitStoreFPR(data.rd, s1.r32());
+}
+
+void JitX64::MFC1(InstructionData& data) {
+	EmitLoadFPR(s1.r32(), data.rd);
+	EmitStoreRegister(R64, data.rt, s1.r32(), true);
 }

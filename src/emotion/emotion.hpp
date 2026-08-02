@@ -159,6 +159,10 @@ namespace EmotionEngine::Core {
 		virtual void BREAK(InstructionData& data) = 0;
 		virtual void BLTZ(InstructionData& data) = 0;
 		virtual void LWC1(InstructionData& data) = 0;
+		virtual void CVTsw(InstructionData& data) = 0;
+		virtual void CVTws(InstructionData& data) = 0;
+		virtual void MTC1(InstructionData& data) = 0;
+		virtual void MFC1(InstructionData& data) = 0;
 
 	protected:
 		constexpr void VirtualToPhysical(u32& address) {

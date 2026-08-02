@@ -178,10 +178,41 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				case 0b00000: { data.ptr = &JitBackend::BLTZ; break; }									// BLTZ
 
 				default: {
-					error_log("unknown regimm opcode {:05b} {:08x}", data.rt, data.funct);
+					error_log("unknown regimm opcode {:05b} {:08x}", data.rt, instruction);
 					exit(1);
 				}
 			}
+			break;
+		}
+
+		// COP1
+		case 0b010001: {
+			switch (data.funct) {
+				case 0b000000: {
+					// low 11-bit == 0 -> mtc1/mfc1
+					if ((instruction & 0x7ff) == 0) {
+						switch (data.rs) {
+							case 0b00100: { data.ptr = &JitBackend::MTC1; break; }						// MTC1
+							case 0b00000: { data.ptr = &JitBackend::MFC1; break; }						// MFC1
+							
+							default: {
+								error_log("unknown opcode with lo 11-bits == 0 {:05b} {:08x}", data.rs, instruction);
+								exit(1);
+							}
+						}
+					}
+					
+					break;
+				}
+				case 0b100000: { data.ptr = &JitBackend::CVTsw; break; }
+				case 0b100100: { data.ptr = &JitBackend::CVTws; break; }
+
+				default: {
+					error_log("unknown cop1 opcode {:06b} {:08x}", data.funct, instruction);
+					exit(1);
+				}
+			}
+
 			break;
 		}
 
