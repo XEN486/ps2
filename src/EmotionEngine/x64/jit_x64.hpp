@@ -1,5 +1,5 @@
-#ifndef JIT_X64_HPP
-#define JIT_X64_HPP
+#ifndef EMOTIONENGINE_X64_JIT_X64_HPP
+#define EMOTIONENGINE_X64_JIT_X64_HPP
 
 #include "../emotion.hpp"
 
