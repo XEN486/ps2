@@ -1,12 +1,19 @@
 #include "memory.hpp"
 #include "elf.hpp"
 #include "utils.hpp"
+
 #include "EmotionEngine/emotion.hpp"
+#include "DMAC/dmac.hpp"
 
 u32 Memory::ReadVirtualMemory32(u32 address) {
 	// main memory
 	if (address <= RDRAM_LAST_ADDR) {
 		return *(reinterpret_cast<u32*>(&m_Memory[address]));
+	}
+
+	// dmac addresses
+	if (address >= 0x10008000 && address <= 0x1000f590) {
+		return m_DMAC->ReadMemory32(address);
 	}
 
 	error_log("unknown physical address {:08x}", address);
@@ -18,6 +25,12 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 	if (address <= RDRAM_LAST_ADDR) {
 		*(reinterpret_cast<u32*>(&m_Memory[address])) = word;
 		m_JitBackend->Invalidate(address);
+		return;
+	}
+
+	// dmac addresses
+	if (address >= 0x10008000 && address <= 0x1000f590) {
+		m_DMAC->WriteMemory32(address, word);
 		return;
 	}
 

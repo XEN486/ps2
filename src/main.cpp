@@ -1,5 +1,6 @@
 #include "EmotionEngine/x64/jit_x64.hpp"
 #include "EmotionEngine/emotion.hpp"
+#include "DMAC/dmac.hpp"
 #include "memory.hpp"
 #include "elf.hpp"
 
@@ -10,9 +11,13 @@ int main(int argc, char** argv) {
 	}
 
 	EmotionEngine::Core::JitX64 backend;
-	Memory::Initialize(&backend);
+	DMA::DMAC dmac;
+	Memory::Initialize(&backend, &dmac);
 
 	EmotionEngine::EE cpu(&backend);
+
+	// reset everything
+	dmac.Reset();
 	cpu.Reset();
 
 	ElfFile elf(argv[1]);

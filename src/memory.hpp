@@ -8,18 +8,18 @@
 
 #include "utils.hpp"
 
-// forward declaration
-namespace EmotionEngine::Core {
-	class JitBackend;
-}
+// --- forward declarations ---
+namespace EmotionEngine::Core { class JitBackend; }
+namespace DMA { class DMAC; }
 
 #define RDRAM_LAST_ADDR 0x01ffffff
 
 // memory map
 class Memory {
 public:
-	static void Initialize(EmotionEngine::Core::JitBackend* backend) {
+	static void Initialize(EmotionEngine::Core::JitBackend* backend, DMA::DMAC* dmac) {
 		m_JitBackend = backend;
+		m_DMAC = dmac;
 		m_Memory = static_cast<u8*>(calloc(1, 0x2000000)); // 32MiB
 	}
 
@@ -37,6 +37,7 @@ public:
 
 private:
 	inline static EmotionEngine::Core::JitBackend* m_JitBackend;
+	inline static DMA::DMAC* m_DMAC;
 	inline static bool m_ExposeBootROM;
 };
 
