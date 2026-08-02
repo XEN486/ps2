@@ -59,6 +59,7 @@ void JitX64::JAL(InstructionData& data) {
 	// we have to go back 2 instructions (8 bytes) to go back to the address of the JAL instruction
 	// for the same reason as before
 	EmitJump(((m_CompilePC - 8) & 0xf0000000) | (data.addr << 2));
+	EmitBranchDelay();
 }
 
 void JitX64::BNE(InstructionData& data) {
@@ -105,6 +106,7 @@ void JitX64::SYSCALL(InstructionData& data) {
 void JitX64::JR(InstructionData& data) {
 	EmitLoadRegister(s1, R32, data.rs);	// s1 <- rs
 	EmitJump(s1);						// pc <- s1
+	EmitBranchDelay();
 
 	// TODO: Exception(AddressError);
 }
@@ -395,7 +397,7 @@ void JitX64::BLTZ(InstructionData& data) {
 	Label end = cc.new_label();
 
     cc.cmp(s1, 0);
-	cc.j(x86::CondCode::kL, exit_bltz);
+	cc.j(x86::CondCode::kGE, exit_bltz);
 
 	// PC is after the branch delay slot so we have to go back 1 instruction to use it as a base for the branch
 	EmitJump((m_CompilePC - 4) + (i32)((i16)data.imm << 2));
@@ -468,4 +470,32 @@ void JitX64::MULs(InstructionData& data) {
 	EmitLoadFPR(v2, data.rt);								// v2 <- ft
 	cc.vmulss(v1, v1, v2);									// v1 /= v2
 	EmitStoreFPR(data.sa, v1);								// fd <- v1
+}
+
+void JitX64::BGEZ(InstructionData& data) {
+    EmitLoadRegister(s1, R64, data.rs);
+
+	Label exit_bgez = cc.new_label();
+	Label end = cc.new_label();
+
+    cc.cmp(s1, 0);
+	cc.j(x86::CondCode::kL, exit_bgez);
+
+	// PC is after the branch delay slot so we have to go back 1 instruction to use it as a base for the branch
+	EmitJump((m_CompilePC - 4) + (i32)((i16)data.imm << 2));
+	EmitBranchDelay();
+	cc.jmp(end);
+
+	cc.bind(exit_bgez);
+	if (!data.likely) {
+		EmitBranchDelay();
+	}
+
+	cc.bind(end);
+}
+
+void JitX64::SRA(InstructionData& data) {
+	EmitLoadRegister(s1, R32, data.rt);						// s1 <- rt
+	cc.sar(s1.r32(), data.sa);								// s1 >> sa (arithmetic)
+	EmitStoreRegister(R64, data.rd, s1.r32(), true);		// rd <- s1
 }

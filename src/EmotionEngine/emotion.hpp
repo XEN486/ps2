@@ -166,6 +166,8 @@ namespace EmotionEngine::Core {
 		virtual void DIVs(InstructionData& data) = 0;
 		virtual void MOVs(InstructionData& data) = 0;
 		virtual void MULs(InstructionData& data) = 0;
+		virtual void BGEZ(InstructionData& data) = 0;
+		virtual void SRA(InstructionData& data) = 0;
 
 	protected:
 		constexpr void VirtualToPhysical(u32& address) {

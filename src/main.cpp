@@ -3,14 +3,19 @@
 #include "memory.hpp"
 #include "elf.hpp"
 
-int main() {
+int main(int argc, char** argv) {
+	if (argc < 2) {
+		std::println(stderr, "usage: {} [elf file]", argv[0]);
+		return 1;
+	}
+
 	EmotionEngine::Core::JitX64 backend;
 	Memory::Initialize(&backend);
 
 	EmotionEngine::EE cpu(&backend);
 	cpu.Reset();
 
-	ElfFile elf("demo1.elf");
+	ElfFile elf(argv[1]);
 	cpu.GetR5900().pc = elf.LoadElf();
 
 	while (true) {

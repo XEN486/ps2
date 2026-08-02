@@ -153,6 +153,7 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				case 0b011011: { data.ptr = &JitBackend::DIVU; break; }									// DIVU
 				case 0b010000: { data.ptr = &JitBackend::MFHI; break; }									// MFHI
 				case 0b001101: { data.ptr = &JitBackend::BREAK; break; }								// BREAK
+				case 0b000011: { data.ptr = &JitBackend::SRA; break; }									// SRA
 
 				// system call (HLE for now)
 				case 0b001100: { data.ptr = &JitBackend::SYSCALL; data.type = InstructionType::Syscall; break; }
@@ -176,6 +177,7 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b000001: {
 			switch (data.rt) {
 				case 0b00000: { data.ptr = &JitBackend::BLTZ; break; }									// BLTZ
+				case 0b00001: { data.ptr = &JitBackend::BGEZ; break; }									// BGEZ
 
 				default: {
 					error_log("unknown regimm opcode {:05b} {:08x}", data.rt, instruction);
