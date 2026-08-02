@@ -24,7 +24,13 @@ int main(int argc, char** argv) {
 	cpu.GetR5900().pc = elf.LoadElf();
 
 	while (true) {
-		cpu.RunOnce();
+		size_t instructions = cpu.RunOnce();
+
+		// assume 1 instruction = 1 clock cycle.
+		// tick dmac every other cycle
+		for (size_t i = 0; i < (instructions / 2); i++) {
+			dmac.Tick();
+		}
 	}
 
 	cpu.Release();

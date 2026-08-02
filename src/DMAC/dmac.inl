@@ -20,7 +20,7 @@ struct std::formatter<DMA::ChannelID> {
 			case DMA::ChannelID::SPR_FROM:	return std::format_to(ctx.out(), "SPR_FROM");
 			case DMA::ChannelID::SPR_TO:	return std::format_to(ctx.out(), "SPR_TO");
 		}
-		
+
 		std::unreachable();
 	}
 };
@@ -40,6 +40,28 @@ struct std::formatter<DMA::ChannelReg> {
 			case DMA::ChannelReg::ASR0:		return std::format_to(ctx.out(), "ASR0");
 			case DMA::ChannelReg::ASR1:		return std::format_to(ctx.out(), "ASR1");
 			case DMA::ChannelReg::SADR:		return std::format_to(ctx.out(), "SADR");
+		}
+
+		std::unreachable();
+	}
+};
+
+template <>
+struct std::formatter<DMA::DmacReg> {
+	constexpr auto parse(std::format_parse_context& ctx) {
+		return ctx.begin();
+	}
+
+	auto format(const DMA::DmacReg reg, std::format_context& ctx) const {
+		switch (reg) {
+			case DMA::DmacReg::CTRL:		return std::format_to(ctx.out(), "CTRL");
+			case DMA::DmacReg::STAT:		return std::format_to(ctx.out(), "STAT");
+			case DMA::DmacReg::PCR:			return std::format_to(ctx.out(), "PCR");
+			case DMA::DmacReg::SQWC:		return std::format_to(ctx.out(), "SQWC");
+			case DMA::DmacReg::RBSR:		return std::format_to(ctx.out(), "RBSR");
+			case DMA::DmacReg::RBOR:		return std::format_to(ctx.out(), "RBOR");
+			case DMA::DmacReg::ENABLER:		return std::format_to(ctx.out(), "ENABLER");
+			case DMA::DmacReg::ENABLEW:		return std::format_to(ctx.out(), "ENABLEW");
 		}
 
 		std::unreachable();
