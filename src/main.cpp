@@ -5,11 +5,15 @@
 #include "memory.hpp"
 #include "elf.hpp"
 
+// #define ENABLE_DEBUGGER
+
 int main(int argc, char** argv) {
-	//if (argc < 2) {
-	//	std::println(stderr, "usage: {} [elf file]", argv[0]);
-	//	return 1;
-	//}
+#ifndef ENABLE_DEBUGGER
+	if (argc < 2) {
+		std::println(stderr, "usage: {} [elf file]", argv[0]);
+		return 1;
+	}
+#endif
 
 	GraphicsSynthesizer::GS gs;
 	EmotionEngine::Core::JitX64 backend;
@@ -19,7 +23,11 @@ int main(int argc, char** argv) {
 
 	cpu.Reset();
 
+#ifndef ENABLE_DEBUGGER
+	ElfFile elf(argv[1]);
+#else
 	ElfFile elf("demo2a.elf");
+#endif
 	cpu.GetR5900().pc = elf.LoadElf();
 
 	while (true) {
