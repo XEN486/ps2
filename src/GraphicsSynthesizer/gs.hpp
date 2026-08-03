@@ -2,6 +2,9 @@
 #define GRAPHICSSYNTHESIZER_GS_HPP
 
 #include "../utils.hpp"
+#include "registers.hpp"
+
+#include <vector>
 
 /// @brief The PlayStation2's graphics unit.
 namespace GraphicsSynthesizer {
@@ -84,33 +87,20 @@ namespace GraphicsSynthesizer {
 		SIGLBLID	= 0x1080,
 	};
 
-	enum PrimitiveType : u8 {
-		Point,
-		Line,
-		LineStrip,
-		Triangle,
-		TriangleStrip,
-		TriangleFan,
-		Sprite,
-		Reserved
-	};
-
-	/// @brief Structure describing the current GS primitive.
-	struct RegPrim {
-		PrimitiveType type;
-		bool gouraud;
-		bool textured;
-		bool fog;
-		bool alpha_blending;
-		bool antialiasing;
-		bool uv;
-		bool context2;
-		bool fix_fragment;
+	/// @brief Structure containing the internal GS registers for one of the drawing contexts.
+	struct DrawingContext {
+		RegFrame frame;
+		RegXYOffset xyoffset;
+		RegScissor scissor;
 	};
 
 	/// @brief Structure containing all the internal GS registers.
 	struct InternalRegisters {
 		RegPrim prim;
+		RegRGBAQ rgbaq;
+
+		DrawingContext ctx1;
+		DrawingContext ctx2;
 	};
 
 	/// @brief Structure containing all the privileged GS registers.
@@ -135,22 +125,52 @@ namespace GraphicsSynthesizer {
 		u64 busdir;
 		u64 siglblid;
 	};
+	
+	struct Vertex {
+		AnyXYZ xyz;
+		RegRGBAQ rgbaq;
+	};
 
 	/// @brief The PlayStation2's graphics unit.
 	class GS {
 	public:
-		void WritePrim(u16 value) {
-			debug_log("GS(PRIM) <- {:04x}", value);
+		void Reset() {
+			m_IRegs.prim.initial_kick = true;
 		}
 
-		void WriteInternalReg(InternalRegisterID id, u64 dword) {
-			if (id == HWREG) return;
-			debug_log("GS({:02x}) <- {:016x}", (u8)id, dword);
+		u32 ReadLoCSR() const {
+			return m_PRegs.gs_csr & 0xffffffff;
 		}
+
+		u32 ReadLoSIGLBLID() const {
+			return m_PRegs.siglblid & 0xffffffff;
+		}
+
+		u32 ReadHiCSR() const {
+			return (m_PRegs.gs_csr >> 32) & 0xffffffff;
+		}
+
+		u32 ReadHiSIGLBLID() const {
+			return (m_PRegs.siglblid >> 32) & 0xffffffff;
+		}
+
+		void WritePrim(u16 value);
+		void WritePrivilegedRegEE(u32 address, u32 word);
+		void WritePrivilegedReg(u32 address, u64 dword);
+		void WriteInternalReg(InternalRegisterID id, u64 dword);
+
+	private:
+		void WriteXYZ(AnyXYZ xyz, bool three);
+
+		void DrawingKick();
 
 	private:
 		InternalRegisters m_IRegs;
 		PrivilegedRegisters m_PRegs;
+
+		std::vector<Vertex> m_VertexQueue;
+		Vertex m_InitialVertex;
+		Vertex m_LastVertex;
 	};
 }
 

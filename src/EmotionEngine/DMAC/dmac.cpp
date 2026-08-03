@@ -90,7 +90,7 @@ u32 DMAC::ReadMemory32(u32 address) {
 
 void DMAC::WriteToChannel(ChannelID channel, u32 address, u32 word) {
 	ChannelReg reg = static_cast<ChannelReg>(address & 0xff);
-	debug_log("write {:08x} -> {}({})", word, channel, reg);
+	//debug_log("write {:08x} -> {}({})", word, channel, reg);
 
 	switch (reg) {
 		case ChannelReg::CHCR:	{ m_Channels.channels[channel].chcr = word; return; }

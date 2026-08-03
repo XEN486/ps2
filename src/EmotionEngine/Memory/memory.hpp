@@ -10,6 +10,8 @@
 
 #define RDRAM_LAST_ADDR 0x01ffffff
 
+namespace GraphicsSynthesizer { class GS; }
+
 namespace EmotionEngine {
 	// --- forward declarations ---
 	namespace Core { class JitBackend; }
@@ -21,9 +23,10 @@ namespace EmotionEngine {
 		/// @brief Initializes and allocates everything necessary for the physical memory map.
 		/// @param backend Pointer to the JIT backend.
 		/// @param dmac Pointer to the EmotionEngine's DMAC.
-		void Initialize(Core::JitBackend* backend, DMA::DMAC* dmac) {
+		void Initialize(Core::JitBackend* backend, DMA::DMAC* dmac, GraphicsSynthesizer::GS* gs) {
 			m_JitBackend = backend;
 			m_DMAC = dmac;
+			m_GS = gs;
 			rdram = static_cast<u8*>(calloc(1, 0x2000000)); // 32MiB
 		}
 
@@ -75,9 +78,9 @@ namespace EmotionEngine {
 		u8* rdram;
 
 	private:
-		EmotionEngine::Core::JitBackend* m_JitBackend;
-		EmotionEngine::DMA::DMAC* m_DMAC;
-		bool m_ExposeBootROM;
+		Core::JitBackend* m_JitBackend;
+		DMA::DMAC* m_DMAC;
+		GraphicsSynthesizer::GS* m_GS;
 	};
 }
 

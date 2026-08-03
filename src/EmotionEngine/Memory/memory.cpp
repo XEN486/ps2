@@ -23,6 +23,12 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 	// D_ENABLER
 	if (address == 0x1000f520) return m_DMAC->ReadMemory32(address);
 
+	// readable GS privileged registers
+	if (address == 0x12001000) return m_GS->ReadLoCSR();
+	if (address == 0x12001004) return m_GS->ReadHiCSR();
+	if (address == 0x12001080) return m_GS->ReadLoSIGLBLID();
+	if (address == 0x12001084) return m_GS->ReadHiSIGLBLID();
+
 	error_log("unknown physical address {:08x}", address);
 	return 0;
 }
@@ -45,6 +51,12 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 
 	// D_ENABLEW
 	if (address == 0x1000f590) return m_DMAC->WriteMemory32(address, word);
+
+	// GS privileged registers
+	if (address >= 0x12000000 && address <= 0x12001080) {
+		m_GS->WritePrivilegedRegEE(address, word);
+		return;
+	}
 
 	error_log("{:08x} -> unknown physical address {:08x}", word, address);
 }

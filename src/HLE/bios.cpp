@@ -49,7 +49,7 @@ void BIOS::EESysCall(R5900* r5900) {
 			int mode = r5900->gpr[(u8)AbiNames::a0].reg_i32[0];
 
 			// TODO: invalidate JIT blocks here?
-			debug_log("FlushCache({})", mode);
+			//debug_log("FlushCache({})", mode);
 			break;
 		}
 

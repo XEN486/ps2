@@ -10,7 +10,7 @@ EE::EE(Core::JitBackend* backend, GraphicsSynthesizer::GS* gs) : m_JitBackend(ba
 		exit(1);
 	}
 
-	m_Memory.Initialize(m_JitBackend, &m_DMAC);
+	m_Memory.Initialize(m_JitBackend, &m_DMAC, m_GS);
 	m_GIF.SetGS(m_GS);
 	m_DMAC.SetPointers(&m_Memory, &m_GIF);
 }

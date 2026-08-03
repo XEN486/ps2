@@ -100,12 +100,12 @@ void GIF::ProcessQword() {
 		m_LastTag.nregs			= (lo64 >> 60) & 0b1111;
 		if (m_LastTag.nregs == 0) m_LastTag.nregs = 16;
 
-		debug_log("giftag({}, {}, {}, {}, {}, {})", m_LastTag.nloop, m_LastTag.eop, m_LastTag.enable_prim, m_LastTag.prim_data, (u8)m_LastTag.data_format, m_LastTag.nregs);
+		//debug_log("giftag({}, {}, {}, {}, {}, {})", m_LastTag.nloop, m_LastTag.eop, m_LastTag.enable_prim, m_LastTag.prim_data, (u8)m_LastTag.data_format, m_LastTag.nregs);
 
 		// NLOOP == 0 case
 		if (m_LastTag.nloop == 0) {
 			if (m_LastTag.eop) {
-				debug_log("end of packet");
+				//debug_log("end of packet");
 				return;
 			}
 			m_State = GIFstate::ReceiveTag;
@@ -193,7 +193,7 @@ void GIF::ProcessQword() {
 				if (m_LastTag.nloop == 0) {
 					m_State = GIFstate::ReceiveTag;
 					if (m_LastTag.eop) {
-						debug_log("end of packet");
+						//debug_log("end of packet");
 						m_ActivePath = ActivePath::None;
 						return;
 					}
