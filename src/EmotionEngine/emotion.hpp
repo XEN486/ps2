@@ -1,6 +1,10 @@
 #ifndef EMOTIONENGINE_EMOTION_HPP
 #define EMOTIONENGINE_EMOTION_HPP
 
+#include "DMAC/dmac.hpp"
+#include "GIF/gif.hpp"
+
+#include "../GraphicsSynthesizer/gs.hpp"
 #include "../memory.hpp"
 #include "../utils.hpp"
 
@@ -143,7 +147,7 @@ namespace EmotionEngine {
 			/// @brief Fetches a word at the current compile PC, and increments it. (NOTE: this is run at compile-time)
 			/// @return The fetched value.
 			[[nodiscard]] u32 Fetch() {
-				u32 value = Memory::ReadVirtualMemory32(m_CompilePC);
+				u32 value = Memory::ReadMemory32(m_CompilePC);
 				m_CompilePC += 4;
 				return value;
 			}
@@ -240,11 +244,19 @@ namespace EmotionEngine {
 	/// The EmotionEngine includes a MIPS R5900-based CPU core, two Vector Units, a DMA controller, an Image Processing Unit, and interfaces to other parts of the system.
 	class EE {
 	public:
-		EE(Core::JitBackend* jit);
+		EE(Core::JitBackend* jit, GraphicsSynthesizer::GS* gs);
 
 		/// @brief Returns a reference to the MIPS R5900 CPU state.
 		/// @return Reference to the CPU state.
 		Core::R5900& GetR5900() { return m_R5900; }
+
+		/// @brief Returns a reference to the DMA controller.
+		/// @return Reference to the DMAC.
+		DMA::DMAC& GetDMAC() { return m_DMAC; }
+
+		/// @brief Returns a reference to the GIF.
+		/// @return Reference to the GIF.
+		Graphics::GIF& GetGIF() { return m_GIF; }
 
 		/// @brief Resets the EmotionEngine's state.
 		void Reset();
@@ -258,6 +270,10 @@ namespace EmotionEngine {
 
 	private:
 		Core::R5900 m_R5900;
+		DMA::DMAC m_DMAC;
+		Graphics::GIF m_GIF;
+
+		GraphicsSynthesizer::GS* m_GS;
 		Core::JitBackend* m_JitBackend;
 	};
 }

@@ -1,4 +1,5 @@
 #include "dmac.hpp"
+#include "../../memory.hpp"
 #include <cassert>
 
 using namespace EmotionEngine::DMA;
@@ -53,7 +54,6 @@ void DMAC::Tick() {
 		}
 
 		if (condition) {
-			debug_log("{}: begin transfer", channel.id);
 			m_InTransfer = true;
 			m_TransferChannel = &channel;
 			return;
@@ -175,6 +175,26 @@ void DMAC::DoTransfer() {
 	assert(((m_TransferChannel->chcr & CHCRBits::MOD) >> 2) == 0);
 
 	switch (m_TransferChannel->id) {
+		case GIF: {
+			if (m_TransferChannel->qwc == 0) {
+				m_InTransfer = false;
+				return;
+			}
+
+			u32 address = m_TransferChannel->madr;
+			m_TransferChannel->qwc -= 1;
+			m_TransferChannel->madr += 16;
+
+			u64 lo = Memory::ReadMemory64(address);
+			u64 hi = Memory::ReadMemory64(address + 8);
+			u128 qword = ((u128)hi << 64) | lo;
+
+			debug_log("transfer {:016x}{:016x} -> {:08x} ({} left)", hi, lo, address, m_TransferChannel->qwc);
+			m_GIF->ReceivePath3(qword);
+
+			break;
+		}
+
 		default: {
 			error_log("unimplemented transfer for {} channel", m_TransferChannel->id);
 			exit(1);

@@ -141,7 +141,7 @@ void JitX64::EmitReadVirtualMemory64(const asmjit::x86::Gp& ret, const asmjit::x
 	// not in main memory (do external call)
 	cc.bind(not_main_memory);
 	asmjit::InvokeNode* node = EmitExternalCall(
-		reinterpret_cast<uintptr_t>(&Memory::ReadVirtualMemory64),
+		reinterpret_cast<uintptr_t>(&Memory::ReadMemory64),
 		asmjit::FuncSignature::build<u64, u32>()
 	);
 
@@ -171,7 +171,7 @@ void JitX64::EmitWriteVirtualMemory64(const asmjit::x86::Gp& address, const asmj
 	// not in main memory (do external call)
 	cc.bind(not_main_memory);
 	asmjit::InvokeNode* node = EmitExternalCall(
-		reinterpret_cast<uintptr_t>(&Memory::WriteVirtualMemory64),
+		reinterpret_cast<uintptr_t>(&Memory::WriteMemory64),
 		asmjit::FuncSignature::build<void, u32, u64>()
 	);
 
@@ -192,7 +192,7 @@ void JitX64::EmitReadVirtualMemory64(const asmjit::x86::Gp& ret, u32 address) {
 	}
 
 	asmjit::InvokeNode* node = EmitExternalCall(
-		reinterpret_cast<uintptr_t>(&Memory::ReadVirtualMemory64),
+		reinterpret_cast<uintptr_t>(&Memory::ReadMemory64),
 		asmjit::FuncSignature::build<u64, u32>()
 	);
 
@@ -211,7 +211,7 @@ void JitX64::EmitWriteVirtualMemory64(u32 address, const asmjit::x86::Gp& value)
 	}
 
 	asmjit::InvokeNode* node = EmitExternalCall(
-		reinterpret_cast<uintptr_t>(&Memory::WriteVirtualMemory64),
+		reinterpret_cast<uintptr_t>(&Memory::WriteMemory64),
 		asmjit::FuncSignature::build<void, u32, u64>()
 	);
 
@@ -241,7 +241,7 @@ void JitX64::EmitReadVirtualMemory32(const asmjit::x86::Gp& ret, const asmjit::x
 	// not in main memory (do external call)
 	cc.bind(not_main_memory);
 	asmjit::InvokeNode* node = EmitExternalCall(
-		reinterpret_cast<uintptr_t>(&Memory::ReadVirtualMemory32),
+		reinterpret_cast<uintptr_t>(&Memory::ReadMemory32),
 		asmjit::FuncSignature::build<u32, u32>()
 	);
 
@@ -272,7 +272,7 @@ void JitX64::EmitWriteVirtualMemory32(const asmjit::x86::Gp& address, const asmj
 	// not in main memory (do external call)
 	cc.bind(not_main_memory);
 	asmjit::InvokeNode* node = EmitExternalCall(
-		reinterpret_cast<uintptr_t>(&Memory::WriteVirtualMemory32),
+		reinterpret_cast<uintptr_t>(&Memory::WriteMemory32),
 		asmjit::FuncSignature::build<void, u32, u32>()
 	);
 
@@ -295,7 +295,7 @@ void JitX64::EmitReadVirtualMemory32(const asmjit::x86::Gp& ret, u32 address) {
 	}
 
 	asmjit::InvokeNode* node = EmitExternalCall(
-		reinterpret_cast<uintptr_t>(&Memory::ReadVirtualMemory32),
+		reinterpret_cast<uintptr_t>(&Memory::ReadMemory32),
 		asmjit::FuncSignature::build<u32, u32>()
 	);
 
@@ -315,7 +315,7 @@ void JitX64::EmitWriteVirtualMemory32(u32 address, const asmjit::x86::Gp& value)
 	}
 
 	asmjit::InvokeNode* node = EmitExternalCall(
-		reinterpret_cast<uintptr_t>(&Memory::WriteVirtualMemory32),
+		reinterpret_cast<uintptr_t>(&Memory::WriteMemory32),
 		asmjit::FuncSignature::build<void, u32, u32>()
 	);
 

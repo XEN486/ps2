@@ -29,22 +29,22 @@ public:
 	/// @brief Reads a 64-bit value from the specified address
 	/// @param address Address to read from.
 	/// @return Value at the address.
-	static u64 ReadVirtualMemory64(u32 address);
+	static u64 ReadMemory64(u32 address);
 
 	/// @brief Writes a 64-bit value to the specified address
 	/// @param address Address to write to.
 	/// @param dword Value to write.
-	static void WriteVirtualMemory64(u32 address, u64 dword);
+	static void WriteMemory64(u32 address, u64 dword);
 
 	/// @brief Reads a 32-bit value from the specified address
 	/// @param address Address to read from.
 	/// @return Value at the address.
-	static u32 ReadVirtualMemory32(u32 address);
+	static u32 ReadMemory32(u32 address);
 
 	/// @brief Writes a 32-bit value to the specified address
 	/// @param address Address to write to.
 	/// @param dword Value to write.
-	static void WriteVirtualMemory32(u32 address, u32 word);
+	static void WriteMemory32(u32 address, u32 word);
 
 	/// @brief Releases the resources used by the memory map. Call this before terminating.
 	static void Release() {
