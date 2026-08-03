@@ -3,6 +3,7 @@
 
 #include "../utils.hpp"
 
+/// @brief The PlayStation2's graphics unit.
 namespace GraphicsSynthesizer {
 	enum InternalRegisterID : u8 {
 		PRIM		= 0x00,
@@ -94,6 +95,7 @@ namespace GraphicsSynthesizer {
 		Reserved
 	};
 
+	/// @brief Structure describing the current GS primitive.
 	struct RegPrim {
 		PrimitiveType type;
 		bool gouraud;
@@ -106,10 +108,12 @@ namespace GraphicsSynthesizer {
 		bool fix_fragment;
 	};
 
+	/// @brief Structure containing all the internal GS registers.
 	struct InternalRegisters {
 		RegPrim prim;
 	};
 
+	/// @brief Structure containing all the privileged GS registers.
 	struct PrivilegedRegisters {
 		u64 pmode;
 		u64 smode1;
@@ -132,6 +136,7 @@ namespace GraphicsSynthesizer {
 		u64 siglblid;
 	};
 
+	/// @brief The PlayStation2's graphics unit.
 	class GS {
 	public:
 		void WritePrim(u16 value) {

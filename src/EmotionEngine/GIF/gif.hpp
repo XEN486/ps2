@@ -26,6 +26,7 @@ namespace EmotionEngine::Graphics {
 		ReceiveData,	// waiting for more data
 	};
 
+	/// @brief Structure describing a GIFtag.
 	struct GIFtag {
 		u16 nloop;
 		bool eop;
@@ -41,6 +42,7 @@ namespace EmotionEngine::Graphics {
 		bool queued;
 	};
 
+	/// @brief The EmotionEngine's interface to the GraphicsSynthesizer.
 	class GIF {
 	public:
 		void SetGS(GraphicsSynthesizer::GS* gs) {
