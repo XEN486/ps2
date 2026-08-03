@@ -203,6 +203,16 @@ void GIF::ProcessQword() {
 			break;
 		}
 
+		case DataFormat::Image1:
+		case DataFormat::Image2: {
+			u64 hi = static_cast<u64>((qword >> 64) & 0xffffffffffffffff);
+			u64 lo = static_cast<u64>(qword & 0xffffffffffffffff);
+			
+			m_GS->WriteInternalReg(GraphicsSynthesizer::HWREG, lo);
+			m_GS->WriteInternalReg(GraphicsSynthesizer::HWREG, hi);
+			break;
+		}
+
 		default: {
 			error_log("unknown data format {}", (u8)m_LastTag.data_format);
 			exit(1);

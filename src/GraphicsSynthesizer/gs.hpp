@@ -144,6 +144,7 @@ namespace GraphicsSynthesizer {
 		}
 
 		void WriteInternalReg(InternalRegisterID id, u64 dword) {
+			if (id == HWREG) return;
 			debug_log("GS({:02x}) <- {:016x}", (u8)id, dword);
 		}
 
