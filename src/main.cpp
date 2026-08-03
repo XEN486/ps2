@@ -1,3 +1,4 @@
+/// @file
 #include "EmotionEngine/x64/jit_x64.hpp"
 #include "EmotionEngine/emotion.hpp"
 #include "EmotionEngine/DMAC/dmac.hpp"
