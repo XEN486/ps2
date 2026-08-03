@@ -1,3 +1,6 @@
 [submodule "thirdparty/asmjit"]
 	path = thirdparty/asmjit
 	url = https://github.com/asmjit/asmjit.git
+[submodule "thirdparty/SDL"]
+	path = thirdparty/SDL
+	url = https://github.com/libsdl-org/SDL.git
