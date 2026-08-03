@@ -6,6 +6,7 @@ using namespace EmotionEngine::DMA;
 
 void DMAC::Reset() {
 	// clear out channels
+	memset(m_Channels.channels, 0, sizeof(m_Channels.channels));
 	m_Channels = {
 		Channel { .id = ChannelID::VIF0 },
 		Channel { .id = ChannelID::VIF1 },
@@ -18,6 +19,9 @@ void DMAC::Reset() {
 		Channel { .id = ChannelID::SPR_FROM },
 		Channel { .id = ChannelID::SPR_TO },
 	};
+
+	// clear out registers
+	memset(&m_Regs, 0, sizeof(m_Regs));
 
 	// ps2tek says that SCPH-30001 BIOS expects this to be the reset value
 	// we are not emulating the BIOS yet, but when we do, it would be nice
@@ -123,8 +127,13 @@ void DMAC::WriteToReg(u32 address, u32 word) {
 	debug_log("write {:08x} -> D_{}", word, reg);
 
 	switch (reg) {
+		case DmacReg::STAT: {
+			m_Regs.stat &= ~(word & 0x000003ff); // channel interrupt status
+			m_Regs.stat ^=  (word & 0x03ff0000); // channel interrupt mask
+			return;
+		}
+
 		case DmacReg::CTRL:		{ m_Regs.ctrl = word; return; }
-		case DmacReg::STAT:		{ m_Regs.stat = word; return; }
 		case DmacReg::PCR:		{ m_Regs.pcr = word; return; }
 		case DmacReg::SQWC:		{ m_Regs.sqwc = word; return; }
 		case DmacReg::RBSR:		{ m_Regs.rbsr = word; return; }
@@ -177,7 +186,7 @@ void DMAC::DoTransfer() {
 	switch (m_TransferChannel->id) {
 		case GIF: {
 			if (m_TransferChannel->qwc == 0) {
-				m_InTransfer = false;
+				FinishTransfer();
 				return;
 			}
 
@@ -198,5 +207,20 @@ void DMAC::DoTransfer() {
 			error_log("unimplemented transfer for {} channel", m_TransferChannel->id);
 			exit(1);
 		}
+	}
+}
+
+void DMAC::FinishTransfer() {
+	m_TransferChannel->chcr &= ~CHCRBits::STR; // clear STR
+	m_Regs.stat |= (1 << static_cast<u8>(m_TransferChannel->id));
+	CheckInterrupt();
+}
+
+void DMAC::CheckInterrupt() {
+	u16 stat = m_Regs.stat & 0x3ff;
+	u16 mask = (m_Regs.stat >> 16) & 0x3ff;
+
+	if (stat & mask) {
+		debug_log("interrupt");
 	}
 }

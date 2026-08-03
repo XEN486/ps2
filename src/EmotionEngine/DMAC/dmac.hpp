@@ -102,6 +102,8 @@ namespace EmotionEngine::DMA {
 		ChannelID GetChannelFromAddress(u8 addr);
 
 		void DoTransfer();
+		void FinishTransfer();
+		void CheckInterrupt();
 
 	private:
 		DmacRegisters m_Regs;
