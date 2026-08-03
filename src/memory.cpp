@@ -12,9 +12,12 @@ u32 Memory::ReadMemory32(u32 address) {
 	}
 
 	// dmac addresses
-	if (address >= 0x10008000 && address <= 0x1000f590) {
+	if (address >= 0x10008000 && address <= 0x1000e060) {
 		return m_DMAC->ReadMemory32(address);
 	}
+
+	// D_ENABLER
+	if (address == 0x1000f520) return m_DMAC->ReadMemory32(address);
 
 	error_log("unknown physical address {:08x}", address);
 	return 0;
@@ -29,10 +32,13 @@ void Memory::WriteMemory32(u32 address, u32 word) {
 	}
 
 	// dmac addresses
-	if (address >= 0x10008000 && address <= 0x1000f590) {
+	if (address >= 0x10008000 && address <= 0x1000e060) {
 		m_DMAC->WriteMemory32(address, word);
 		return;
 	}
+
+	// D_ENABLEW
+	if (address == 0x1000f520) return m_DMAC->WriteMemory32(address, word);
 
 	error_log("{:08x} -> unknown physical address {:08x}", word, address);
 }
