@@ -13,12 +13,12 @@ struct std::formatter<EmotionEngine::DMA::ChannelID> {
 			case EmotionEngine::DMA::ChannelID::VIF1:		return std::format_to(ctx.out(), "VIF1");
 			case EmotionEngine::DMA::ChannelID::GIF:		return std::format_to(ctx.out(), "GIF");
 			case EmotionEngine::DMA::ChannelID::IPU_FROM:	return std::format_to(ctx.out(), "IPU_FROM");
-			case EmotionEngine::DMA::ChannelID::IPU_TO:	return std::format_to(ctx.out(), "IPU_TO");
+			case EmotionEngine::DMA::ChannelID::IPU_TO:		return std::format_to(ctx.out(), "IPU_TO");
 			case EmotionEngine::DMA::ChannelID::SIF0:		return std::format_to(ctx.out(), "SIF0");
 			case EmotionEngine::DMA::ChannelID::SIF1:		return std::format_to(ctx.out(), "SIF1");
 			case EmotionEngine::DMA::ChannelID::SIF2:		return std::format_to(ctx.out(), "SIF2");
 			case EmotionEngine::DMA::ChannelID::SPR_FROM:	return std::format_to(ctx.out(), "SPR_FROM");
-			case EmotionEngine::DMA::ChannelID::SPR_TO:	return std::format_to(ctx.out(), "SPR_TO");
+			case EmotionEngine::DMA::ChannelID::SPR_TO:		return std::format_to(ctx.out(), "SPR_TO");
 		}
 
 		std::unreachable();
@@ -56,12 +56,12 @@ struct std::formatter<EmotionEngine::DMA::DmacReg> {
 		switch (reg) {
 			case EmotionEngine::DMA::DmacReg::CTRL:		return std::format_to(ctx.out(), "CTRL");
 			case EmotionEngine::DMA::DmacReg::STAT:		return std::format_to(ctx.out(), "STAT");
-			case EmotionEngine::DMA::DmacReg::PCR:			return std::format_to(ctx.out(), "PCR");
+			case EmotionEngine::DMA::DmacReg::PCR:		return std::format_to(ctx.out(), "PCR");
 			case EmotionEngine::DMA::DmacReg::SQWC:		return std::format_to(ctx.out(), "SQWC");
 			case EmotionEngine::DMA::DmacReg::RBSR:		return std::format_to(ctx.out(), "RBSR");
 			case EmotionEngine::DMA::DmacReg::RBOR:		return std::format_to(ctx.out(), "RBOR");
-			case EmotionEngine::DMA::DmacReg::ENABLER:		return std::format_to(ctx.out(), "ENABLER");
-			case EmotionEngine::DMA::DmacReg::ENABLEW:		return std::format_to(ctx.out(), "ENABLEW");
+			case EmotionEngine::DMA::DmacReg::ENABLER:	return std::format_to(ctx.out(), "ENABLER");
+			case EmotionEngine::DMA::DmacReg::ENABLEW:	return std::format_to(ctx.out(), "ENABLEW");
 		}
 
 		std::unreachable();
