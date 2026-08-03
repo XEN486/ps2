@@ -38,7 +38,7 @@ void Memory::WriteMemory32(u32 address, u32 word) {
 	}
 
 	// D_ENABLEW
-	if (address == 0x1000f520) return m_DMAC->WriteMemory32(address, word);
+	if (address == 0x1000f590) return m_DMAC->WriteMemory32(address, word);
 
 	error_log("{:08x} -> unknown physical address {:08x}", word, address);
 }
