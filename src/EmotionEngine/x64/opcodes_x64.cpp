@@ -340,7 +340,7 @@ void JitX64::DIVU(InstructionData& data) {
 
 	// check if we are dividing by zero
 	cc.test(s2.r32(), s2.r32());
-	cc.jnz(div);
+	cc.jz(div);
 
 	// set division by zero results
 	EmitStoreSpecialRegister(SpecialRegName::HI, s1.r32()); // HI <- numerator
