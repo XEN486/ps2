@@ -1,7 +1,7 @@
 #ifndef ELF_HPP
 #define ELF_HPP
 
-#include "memory.hpp"
+#include "EmotionEngine/Memory/memory.hpp"
 #include "utils.hpp"
 
 #include <vector>
@@ -109,7 +109,7 @@ namespace Elf32 {
 class ElfFile {
 public:
 	ElfFile(std::filesystem::path path);
-	u32 LoadElf();
+	u32 LoadElf(EmotionEngine::Memory* memory);
 
 private:
 	void ReadSegments();

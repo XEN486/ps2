@@ -1,14 +1,18 @@
 #include "memory.hpp"
-#include "elf.hpp"
-#include "utils.hpp"
+#include "../../elf.hpp"
+#include "../../utils.hpp"
 
-#include "EmotionEngine/emotion.hpp"
-#include "EmotionEngine/DMAC/dmac.hpp"
+#include "../emotion.hpp"
+#include "../DMAC/dmac.hpp"
 
-u32 Memory::ReadMemory32(u32 address) {
+using namespace EmotionEngine;
+
+u32 Memory::ReadVirtualMemory32(u32 address) {
+	address &= 0x1fffffff;
+
 	// main memory
 	if (address <= RDRAM_LAST_ADDR) {
-		return *(reinterpret_cast<u32*>(&m_Memory[address]));
+		return *(reinterpret_cast<u32*>(&rdram[address]));
 	}
 
 	// dmac addresses
@@ -23,10 +27,12 @@ u32 Memory::ReadMemory32(u32 address) {
 	return 0;
 }
 
-void Memory::WriteMemory32(u32 address, u32 word) {
+void Memory::WriteVirtualMemory32(u32 address, u32 word) {
+	address &= 0x1fffffff;
+	
 	// main memory
 	if (address <= RDRAM_LAST_ADDR) {
-		*(reinterpret_cast<u32*>(&m_Memory[address])) = word;
+		*(reinterpret_cast<u32*>(&rdram[address])) = word;
 		m_JitBackend->Invalidate(address);
 		return;
 	}
@@ -43,13 +49,13 @@ void Memory::WriteMemory32(u32 address, u32 word) {
 	error_log("{:08x} -> unknown physical address {:08x}", word, address);
 }
 
-u64 Memory::ReadMemory64(u32 address) {
-	u32 lo = ReadMemory32(address);
-	u32 hi = ReadMemory32(address + 4);
+u64 Memory::ReadVirtualMemory64(u32 address) {
+	u32 lo = ReadVirtualMemory32(address);
+	u32 hi = ReadVirtualMemory32(address + 4);
 	return ((u64)hi << 32) | lo;
 }
 
-void Memory::WriteMemory64(u32 address, u64 dword) {
-	WriteMemory32(address, dword & 0xffffffff);
-	WriteMemory32(address + 4, (dword >> 32) & 0xffffffff);
+void Memory::WriteVirtualMemory64(u32 address, u64 dword) {
+	WriteVirtualMemory32(address, dword & 0xffffffff);
+	WriteVirtualMemory32(address + 4, (dword >> 32) & 0xffffffff);
 }

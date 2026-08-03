@@ -18,7 +18,7 @@ namespace EmotionEngine::Core {
 	/// @brief MIPS -> x86_64 JIT recompiler.
 	class JitX64 : public JitBackend {
 	public:
-		bool InitJit(R5900* cpu) override;
+		bool InitJit(R5900* cpu, Memory* memory) override;
 
 	protected:
 		void EmitBeginBlock() override;
@@ -111,7 +111,6 @@ namespace EmotionEngine::Core {
 		template <typename T> constexpr void EmitStoreRegister(RegisterSize size, u8 index, T reg, bool sign_extend);
 		template <typename T> void EmitJump(T address);
 
-		void EmitVirtualToPhysical(const asmjit::x86::Gp& address);
 		void EmitWrite32To64Preserved(const asmjit::x86::Gp& dst, const asmjit::x86::Gp& src);
 
 		void EmitStoreSpecialRegister(SpecialRegName dst, const asmjit::x86::Gp& src);

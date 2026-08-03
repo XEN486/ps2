@@ -6,7 +6,8 @@
 using namespace EmotionEngine::Core;
 using namespace asmjit;
 
-bool JitBackend::InitJit(R5900* cpu) {
+bool JitBackend::InitJit(R5900* cpu, Memory* memory) {
+	m_Memory = memory;
 	m_R5900 = cpu;
 	m_Logger.set_file(fopen("asmjit.log", "w"));
 
@@ -117,8 +118,7 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 }
 
 CompiledBlock& JitBackend::GetOrCompileBlock(u32 pc) {
-	VirtualToPhysical(pc);
-
+	pc &= 0x1fffffff;
     auto it = m_BlockCache.find(pc);
     if (it != m_BlockCache.end() && it->second.valid) {
 		return it->second;

@@ -1,5 +1,5 @@
 #include "dmac.hpp"
-#include "../../memory.hpp"
+#include "../Memory/memory.hpp"
 #include <cassert>
 
 using namespace EmotionEngine::DMA;
@@ -194,8 +194,8 @@ void DMAC::DoTransfer() {
 			m_TransferChannel->qwc -= 1;
 			m_TransferChannel->madr += 16;
 
-			u64 lo = Memory::ReadMemory64(address);
-			u64 hi = Memory::ReadMemory64(address + 8);
+			u64 lo = m_Memory->ReadVirtualMemory64(address);
+			u64 hi = m_Memory->ReadVirtualMemory64(address + 8);
 			u128 qword = ((u128)hi << 64) | lo;
 
 			m_GIF->ReceivePath3(qword);

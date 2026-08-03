@@ -1,5 +1,5 @@
 #include "jit_x64.hpp"
-#include "../../memory.hpp"
+#include "../Memory/memory.hpp"
 
 namespace EmotionEngine::Core {
 	template <typename T>

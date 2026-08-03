@@ -32,7 +32,7 @@ error:
 	exit(1);
 }
 
-u32 ElfFile::LoadElf() {
+u32 ElfFile::LoadElf(EmotionEngine::Memory* memory) {
 	ReadSegments();
 
 	for (ProgramHeader& phdr : m_Segments) {
@@ -40,7 +40,7 @@ u32 ElfFile::LoadElf() {
 			debug_log("load {} bytes @ {:08x} -> {:08x}", phdr.p_filesz, phdr.p_offset, phdr.p_vaddr);
 
 			m_File.seekg(phdr.p_offset);
-			m_File.read(reinterpret_cast<char*>(Memory::m_Memory + (phdr.p_vaddr & 0x1fffffff)), phdr.p_filesz);
+			m_File.read(reinterpret_cast<char*>(memory->rdram + (phdr.p_vaddr & 0x1fffffff)), phdr.p_filesz);
 		} else {
 			error_log("unknown program header type");
 			exit(1);

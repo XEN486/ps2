@@ -1,6 +1,7 @@
 #ifndef DMAC_DMAC_HPP
 #define DMAC_DMAC_HPP
 
+#include "../Memory/memory.hpp"
 #include "../GIF/gif.hpp"
 #include "../../utils.hpp"
 
@@ -82,7 +83,8 @@ namespace EmotionEngine::DMA {
 	/// The DMAC is used to access most of the system except for main memory.
 	class DMAC {
 	public:
-		void SetGIF(Graphics::GIF* gif) {
+		void SetPointers(Memory* memory, Graphics::GIF* gif) {
+			m_Memory = memory;
 			m_GIF = gif;
 		}
 		
@@ -112,6 +114,7 @@ namespace EmotionEngine::DMA {
 		bool m_InTransfer;
 		Channel* m_TransferChannel;
 
+		Memory* m_Memory;
 		Graphics::GIF* m_GIF;
 	};
 }

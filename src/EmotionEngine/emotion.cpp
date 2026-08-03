@@ -1,17 +1,18 @@
 #include "emotion.hpp"
-#include "../memory.hpp"
+#include "Memory/memory.hpp"
 #include "../utils.hpp"
 
 using namespace EmotionEngine;
 
 EE::EE(Core::JitBackend* backend, GraphicsSynthesizer::GS* gs) : m_JitBackend(backend), m_GS(gs) {
-	if (!m_JitBackend->InitJit(&m_R5900)) {
+	if (!m_JitBackend->InitJit(&m_R5900, &m_Memory)) {
 		error_log("failed to initialize backend");
 		exit(1);
 	}
 
+	m_Memory.Initialize(m_JitBackend, &m_DMAC);
 	m_GIF.SetGS(m_GS);
-	m_DMAC.SetGIF(&m_GIF);
+	m_DMAC.SetPointers(&m_Memory, &m_GIF);
 }
 
 size_t EE::RunOnce() {
@@ -54,4 +55,5 @@ void EE::Reset() {
 
 void EE::Release() {
 	m_JitBackend->Release();
+	m_Memory.Release();
 }

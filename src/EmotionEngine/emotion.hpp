@@ -1,11 +1,11 @@
 #ifndef EMOTIONENGINE_EMOTION_HPP
 #define EMOTIONENGINE_EMOTION_HPP
 
+#include "Memory/memory.hpp"
 #include "DMAC/dmac.hpp"
 #include "GIF/gif.hpp"
 
 #include "../GraphicsSynthesizer/gs.hpp"
-#include "../memory.hpp"
 #include "../utils.hpp"
 
 #include <asmjit/core.h>
@@ -125,8 +125,9 @@ namespace EmotionEngine {
 		public:
 			/// @brief Initializes the JIT backend. Automatically called by the EmotionEngine::EE() constructor.
 			/// @param cpu Pointer to the R5900 CPU state.
+			/// @param memory Pointer to the memory map.
 			/// @return true on success
-			virtual bool InitJit(R5900* cpu);
+			virtual bool InitJit(R5900* cpu, Memory* memory);
 
 			/// @brief Resets the JIT backend. Automatically called by EmotionEngine::EE::Reset()
 			void Reset();
@@ -147,7 +148,7 @@ namespace EmotionEngine {
 			/// @brief Fetches a word at the current compile PC, and increments it. (NOTE: this is run at compile-time)
 			/// @return The fetched value.
 			[[nodiscard]] u32 Fetch() {
-				u32 value = Memory::ReadMemory32(m_CompilePC);
+				u32 value = m_Memory->ReadVirtualMemory32(m_CompilePC);
 				m_CompilePC += 4;
 				return value;
 			}
@@ -213,14 +214,8 @@ namespace EmotionEngine {
 			virtual void J(InstructionData& data) = 0;
 
 		protected:
-			/// @brief Converts a virtual address to a physical address at compile-time.
-			/// @param address Address to convert.
-			constexpr void VirtualToPhysical(u32& address) {
-				address &= 0x1fffffff;
-			}
-
-		protected:
 			R5900* m_R5900;
+			Memory* m_Memory;
 
 			asmjit::JitRuntime m_Runtime;
 			asmjit::CodeHolder m_CodeHolder;
@@ -251,6 +246,10 @@ namespace EmotionEngine {
 		/// @return Reference to the CPU state.
 		Core::R5900& GetR5900() { return m_R5900; }
 
+		/// @brief Returns a reference to the EE memory map.
+		/// @return Reference to the EE memory map.
+		Memory& GetMemory() { return m_Memory; }
+
 		/// @brief Returns a reference to the DMA controller.
 		/// @return Reference to the DMAC.
 		DMA::DMAC& GetDMAC() { return m_DMAC; }
@@ -271,6 +270,7 @@ namespace EmotionEngine {
 
 	private:
 		Core::R5900 m_R5900;
+		Memory m_Memory;
 		DMA::DMAC m_DMAC;
 		Graphics::GIF m_GIF;
 
