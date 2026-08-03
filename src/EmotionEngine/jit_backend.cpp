@@ -256,6 +256,7 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		}
 
 		// jump
+		case 0b000010: { data.ptr = &JitBackend::J; data.type = InstructionType::Branch; break; }		// J
 		case 0b000011: { data.ptr = &JitBackend::JAL; data.type = InstructionType::Branch; break; }		// JAL
 
 		default: {

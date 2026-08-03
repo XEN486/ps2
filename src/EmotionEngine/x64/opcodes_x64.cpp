@@ -56,9 +56,8 @@ void JitX64::JAL(InstructionData& data) {
 	// so we can store the current PC to GPR[31]
 	EmitStoreRegister(R64, 31, m_CompilePC, false);
 
-	// we have to go back 2 instructions (8 bytes) to go back to the address of the JAL instruction
-	// for the same reason as before
-	EmitJump(((m_CompilePC - 8) & 0xf0000000) | (data.addr << 2));
+	// we have to go back 1 instruction (4 bytes) to go back to the address of the delay slot
+	EmitJump(((m_CompilePC - 4) & 0xf0000000) | (data.addr << 2));
 	EmitBranchDelay();
 }
 
@@ -498,4 +497,10 @@ void JitX64::SRA(InstructionData& data) {
 	EmitLoadRegister(s1, R32, data.rt);						// s1 <- rt
 	cc.sar(s1.r32(), data.sa);								// s1 >> sa (arithmetic)
 	EmitStoreRegister(R64, data.rd, s1.r32(), true);		// rd <- s1
+}
+
+void JitX64::J(InstructionData& data) {
+	// m_CompilePC is after the branch delay slot so we have to subtract 4
+	EmitJump(((m_CompilePC - 4) & 0xf0000000) | (data.addr << 2));
+	EmitBranchDelay();
 }

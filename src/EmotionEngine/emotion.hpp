@@ -210,6 +210,7 @@ namespace EmotionEngine {
 			virtual void MULs(InstructionData& data) = 0;
 			virtual void BGEZ(InstructionData& data) = 0;
 			virtual void SRA(InstructionData& data) = 0;
+			virtual void J(InstructionData& data) = 0;
 
 		protected:
 			/// @brief Converts a virtual address to a physical address at compile-time.
