@@ -46,7 +46,7 @@ namespace EmotionEngine::Graphics {
 	class GIF {
 	public:
 		void SetGS(GraphicsSynthesizer::GS* gs) {
-			m_GS = gs;
+			m_GS = gs;	
 		}
 
 		void Reset();
@@ -54,7 +54,7 @@ namespace EmotionEngine::Graphics {
 		void ReceivePath1(u128 qword);
 		void ReceivePath2(u128 qword);
 		void ReceivePath3(u128 qword);
-		void ProcessTag();
+		void ProcessQword();
 
 	private:
 		ActivePath m_ActivePath;

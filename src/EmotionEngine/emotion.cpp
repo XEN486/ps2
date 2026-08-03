@@ -30,7 +30,7 @@ size_t EE::RunOnce() {
 	// tick dmac every other cycle
 	for (size_t i = 0; i < (block.instructions / 2); i++) {
 		m_DMAC.Tick();
-		m_GIF.ProcessTag();
+		m_GIF.ProcessQword();
 	}
 
 	return block.instructions;

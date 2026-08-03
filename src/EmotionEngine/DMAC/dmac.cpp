@@ -189,7 +189,6 @@ void DMAC::DoTransfer() {
 			u64 hi = Memory::ReadMemory64(address + 8);
 			u128 qword = ((u128)hi << 64) | lo;
 
-			debug_log("transfer {:016x}{:016x} -> {:08x} ({} left)", hi, lo, address, m_TransferChannel->qwc);
 			m_GIF->ReceivePath3(qword);
 
 			break;

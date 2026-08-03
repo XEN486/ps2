@@ -28,7 +28,7 @@ void GIF::ReceivePath3(u128 qword) {
 	m_Path3Fifo.push(qword);
 }
 
-void GIF::ProcessTag() {
+void GIF::ProcessQword() {
 	// try find a path to activate
 	if (m_ActivePath == ActivePath::None) {
 		// path1
