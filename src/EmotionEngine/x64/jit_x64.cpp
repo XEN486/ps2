@@ -5,9 +5,13 @@ using namespace EmotionEngine::Core;
 using namespace asmjit;
 
 static void WRAP_WriteVirtualMemory64(EmotionEngine::Memory* mem, u32 addr, u64 val) { mem->WriteVirtualMemory64(addr, val); }
-static void WRAP_WriteVirtualMemory32(EmotionEngine::Memory* mem, u32 addr, u64 val) { mem->WriteVirtualMemory32(addr, val); }
+static void WRAP_WriteVirtualMemory32(EmotionEngine::Memory* mem, u32 addr, u32 val) { mem->WriteVirtualMemory32(addr, val); }
+static void WRAP_WriteVirtualMemory16(EmotionEngine::Memory* mem, u32 addr, u16 val) { mem->WriteVirtualMemory16(addr, val); }
+static void WRAP_WriteVirtualMemory8(EmotionEngine::Memory* mem, u32 addr, u8 val) { mem->WriteVirtualMemory8(addr, val); }
 static u64 WRAP_ReadVirtualMemory64(EmotionEngine::Memory* mem, u32 addr) { return mem->ReadVirtualMemory64(addr); }
 static u32 WRAP_ReadVirtualMemory32(EmotionEngine::Memory* mem, u32 addr) { return mem->ReadVirtualMemory32(addr); }
+static u16 WRAP_ReadVirtualMemory16(EmotionEngine::Memory* mem, u32 addr) { return mem->ReadVirtualMemory16(addr); }
+static u8 WRAP_ReadVirtualMemory8(EmotionEngine::Memory* mem, u32 addr) { return mem->ReadVirtualMemory8(addr); }
 
 bool JitX64::InitJit(R5900* cpu, Memory* memory) {
 	if (!JitBackend::InitJit(cpu, memory)) return false;
@@ -349,10 +353,16 @@ void JitX64::EmitReadVirtualMemory16(const asmjit::x86::Gp& ret, const asmjit::x
 		cc.jmp(end);
 	}
 
-	// not in main memory (trap)
+	// not in main memory
 	cc.bind(not_main_memory); {
-		cc.int3();
-		cc.nop();
+		asmjit::InvokeNode* node = EmitExternalCall(
+			reinterpret_cast<uintptr_t>(WRAP_ReadVirtualMemory16),
+			asmjit::FuncSignature::build<u16, Memory*, u32>()
+		);
+
+		node->set_arg(0, m_Memory);
+		node->set_arg(1, address);
+		node->set_ret(0, ret.r16());
 	}
 
 	cc.bind(end);
@@ -372,23 +382,52 @@ void JitX64::EmitWriteVirtualMemory16(const asmjit::x86::Gp& address, const asmj
 		cc.jmp(end);
 	}
 
-	// not in main memory (trap)
+	// not in main memory
 	cc.bind(not_main_memory); {
-		cc.int3();
-		cc.nop();
+		asmjit::InvokeNode* node = EmitExternalCall(
+			reinterpret_cast<uintptr_t>(WRAP_WriteVirtualMemory16),
+			asmjit::FuncSignature::build<void, Memory*, u32, u16>()
+		);
+
+		node->set_arg(0, m_Memory);
+		node->set_arg(1, address);
+		node->set_arg(2, value.r16());
 	}
 
 	cc.bind(end);
 }
 
 void JitX64::EmitReadVirtualMemory16(const asmjit::x86::Gp& ret, u32 address) {
-	assert(address <= RDRAM_LAST_ADDR);
-	cc.mov(ret.r16(), asmjit::x86::word_ptr(reinterpret_cast<uintptr_t>(m_Memory->rdram + address)));
+	if (address <= RDRAM_LAST_ADDR) {
+		cc.mov(ret.r16(), asmjit::x86::word_ptr(reinterpret_cast<uintptr_t>(m_Memory->rdram + address)));
+		return;
+	}
+
+	asmjit::InvokeNode* node = EmitExternalCall(
+		reinterpret_cast<uintptr_t>(WRAP_ReadVirtualMemory16),
+		asmjit::FuncSignature::build<u16, Memory*, u32>()
+	);
+
+	node->set_arg(0, m_Memory);
+	node->set_arg(1, address);
+	node->set_ret(0, ret.r16());
 }
 
 void JitX64::EmitWriteVirtualMemory16(u32 address, const asmjit::x86::Gp& value) {
-	assert(address <= RDRAM_LAST_ADDR);
-	cc.mov(asmjit::x86::word_ptr(reinterpret_cast<uintptr_t>(m_Memory->rdram + address)), value.r16());
+	// optimization: read from main memory without calling external function
+	if (address <= RDRAM_LAST_ADDR) {
+		cc.mov(asmjit::x86::word_ptr(reinterpret_cast<uintptr_t>(m_Memory->rdram + address)), value.r16());
+		return;
+	}
+
+	asmjit::InvokeNode* node = EmitExternalCall(
+		reinterpret_cast<uintptr_t>(WRAP_WriteVirtualMemory16),
+		asmjit::FuncSignature::build<void, Memory*, u32, u16>()
+	);
+
+	node->set_arg(0, m_Memory);
+	node->set_arg(1, address);
+	node->set_arg(2, value.r16());
 }
 
 void JitX64::EmitReadVirtualMemory8(const asmjit::x86::Gp& ret, const asmjit::x86::Gp& address) {
@@ -405,10 +444,16 @@ void JitX64::EmitReadVirtualMemory8(const asmjit::x86::Gp& ret, const asmjit::x8
 		cc.jmp(end);
 	}
 
-	// not in main memory (trap)
+	// not in main memory
 	cc.bind(not_main_memory); {
-		cc.int3();
-		cc.nop();
+		asmjit::InvokeNode* node = EmitExternalCall(
+			reinterpret_cast<uintptr_t>(WRAP_ReadVirtualMemory8),
+			asmjit::FuncSignature::build<u8, Memory*, u32>()
+		);
+
+		node->set_arg(0, m_Memory);
+		node->set_arg(1, address);
+		node->set_ret(0, ret.r8());
 	}
 
 	cc.bind(end);
@@ -428,23 +473,52 @@ void JitX64::EmitWriteVirtualMemory8(const asmjit::x86::Gp& address, const asmji
 		cc.jmp(end);
 	}
 
-	// not in main memory (trap)
+	// not in main memory
 	cc.bind(not_main_memory); {
-		cc.int3();
-		cc.nop();
+		asmjit::InvokeNode* node = EmitExternalCall(
+			reinterpret_cast<uintptr_t>(WRAP_WriteVirtualMemory8),
+			asmjit::FuncSignature::build<void, Memory*, u32, u8>()
+		);
+
+		node->set_arg(0, m_Memory);
+		node->set_arg(1, address);
+		node->set_arg(2, value.r8());
 	}
 
 	cc.bind(end);
 }
 
 void JitX64::EmitReadVirtualMemory8(const asmjit::x86::Gp& ret, u32 address) {
-	assert(address <= RDRAM_LAST_ADDR);
-	cc.mov(ret.r8(), asmjit::x86::byte_ptr(reinterpret_cast<uintptr_t>(m_Memory->rdram + address)));
+	if (address <= RDRAM_LAST_ADDR) {
+		cc.mov(ret.r8(), asmjit::x86::byte_ptr(reinterpret_cast<uintptr_t>(m_Memory->rdram + address)));
+		return;
+	}
+
+	asmjit::InvokeNode* node = EmitExternalCall(
+		reinterpret_cast<uintptr_t>(WRAP_ReadVirtualMemory8),
+		asmjit::FuncSignature::build<u8, Memory*, u32>()
+	);
+
+	node->set_arg(0, m_Memory);
+	node->set_arg(1, address);
+	node->set_ret(0, ret.r8());
 }
 
 void JitX64::EmitWriteVirtualMemory8(u32 address, const asmjit::x86::Gp& value) {
-	assert(address <= RDRAM_LAST_ADDR);
-	cc.mov(asmjit::x86::byte_ptr(reinterpret_cast<uintptr_t>(m_Memory->rdram + address)), value.r8());
+	// optimization: read from main memory without calling external function
+	if (address <= RDRAM_LAST_ADDR) {
+		cc.mov(asmjit::x86::byte_ptr(reinterpret_cast<uintptr_t>(m_Memory->rdram + address)), value.r8());
+		return;
+	}
+
+	asmjit::InvokeNode* node = EmitExternalCall(
+		reinterpret_cast<uintptr_t>(WRAP_WriteVirtualMemory8),
+		asmjit::FuncSignature::build<void, Memory*, u32, u8>()
+	);
+
+	node->set_arg(0, m_Memory);
+	node->set_arg(1, address);
+	node->set_arg(2, value.r8());
 }
 
 void JitX64::EmitStoreSpecialRegister(SpecialRegName dst, const asmjit::x86::Gp& src) {

@@ -238,6 +238,7 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b100100: { data.ptr = &JitBackend::LBU; break; }											// LBU
 		case 0b101000: { data.ptr = &JitBackend::SB; break; }											// SB
 		case 0b001011: { data.ptr = &JitBackend::SLTIU; break; }										// SLTIU
+		case 0b100000: { data.ptr = &JitBackend::LB; break; }											// LB
 
 		// cop1
 		case 0b111001: { data.ptr = &JitBackend::SWC1; break; }											// SWC1

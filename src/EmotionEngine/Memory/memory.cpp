@@ -59,3 +59,23 @@ void Memory::WriteVirtualMemory64(u32 address, u64 dword) {
 	WriteVirtualMemory32(address, dword & 0xffffffff);
 	WriteVirtualMemory32(address + 4, (dword >> 32) & 0xffffffff);
 }
+
+u16 Memory::ReadVirtualMemory16(u32 address) {
+	return ReadVirtualMemory32(address) & 0xffff;
+}
+
+void Memory::WriteVirtualMemory16(u32 address, u16 hword) {
+	error_log("16-bit write");
+	WriteVirtualMemory32(address, hword);
+	exit(1);
+}
+
+u8 Memory::ReadVirtualMemory8(u32 address) {
+	return ReadVirtualMemory32(address) & 0xff;
+}
+
+void Memory::WriteVirtualMemory8(u32 address, u8 byte) {
+	error_log("8-bit write");
+	WriteVirtualMemory32(address, byte);
+	exit(1);
+}

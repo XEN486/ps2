@@ -504,3 +504,13 @@ void JitX64::J(InstructionData& data) {
 	EmitJump(((m_CompilePC - 4) & 0xf0000000) | (data.addr << 2));
 	EmitBranchDelay();
 }
+
+void JitX64::LB(InstructionData& data) {
+	// base = rs
+	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
+	if (data.imm) cc.add(s1.r32(), (i32)(i16)data.imm);		// vaddr += (i16)imm
+	
+	EmitReadVirtualMemory8(s2.r8(), s1);					// s2 <- [vaddr]
+	cc.movsx(s2.r32(), s2.r8());							// s2.r32 <- sign_extend(s2.r8)
+	EmitStoreRegister(R64, data.rt, s2.r32(), true);		// rt <- s2
+}

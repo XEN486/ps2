@@ -73,6 +73,7 @@ namespace EmotionEngine::Core {
 		void BGEZ(InstructionData& data) override;
 		void SRA(InstructionData& data) override;
 		void J(InstructionData& data) override;
+		void LB(InstructionData& data) override;
 
 	private:
 		asmjit::InvokeNode* EmitExternalCall(uintptr_t address, const asmjit::FuncSignature& sig);

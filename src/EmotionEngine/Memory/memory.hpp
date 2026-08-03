@@ -44,8 +44,28 @@ namespace EmotionEngine {
 
 		/// @brief Writes a 32-bit value to the specified address
 		/// @param address Address to write to.
-		/// @param dword Value to write.
+		/// @param word Value to write.
 		void WriteVirtualMemory32(u32 address, u32 word);
+
+		/// @brief Reads a 16-bit value from the specified address
+		/// @param address Address to read from.
+		/// @return Value at the address.
+		u16 ReadVirtualMemory16(u32 address);
+
+		/// @brief Writes a 16-bit value to the specified address
+		/// @param address Address to write to.
+		/// @param hword Value to write.
+		void WriteVirtualMemory16(u32 address, u16 hword);
+
+		/// @brief Reads a 8-bit value from the specified address
+		/// @param address Address to read from.
+		/// @return Value at the address.
+		u8 ReadVirtualMemory8(u32 address);
+
+		/// @brief Writes a 8-bit value to the specified address
+		/// @param address Address to write to.
+		/// @param byte Value to write.
+		void WriteVirtualMemory8(u32 address, u8 byte);
 
 		/// @brief Releases the resources used by the memory map. Called by EmotionEngine::EE::Reset();
 		void Release() {
@@ -60,6 +80,5 @@ namespace EmotionEngine {
 		bool m_ExposeBootROM;
 	};
 }
-
 
 #endif

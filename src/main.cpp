@@ -23,8 +23,8 @@ int main(int argc, char** argv) {
 
 #ifndef ENABLE_DEBUGGER
 	ElfFile elf(argv[1]);
-#else`
-	ElfFile elf("demo2a.elf");
+#else
+	ElfFile elf("3stars.elf");
 #endif
 	cpu.GetR5900().pc = elf.LoadElf(&cpu.GetMemory());
 

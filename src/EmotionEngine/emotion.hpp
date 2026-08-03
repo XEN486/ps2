@@ -212,6 +212,7 @@ namespace EmotionEngine {
 			virtual void BGEZ(InstructionData& data) = 0;
 			virtual void SRA(InstructionData& data) = 0;
 			virtual void J(InstructionData& data) = 0;
+			virtual void LB(InstructionData& data) = 0;
 
 		protected:
 			R5900* m_R5900;
