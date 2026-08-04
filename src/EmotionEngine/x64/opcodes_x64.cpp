@@ -115,7 +115,7 @@ void JitX64::LW(InstructionData& data) {
 	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
 	if (data.imm) cc.add(s1.r32(), (i32)(i16)data.imm);		// vaddr += (i16)imm
 	
-	EmitReadVirtualMemory<u32>(s2.r32(), s1);					// s2 <- [vaddr]
+	EmitReadVirtualMemory<u32>(s2.r32(), s1);				// s2 <- [vaddr]
 	EmitStoreRegister(R64, data.rt, s2.r32(), true);		// rt <- data
 }
 
@@ -125,7 +125,7 @@ void JitX64::SD(InstructionData& data) {
 	if (data.imm) cc.add(s1.r32(), (i32)(i16)data.imm);		// vaddr += (i16)imm
 	
 	EmitLoadRegister(s2, R64, data.rt);						// s2 <- rt
-	EmitWriteVirtualMemory<u64>(s1, s2);						// [vaddr] <- rt
+	EmitWriteVirtualMemory<u64>(s1, s2);					// [vaddr] <- rt
 }
 
 void JitX64::SW(InstructionData& data) {
@@ -134,7 +134,7 @@ void JitX64::SW(InstructionData& data) {
 	if (data.imm) cc.add(s1.r32(), (i32)(i16)data.imm);		// vaddr += (i16)imm
 	
 	EmitLoadRegister(s2, R32, data.rt);						// s2 <- rt
-	EmitWriteVirtualMemory<u32>(s1, s2.r32());					// [vaddr] <- rt
+	EmitWriteVirtualMemory<u32>(s1, s2.r32());				// [vaddr] <- rt
 }
 
 void JitX64::MULT(InstructionData& data) {
@@ -412,7 +412,7 @@ void JitX64::LWC1(InstructionData& data) {
 	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
 	if (data.imm) cc.add(s1.r32(), (i16)data.imm);			// vaddr += (i16)imm
 
-	EmitReadVirtualMemory<u32>(s2.r32(), s1);					// s2 <- [vaddr]
+	EmitReadVirtualMemory<u32>(s2.r32(), s1);				// s2 <- [vaddr]
 	EmitStoreFPR(data.rt, s2.r32());						// ft <- s2
 }
 
@@ -515,16 +515,16 @@ void JitX64::JALR(InstructionData& data) {
 	// PC at this point is AFTER the branch delay slot so we can store the current PC to rd
 	EmitStoreRegister(R64, data.rd, m_CompilePC, false);
 
-	EmitLoadRegister(s1, R32, data.rs);	// s1 <- rs
-	EmitJump(s1);						// pc <- s1
+	EmitLoadRegister(s1, R32, data.rs);						// s1 <- rs
+	EmitJump(s1);											// pc <- s1
 	EmitBranchDelay();
 }
 
 void JitX64::DSUBU(InstructionData& data) {
-	EmitLoadRegister(s1, R64, data.rs);					// s1 <- rs
-	EmitLoadRegister(s2, R64, data.rt);					// s2 <- rt
-	cc.sub(s1, s2);										// s1 -= s2
-	EmitStoreRegister(R64, data.rd, s1.r64(), false);	// rd <- s1
+	EmitLoadRegister(s1, R64, data.rs);						// s1 <- rs
+	EmitLoadRegister(s2, R64, data.rt);						// s2 <- rt
+	cc.sub(s1, s2);											// s1 -= s2
+	EmitStoreRegister(R64, data.rd, s1.r64(), false);		// rd <- s1
 }
 
 void JitX64::NOR(InstructionData& data) {
