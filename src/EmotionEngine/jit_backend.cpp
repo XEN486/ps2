@@ -134,6 +134,7 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 	data.likely = false;
 	DecodeOp(data, instruction);
 
+	u32 pc = m_CompilePC - 4;
 	u8 op = (instruction >> 26) & 0b111111;
 	switch (op) {
 		// SPECIAL
@@ -156,6 +157,8 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				case 0b000011: { data.ptr = &JitBackend::SRA; break; }									// SRA
 				case 0b101111: { data.ptr = &JitBackend::DSUBU; break; }								// DSUBU
 				case 0b100111: { data.ptr = &JitBackend::NOR; break; }									// NOR
+				case 0b011001: { data.ptr = &JitBackend::MULTU; break; }								// MULTU
+				case 0b111111: { data.ptr = &JitBackend::DSRA32; break; }								// DSRA32
 
 				// system call (HLE for now)
 				case 0b001100: { data.ptr = &JitBackend::SYSCALL; data.type = InstructionType::Syscall; break; }
@@ -168,7 +171,7 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				case 0b001001: { data.ptr = &JitBackend::JALR; data.type = InstructionType::Branch; break; }
 
 				default: {
-					error_log("unknown special opcode {:06b} {:08x}", data.funct, instruction);
+					error_log("unknown special opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, pc);
 					exit(1);
 				}
 			}
@@ -183,7 +186,38 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				case 0b00001: { data.ptr = &JitBackend::BGEZ; break; }									// BGEZ
 
 				default: {
-					error_log("unknown regimm opcode {:05b} {:08x}", data.rt, instruction);
+					error_log("unknown regimm opcode {:05b} {:08x} @ {:08x}", data.rt, instruction, pc);
+					exit(1);
+				}
+			}
+			break;
+		}
+
+		// COP0
+		case 0b010000: {
+			switch (data.funct) {
+				case 0b000000: {
+					// low 11-bit == 0 -> mtc0/mfc0
+					if ((instruction & 0x7ff) == 0) {
+						switch (data.rs) {
+							case 0b00100: { data.ptr = &JitBackend::MTC0; break; }						// MTC0
+							case 0b00000: { data.ptr = &JitBackend::MFC0; break; }						// MFC0
+							
+							default: {
+								error_log("unknown cop0 opcode with lo 11-bits == 0 {:05b} {:08x} @ {:08x}", data.rs, instruction, pc);
+								exit(1);
+							}
+						}
+					}
+					
+					break;
+				}
+
+				case 0b111000: { data.ptr = &JitBackend::EI; break; }
+				case 0b000010: { data.ptr = &JitBackend::TLBWI; break; }
+
+				default: {
+					error_log("unknown cop0 opcode {:06b} {:08x}", data.funct, instruction);
 					exit(1);
 				}
 			}
@@ -201,7 +235,7 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 							case 0b00000: { data.ptr = &JitBackend::MFC1; break; }						// MFC1
 							
 							default: {
-								error_log("unknown opcode with lo 11-bits == 0 {:05b} {:08x}", data.rs, instruction);
+								error_log("unknown cop1 opcode with lo 11-bits == 0 {:05b} {:08x} @ {:08x}", data.rs, instruction, pc);
 								exit(1);
 							}
 						}
@@ -229,7 +263,6 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b001111: { data.ptr = &JitBackend::LUI; break; }											// LUI
 		case 0b001001: { data.ptr = &JitBackend::ADDIU; break; }										// ADDIU
 		case 0b011111: { data.ptr = &JitBackend::SQ; break; }											// SQ
-		case 0b010000: { data.ptr = &JitBackend::EI; break; }											// EI
 		case 0b100011: { data.ptr = &JitBackend::LW; break; }											// LW
 		case 0b111111: { data.ptr = &JitBackend::SD; break; }											// SD
 		case 0b101011: { data.ptr = &JitBackend::SW; break; }											// SW
@@ -242,6 +275,7 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b101000: { data.ptr = &JitBackend::SB; break; }											// SB
 		case 0b001011: { data.ptr = &JitBackend::SLTIU; break; }										// SLTIU
 		case 0b100000: { data.ptr = &JitBackend::LB; break; }											// LB
+		case 0b001010: { data.ptr = &JitBackend::SLTI; break; }											// SLTI
 
 		// cop1
 		case 0b111001: { data.ptr = &JitBackend::SWC1; break; }											// SWC1
@@ -272,7 +306,7 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b000011: { data.ptr = &JitBackend::JAL; data.type = InstructionType::Branch; break; }		// JAL
 
 		default: {
-			error_log("unknown opcode {:06b} {:08x}", op, instruction);
+			error_log("unknown opcode {:06b} {:08x} @ {:08x}", op, instruction, pc);
 			exit(1);
 		}
 	}

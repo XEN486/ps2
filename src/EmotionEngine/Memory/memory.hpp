@@ -27,7 +27,10 @@ namespace EmotionEngine {
 			m_JitBackend = backend;
 			m_DMAC = dmac;
 			m_GS = gs;
+			
+			scratchpad = static_cast<u8*>(calloc(1, 0x4000)); // 4KiB
 			rdram = static_cast<u8*>(calloc(1, 0x2000000)); // 32MiB
+			bios = static_cast<u8*>(calloc(1, 0x400000)); // 4MiB
 		}
 
 		/// @brief Reads a 64-bit value from the specified address
@@ -73,9 +76,14 @@ namespace EmotionEngine {
 		/// @brief Releases the resources used by the memory map. Called by EmotionEngine::EE::Reset();
 		void Release() {
 			free(rdram);
+			free(bios);
 		}
 
+		void LoadBIOS(std::filesystem::path path);
+
 		u8* rdram;
+		u8* scratchpad;
+		u8* bios;
 
 	private:
 		Core::JitBackend* m_JitBackend;

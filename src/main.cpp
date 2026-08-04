@@ -5,29 +5,22 @@
 #include "GraphicsSynthesizer/gs.hpp"
 #include "elf.hpp"
 
-//#define ENABLE_DEBUGGER
-
 int main(int argc, char** argv) {
-#ifndef ENABLE_DEBUGGER
-	if (argc < 2) {
-		std::println(stderr, "usage: {} [elf file]", argv[0]);
-		return 1;
-	}
-#endif
+	//if (argc < 2) {
+	//	std::println(stderr, "usage: {} [bios bin]", argv[0]);
+	//	return 1;
+	//}
 
 	GraphicsSynthesizer::GS gs;
 	EmotionEngine::Core::JitX64 backend;
 	EmotionEngine::EE cpu(&backend, &gs);
 
 	cpu.Reset();
+	cpu.GetMemory().LoadBIOS("scph39001.bin");
 
-#ifndef ENABLE_DEBUGGER
-	ElfFile elf(argv[1]);
-#else
-	ElfFile elf("3stars.elf");
-#endif
-	cpu.GetR5900().pc = elf.LoadElf(&cpu.GetMemory());
-
+	//ElfFile elf("demo1.elf");
+	//cpu.GetR5900().pc = elf.LoadElf(cpu.GetMemory());
+	
 	while (true) {
 		cpu.RunOnce();
 	}

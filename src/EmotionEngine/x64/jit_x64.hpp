@@ -77,9 +77,18 @@ namespace EmotionEngine::Core {
 		void JALR(InstructionData& data) override;
 		void DSUBU(InstructionData& data) override;
 		void NOR(InstructionData& data) override;
+		void MULTU(InstructionData& data) override;
+		void MTC0(InstructionData& data) override;
+		void MFC0(InstructionData& data) override;
+		void SLTI(InstructionData& data) override;
+		void TLBWI(InstructionData& data) override;
+		void DSRA32(InstructionData& data) override;
 
 	private:
 		asmjit::InvokeNode* EmitExternalCall(uintptr_t address, const asmjit::FuncSignature& sig);
+
+		template <typename Size, typename T> void EmitReadVirtualMemory(const asmjit::x86::Gp& ret, T address);
+		template <typename Size, typename T> void EmitWriteVirtualMemory(T address, const asmjit::x86::Gp& value);
 
 		void EmitLoadRegister128(asmjit::x86::Vec& reg, u8 index);
 		void EmitStoreRegister128(u8 index, asmjit::x86::Vec& reg);
@@ -87,35 +96,9 @@ namespace EmotionEngine::Core {
 		void EmitReadVirtualMemory128(asmjit::x86::Vec& ret, const asmjit::x86::Gp& address);
 		void EmitWriteVirtualMemory128(const asmjit::x86::Gp& address, asmjit::x86::Vec& val);
 
-		void EmitReadVirtualMemory64(const asmjit::x86::Gp& ret, const asmjit::x86::Gp& address);
-		void EmitWriteVirtualMemory64(const asmjit::x86::Gp& address, const asmjit::x86::Gp& value);
-
-		void EmitReadVirtualMemory64(const asmjit::x86::Gp& ret, u32 address);
-		void EmitWriteVirtualMemory64(u32 address, const asmjit::x86::Gp& value);
-		
-		void EmitReadVirtualMemory32(const asmjit::x86::Gp& ret, const asmjit::x86::Gp& address);
-		void EmitWriteVirtualMemory32(const asmjit::x86::Gp& address, const asmjit::x86::Gp& value);
-
-		void EmitReadVirtualMemory32(const asmjit::x86::Gp& ret, u32 address);
-		void EmitWriteVirtualMemory32(u32 address, const asmjit::x86::Gp& value);
-
-		void EmitReadVirtualMemory16(const asmjit::x86::Gp& ret, const asmjit::x86::Gp& address);
-		void EmitWriteVirtualMemory16(const asmjit::x86::Gp& address, const asmjit::x86::Gp& value);
-
-		void EmitReadVirtualMemory16(const asmjit::x86::Gp& ret, u32 address);
-		void EmitWriteVirtualMemory16(u32 address, const asmjit::x86::Gp& value);
-
-		void EmitReadVirtualMemory8(const asmjit::x86::Gp& ret, const asmjit::x86::Gp& address);
-		void EmitWriteVirtualMemory8(const asmjit::x86::Gp& address, const asmjit::x86::Gp& value);
-
-		void EmitReadVirtualMemory8(const asmjit::x86::Gp& ret, u32 address);
-		void EmitWriteVirtualMemory8(u32 address, const asmjit::x86::Gp& value);
-
 		template <typename T> constexpr void EmitLoadRegister(T reg, RegisterSize size, u8 index);
 		template <typename T> constexpr void EmitStoreRegister(RegisterSize size, u8 index, T reg, bool sign_extend);
 		template <typename T> void EmitJump(T address);
-
-		void EmitWrite32To64Preserved(const asmjit::x86::Gp& dst, const asmjit::x86::Gp& src);
 
 		void EmitStoreSpecialRegister(SpecialRegName dst, const asmjit::x86::Gp& src);
 

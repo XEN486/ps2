@@ -2,3 +2,4 @@ build/
 html/
 *.log
 *.elf
+*.bin

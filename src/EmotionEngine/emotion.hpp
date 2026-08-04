@@ -54,6 +54,20 @@ namespace EmotionEngine {
 			LO1,
 		};
 
+		/// @brief The EmotionEngine's System Control Coprocessor
+		struct Cop0 {
+			u32 index;		// $0: Index that specifies TLB entry for reading or writing
+			u32 entrylo0;	// $2: Lower part of the TLB entry 0
+			u32 entrylo1;	// $2: Lower part of the TLB entry 1
+			u32 pagemask;	// $5: Page size comparison mask
+			u32 count;		// $9: Timer count value
+			u32 entryhi;	// $10: Upper parts of a TLB entry
+			u32 compare;	// $11: Timer stable value
+			u32 status;		// $12: COP0 Status
+			u32 prid;		// $15: Processor Revision Identifier
+			u32 config;		// $16: Processor Configuration
+		};
+
 		/// @brief The EmotionEngine's MIPS CPU core.
 		/// This contains the state of both the CPU core itself, aswell as COP1.
 		struct R5900 {
@@ -66,6 +80,9 @@ namespace EmotionEngine {
 			u64 hi1;
 			u64 lo1;
 
+			// cop0
+			Cop0 cop0;
+
 			// cop1 registers
 			float fpr[32];
 			u32 fcr[32];
@@ -74,6 +91,9 @@ namespace EmotionEngine {
 			// stuff for jit
 			u32 pc;
 			u32 next_pc;
+
+			u32 ReadCOP0(u8 reg);
+			void WriteCOP0(u8 reg, u32 val);
 		};
 
 
@@ -216,6 +236,12 @@ namespace EmotionEngine {
 			virtual void JALR(InstructionData& data) = 0;
 			virtual void DSUBU(InstructionData& data) = 0;
 			virtual void NOR(InstructionData& data) = 0;
+			virtual void MULTU(InstructionData& data) = 0;
+			virtual void MTC0(InstructionData& data) = 0;
+			virtual void MFC0(InstructionData& data) = 0;
+			virtual void SLTI(InstructionData& data) = 0;
+			virtual void TLBWI(InstructionData& data) = 0;
+			virtual void DSRA32(InstructionData& data) = 0;
 
 		protected:
 			R5900* m_R5900;

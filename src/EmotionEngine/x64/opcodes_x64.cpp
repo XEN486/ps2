@@ -1,8 +1,10 @@
 #include "jit_x64.hpp"
-#include "../../HLE/bios.hpp"
 
 using namespace EmotionEngine::Core;
 using namespace asmjit;
+
+static u32 WRAP_ReadCOP0(EmotionEngine::Core::R5900* r5900, u8 reg) { return r5900->ReadCOP0(reg); }
+static void WRAP_WriteCOP0(EmotionEngine::Core::R5900* r5900, u8 reg, u32 val) { r5900->WriteCOP0(reg, val); }
 
 void JitX64::LUI(InstructionData& data) {
 	u32 shifted = data.imm << 16;
@@ -92,13 +94,8 @@ void JitX64::DADDU(InstructionData& data) {
 }
 
 void JitX64::SYSCALL(InstructionData& data) {
-	// TODO: LLE emulation of BIOS
-	InvokeNode* node = EmitExternalCall(
-		reinterpret_cast<uintptr_t>(&HLE::BIOS::EESysCall),
-		FuncSignature::build<void, R5900*>()
-	);
-
-	node->set_arg(0, m_R5900);
+	error_log("syscall unimplemented");
+	exit(1);
 }
 
 void JitX64::JR(InstructionData& data) {
@@ -118,7 +115,7 @@ void JitX64::LW(InstructionData& data) {
 	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
 	if (data.imm) cc.add(s1.r32(), (i32)(i16)data.imm);		// vaddr += (i16)imm
 	
-	EmitReadVirtualMemory32(s2.r32(), s1);					// s2 <- [vaddr]
+	EmitReadVirtualMemory<u32>(s2.r32(), s1);					// s2 <- [vaddr]
 	EmitStoreRegister(R64, data.rt, s2.r32(), true);		// rt <- data
 }
 
@@ -128,7 +125,7 @@ void JitX64::SD(InstructionData& data) {
 	if (data.imm) cc.add(s1.r32(), (i32)(i16)data.imm);		// vaddr += (i16)imm
 	
 	EmitLoadRegister(s2, R64, data.rt);						// s2 <- rt
-	EmitWriteVirtualMemory64(s1, s2);						// [vaddr] <- rt
+	EmitWriteVirtualMemory<u64>(s1, s2);						// [vaddr] <- rt
 }
 
 void JitX64::SW(InstructionData& data) {
@@ -137,7 +134,7 @@ void JitX64::SW(InstructionData& data) {
 	if (data.imm) cc.add(s1.r32(), (i32)(i16)data.imm);		// vaddr += (i16)imm
 	
 	EmitLoadRegister(s2, R32, data.rt);						// s2 <- rt
-	EmitWriteVirtualMemory32(s1, s2.r32());					// [vaddr] <- rt
+	EmitWriteVirtualMemory<u32>(s1, s2.r32());					// [vaddr] <- rt
 }
 
 void JitX64::MULT(InstructionData& data) {
@@ -183,7 +180,7 @@ void JitX64::LHU(InstructionData& data) {
 	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
 	if (data.imm) cc.add(s1.r32(), (i32)(i16)data.imm);		// vaddr += (i16)imm
 	
-	EmitReadVirtualMemory16(s2.r16(), s1);					// s2 <- [vaddr]
+	EmitReadVirtualMemory<u16>(s2.r16(), s1);				// s2 <- [vaddr]
 	EmitStoreRegister(R64, data.rt, s2, false);				// rt <- data
 }
 
@@ -193,7 +190,7 @@ void JitX64::SH(InstructionData& data) {
 	if (data.imm) cc.add(s1.r32(), (i32)(i16)data.imm);		// vaddr += (i16)imm
 	
 	EmitLoadRegister(s2.r16(), R16, data.rt);				// s2 <- rt
-	EmitWriteVirtualMemory16(s1, s2);						// [vaddr] <- rt
+	EmitWriteVirtualMemory<u16>(s1, s2.r16());				// [vaddr] <- rt
 }
 
 void JitX64::ORI(InstructionData& data) {
@@ -218,7 +215,7 @@ void JitX64::LD(InstructionData& data) {
 	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
 	if (data.imm) cc.add(s1.r32(), (i32)(i16)data.imm);		// vaddr += (i16)imm
 	
-	EmitReadVirtualMemory64(s2, s1);						// s2 <- [vaddr]
+	EmitReadVirtualMemory<u64>(s2, s1);						// s2 <- [vaddr]
 	EmitStoreRegister(R64, data.rt, s2, false);				// rt <- data
 }
 
@@ -239,7 +236,7 @@ void JitX64::LBU(InstructionData& data) {
 	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
 	if (data.imm) cc.add(s1.r32(), (i32)(i16)data.imm);		// vaddr += (i16)imm
 	
-	EmitReadVirtualMemory8(s2.r8(), s1);					// s2 <- [vaddr]
+	EmitReadVirtualMemory<u8>(s2.r8(), s1);					// s2 <- [vaddr]
 	EmitStoreRegister(R64, data.rt, s2, false);				// rt <- data
 }
 
@@ -305,7 +302,7 @@ void JitX64::SB(InstructionData& data) {
 	if (data.imm) cc.add(s1.r32(), (i32)(i16)data.imm);		// vaddr += (i16)imm
 	
 	EmitLoadRegister(s2, R8, data.rt);						// s2 <- rt
-	EmitWriteVirtualMemory8(s1, s2.r8());					// [vaddr] <- rt
+	EmitWriteVirtualMemory<u8>(s1, s2.r8());				// [vaddr] <- rt
 }
 
 void JitX64::SWC1(InstructionData& data) {
@@ -314,7 +311,7 @@ void JitX64::SWC1(InstructionData& data) {
 	if (data.imm) cc.add(s1.r32(), (i16)data.imm);			// vaddr += (i16)imm
 
 	EmitLoadFPR(s2.r32(), data.rt);							// s2 <- ft
-	EmitWriteVirtualMemory32(s1, s2.r32());					// [vaddr] <- rt
+	EmitWriteVirtualMemory<u32>(s1, s2.r32());				// [vaddr] <- rt
 }
 
 void JitX64::SLTIU(InstructionData& data) {
@@ -415,7 +412,7 @@ void JitX64::LWC1(InstructionData& data) {
 	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
 	if (data.imm) cc.add(s1.r32(), (i16)data.imm);			// vaddr += (i16)imm
 
-	EmitReadVirtualMemory32(s2.r32(), s1);					// s2 <- [vaddr]
+	EmitReadVirtualMemory<u32>(s2.r32(), s1);					// s2 <- [vaddr]
 	EmitStoreFPR(data.rt, s2.r32());						// ft <- s2
 }
 
@@ -509,7 +506,7 @@ void JitX64::LB(InstructionData& data) {
 	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
 	if (data.imm) cc.add(s1.r32(), (i32)(i16)data.imm);		// vaddr += (i16)imm
 	
-	EmitReadVirtualMemory8(s2.r8(), s1);					// s2 <- [vaddr]
+	EmitReadVirtualMemory<u8>(s2.r8(), s1);					// s2 <- [vaddr]
 	cc.movsx(s2.r32(), s2.r8());							// s2.r32 <- sign_extend(s2.r8)
 	EmitStoreRegister(R64, data.rt, s2.r32(), true);		// rt <- s2
 }
@@ -535,5 +532,86 @@ void JitX64::NOR(InstructionData& data) {
 	EmitLoadRegister(s2, R64, data.rt);						// s2 <- rt
 	cc.or_(s1, s2);											// s1 |= s2
 	cc.not_(s1);											// s1 = ~s1
+	EmitStoreRegister(R64, data.rd, s1, false);				// rd <- s1
+}
+
+void JitX64::MULTU(InstructionData& data) {
+	EmitLoadRegister(s1, R32, data.rs);						// s1 <- rs
+	EmitLoadRegister(s2, R32, data.rt);						// s2 <- rt
+
+	cc.push(x86::rax);										// rs and low result
+	cc.push(x86::rbx);										// r5900 could be overwritten so we save it here
+	cc.push(x86::rcx);										// rt
+	cc.push(x86::rdx);										// high result
+
+	cc.mov(x86::rbx, r5900);								// save r5900 as if it was in rax, rcx or rdx it would get corrupted
+
+	cc.mov(x86::eax, s1.r32());								// eax <- s1
+	cc.mov(x86::ecx, s2.r32());								// ecx <- s2
+
+	// cc.mul() AND cc.emit() dont support implicit form
+	cc.embed_uint16(0xe1f7);								// mul ecx (edx:eax = eax * ecx)
+
+	cc.movsxd(x86::rax, x86::eax);							// rax <- sign_extend(eax)
+	cc.movsxd(x86::rdx, x86::edx);							// rdx <- sign_extend(edx)
+
+	// store result
+	cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, hi)), x86::rdx);
+	cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, lo)), x86::rax);
+
+	// restore registers
+	cc.pop(x86::rdx);
+	cc.pop(x86::rcx);
+	cc.pop(x86::rbx);
+	cc.pop(x86::rax);
+}
+
+void JitX64::MTC0(InstructionData& data) {
+	// TODO: LLE emulation of BIOS
+	InvokeNode* node = EmitExternalCall(
+		reinterpret_cast<uintptr_t>(&WRAP_WriteCOP0),
+		FuncSignature::build<void, R5900*, u8, u32>()
+	);
+
+	EmitLoadRegister(s1.r32(), R32, data.rt);
+	node->set_arg(0, m_R5900);
+	node->set_arg(1, data.rd);
+	node->set_arg(2, s1.r32());
+}
+
+void JitX64::MFC0(InstructionData& data) {
+	// TODO: LLE emulation of BIOS
+	InvokeNode* node = EmitExternalCall(
+		reinterpret_cast<uintptr_t>(&WRAP_ReadCOP0),
+		FuncSignature::build<u32, R5900*, u8>()
+	);
+
+	node->set_arg(0, m_R5900);
+	node->set_arg(1, data.rd);
+	node->set_ret(0, s1.r32());
+
+	EmitStoreRegister(R64, data.rt, s1.r32(), true);
+}
+
+void JitX64::SLTI(InstructionData& data) {
+	// compare rs and imm
+    EmitLoadRegister(s1, R64, data.rs);
+    cc.cmp(s1, (i32)(i16)data.imm);
+
+    // s1 < imm (signed) -> s1 = 1, else s1 = 0
+    cc.setl(s1.r8());
+    cc.movzx(s1, s1.r8()); // zero extend to 64-bit
+
+	// rt <- s1
+    EmitStoreRegister(R64, data.rt, s1, false);
+}
+
+void JitX64::TLBWI(InstructionData& data) {
+	// don't care about TLB emulation
+}
+
+void JitX64::DSRA32(InstructionData& data) {
+	EmitLoadRegister(s1, R64, data.rt);						// s1 <- rt
+	cc.sar(s1, data.sa + 32);								// s1 >> (sa + 32) (arithmetic)
 	EmitStoreRegister(R64, data.rd, s1, false);				// rd <- s1
 }
