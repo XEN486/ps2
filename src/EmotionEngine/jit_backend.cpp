@@ -131,6 +131,7 @@ CompiledBlock& JitBackend::GetOrCompileBlock(u32 pc) {
 inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 	InstructionData data;
 	data.type = InstructionType::Normal;
+	data.pipeline1 = false;
 	data.likely = false;
 	DecodeOp(data, instruction);
 
@@ -159,6 +160,10 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				case 0b100111: { data.ptr = &JitBackend::NOR; break; }									// NOR
 				case 0b011001: { data.ptr = &JitBackend::MULTU; break; }								// MULTU
 				case 0b111111: { data.ptr = &JitBackend::DSRA32; break; }								// DSRA32
+				case 0b010010: { data.ptr = &JitBackend::MFLO; break; }									// MFLO
+				case 0b101010: { data.ptr = &JitBackend::SLT; break; }									// SLT
+				case 0b001011: { data.ptr = &JitBackend::MOVN; break; }									// MOVN
+				case 0b011010: { data.ptr = &JitBackend::DIV; break; }									// DIV
 
 				// system call (HLE for now)
 				case 0b001100: { data.ptr = &JitBackend::SYSCALL; data.type = InstructionType::Syscall; break; }
@@ -251,11 +256,25 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				case 0b000010: { data.ptr = &JitBackend::MULs; break; }									// MUL.s
 
 				default: {
-					error_log("unknown cop1 opcode {:06b} {:08x}", data.funct, instruction);
+					error_log("unknown cop1 opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, pc);
 					exit(1);
 				}
 			}
 
+			break;
+		}
+
+		// MMI
+		case 0b011100: {
+			switch (data.funct) {
+				case 0b011010: { data.ptr = &JitBackend::DIV; data.pipeline1 = true; break; }			// DIV1
+				case 0b010010: { data.ptr = &JitBackend::MFLO; data.pipeline1 = true; break; }			// MFLO1
+				
+				default: {
+					error_log("unknown mmi opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, pc);
+					exit(1);
+				}
+			}
 			break;
 		}
 

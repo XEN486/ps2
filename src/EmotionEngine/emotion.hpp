@@ -139,6 +139,7 @@ namespace EmotionEngine {
 			u32 addr;
 
 			bool likely; // branch likely instruction
+			bool pipeline1; // use logical pipeline 1 (HI1/LO1)
 		};
 
 		/// @brief Base class for the JIT recompiler's backend.
@@ -243,6 +244,10 @@ namespace EmotionEngine {
 			virtual void SLTI(InstructionData& data) = 0;
 			virtual void TLBWI(InstructionData& data) = 0;
 			virtual void DSRA32(InstructionData& data) = 0;
+			virtual void MFLO(InstructionData& data) = 0;
+			virtual void SLT(InstructionData& data) = 0;
+			virtual void MOVN(InstructionData& data) = 0;
+			virtual void DIV(InstructionData& data) = 0;
 
 		protected:
 			R5900* m_R5900;

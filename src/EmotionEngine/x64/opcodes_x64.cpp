@@ -158,8 +158,13 @@ void JitX64::MULT(InstructionData& data) {
 	cc.movsxd(x86::rdx, x86::edx);							// rdx <- sign_extend(edx)
 
 	// store result
-	cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, hi)), x86::rdx);
-	cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, lo)), x86::rax);
+	if (data.pipeline1) {
+		cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, hi1)), x86::rdx);
+		cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, lo1)), x86::rax);
+	} else {
+		cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, hi)), x86::rdx);
+		cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, lo)), x86::rax);
+	}
 
 	// restore registers
 	cc.pop(x86::rdx);
@@ -328,20 +333,26 @@ void JitX64::SLTIU(InstructionData& data) {
 }
 
 void JitX64::DIVU(InstructionData& data) {
-	EmitLoadRegister(s1, R32, data.rs);
-	EmitLoadRegister(s2, R32, data.rt);
+	EmitLoadRegister(s1.r32(), R32, data.rs);
+	EmitLoadRegister(s2.r32(), R32, data.rt);
 
 	Label div = cc.new_label();
 	Label done = cc.new_label();
 
 	// check if we are dividing by zero
 	cc.test(s2.r32(), s2.r32());
-	cc.jz(div);
+	cc.jnz(div);
 
 	// set division by zero results
-	EmitStoreSpecialRegister(SpecialRegName::HI, s1.r32()); // HI <- numerator
-	cc.mov(s1.r32(), 0xffffffff);
-	EmitStoreSpecialRegister(SpecialRegName::LO, s1.r32());	// LO <- 0xffffffff
+	if (data.pipeline1) {
+		EmitStoreSpecialRegister(SpecialRegName::HI1, s1.r32());	// HI <- numerator
+		cc.mov(s1.r32(), 0xffffffff);
+		EmitStoreSpecialRegister(SpecialRegName::LO1, s1.r32());	// LO <- 0xffffffff
+	} else {
+		EmitStoreSpecialRegister(SpecialRegName::HI, s1.r32());		// HI <- numerator
+		cc.mov(s1.r32(), 0xffffffff);
+		EmitStoreSpecialRegister(SpecialRegName::LO, s1.r32());		// LO <- 0xffffffff
+	}
 	cc.jmp(done);
 
 	// proper division
@@ -364,8 +375,13 @@ void JitX64::DIVU(InstructionData& data) {
 	cc.movsxd(x86::rdx, x86::edx);							// rdx <- sign_extend(edx)
 
 	// store result
-	cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, hi)), x86::rdx);
-	cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, lo)), x86::rax);
+	if (data.pipeline1) {
+		cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, hi1)), x86::rdx);
+		cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, lo1)), x86::rax);
+	} else {
+		cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, hi)), x86::rdx);
+		cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, lo)), x86::rax);
+	}
 
 	// restore registers
 	cc.pop(x86::rdx);
@@ -377,7 +393,11 @@ void JitX64::DIVU(InstructionData& data) {
 }
 
 void JitX64::MFHI(InstructionData& data) {
-	cc.mov(t1, x86::qword_ptr(r5900, offsetof(R5900, hi)));
+	if (data.pipeline1) {
+		cc.mov(t1, x86::qword_ptr(r5900, offsetof(R5900, hi1)));
+	} else {
+		cc.mov(t1, x86::qword_ptr(r5900, offsetof(R5900, hi)));
+	}
 	EmitStoreRegister(R64, data.rd, t1, false);
 }
 
@@ -556,8 +576,13 @@ void JitX64::MULTU(InstructionData& data) {
 	cc.movsxd(x86::rdx, x86::edx);							// rdx <- sign_extend(edx)
 
 	// store result
-	cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, hi)), x86::rdx);
-	cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, lo)), x86::rax);
+	if (data.pipeline1) {
+		cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, hi1)), x86::rdx);
+		cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, lo1)), x86::rax);
+	} else {
+		cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, hi)), x86::rdx);
+		cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, lo)), x86::rax);
+	}
 
 	// restore registers
 	cc.pop(x86::rdx);
@@ -614,4 +639,101 @@ void JitX64::DSRA32(InstructionData& data) {
 	EmitLoadRegister(s1, R64, data.rt);						// s1 <- rt
 	cc.sar(s1, data.sa + 32);								// s1 >> (sa + 32) (arithmetic)
 	EmitStoreRegister(R64, data.rd, s1, false);				// rd <- s1
+}
+
+void JitX64::MFLO(InstructionData& data) {
+	if (data.pipeline1) {
+		cc.mov(t1, x86::qword_ptr(r5900, offsetof(R5900, lo1)));
+	} else {
+		cc.mov(t1, x86::qword_ptr(r5900, offsetof(R5900, lo)));
+	}
+	EmitStoreRegister(R64, data.rd, t1, false);
+}
+
+void JitX64::SLT(InstructionData& data) {
+	// compare rs and rt
+    EmitLoadRegister(s1, R64, data.rs);
+    EmitLoadRegister(s2, R64, data.rt);
+    cc.cmp(s1, s2);
+
+    // s1 < s2 (signed) -> s1 = 1, else s1 = 0
+    cc.setl(s1.r8());
+    cc.movzx(s1, s1.r8()); // zero extend to 64-bit
+
+	// rd <- s1
+    EmitStoreRegister(R64, data.rd, s1, false);
+}
+
+void JitX64::MOVN(InstructionData& data) {
+	Label end = cc.new_label();
+	EmitLoadRegister(s1, R64, data.rt);
+	cc.test(s1, s1);
+	cc.jz(end);
+
+	EmitLoadRegister(s1, R64, data.rs);
+	EmitStoreRegister(R64, data.rd, s1, false);
+
+	cc.bind(end);
+}
+
+void JitX64::DIV(InstructionData& data) {
+	EmitLoadRegister(s1.r32(), R32, data.rs);
+	EmitLoadRegister(s2.r32(), R32, data.rt);
+
+	Label div = cc.new_label();
+	Label done = cc.new_label();
+
+	// check if we are dividing by zero
+	cc.test(s2.r32(), s2.r32());
+	cc.jnz(div);
+
+	// set division by zero results
+	if (data.pipeline1) {
+		EmitStoreSpecialRegister(SpecialRegName::HI1, s1.r32());	// HI <- numerator
+		cc.mov(s1.r32(), 0xffffffff);
+		EmitStoreSpecialRegister(SpecialRegName::LO1, s1.r32());	// LO <- 0xffffffff
+	} else {
+		EmitStoreSpecialRegister(SpecialRegName::HI, s1.r32());		// HI <- numerator
+		cc.mov(s1.r32(), 0xffffffff);
+		EmitStoreSpecialRegister(SpecialRegName::LO, s1.r32());		// LO <- 0xffffffff
+	}
+	cc.jmp(done);
+
+	// proper division
+	cc.bind(div);
+	cc.push(x86::rax);										// rs and quotient result
+	cc.push(x86::rbx);										// r5900 could be overwritten so we save it here
+	cc.push(x86::rcx);										// rt
+	cc.push(x86::rdx);										// remainder result
+
+	cc.mov(x86::rbx, r5900);								// save r5900 as if it was in rax, rcx or rdx it would get corrupted
+
+	cc.xor_(x86::edx, x86::edx);							// edx <- 0
+	cc.mov(x86::eax, s1.r32());								// eax <- s1
+	cc.emit(x86::Inst::kIdCdq);
+
+	cc.mov(x86::ecx, s2.r32());								// ecx <- s2
+
+	// cc.div() doesnt support implicit form
+	cc.emit(x86::Inst::kIdIdiv, x86::ecx);					// eax <- (eax / ecx), edx <- (eax % ecx)
+
+	cc.movsxd(x86::rax, x86::eax);							// rax <- sign_extend(eax)
+	cc.movsxd(x86::rdx, x86::edx);							// rdx <- sign_extend(edx)
+
+	// store result
+	if (data.pipeline1) {
+		cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, hi1)), x86::rdx);
+		cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, lo1)), x86::rax);
+	} else {
+		cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, hi)), x86::rdx);
+		cc.mov(x86::qword_ptr(x86::rbx, offsetof(R5900, lo)), x86::rax);
+	}
+
+	// restore registers
+	cc.pop(x86::rdx);
+	cc.pop(x86::rcx);
+	cc.pop(x86::rbx);
+	cc.pop(x86::rax);
+
+	cc.bind(done);
 }

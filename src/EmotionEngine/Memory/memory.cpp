@@ -45,6 +45,9 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 		return *(reinterpret_cast<u32*>(&bios[address - 0x1fc00000]));
 	}
 
+	// just shut up
+	if (address == 0x1000f130) return 0;
+	
 	error_log("unknown physical address {:08x}", address);
 	return 0;
 }
@@ -90,7 +93,6 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 		std::print("{}", (char)(word & 0xff));
 		return;
 	}
-
 	error_log("{:08x} -> unknown physical address {:08x}", word, address);
 }
 
