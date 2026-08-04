@@ -52,8 +52,7 @@ void JitX64::SLTU(InstructionData& data) {
 }
 
 void JitX64::JAL(InstructionData& data) {
-	// PC at this point is AFTER the branch delay slot because the JIT reorders the instructions
-	// so we can store the current PC to GPR[31]
+	// PC at this point is AFTER the branch delay slot so we can store the current PC to GPR[31]
 	EmitStoreRegister(R64, 31, m_CompilePC, false);
 
 	// we have to go back 1 instruction (4 bytes) to go back to the address of the delay slot
@@ -513,4 +512,28 @@ void JitX64::LB(InstructionData& data) {
 	EmitReadVirtualMemory8(s2.r8(), s1);					// s2 <- [vaddr]
 	cc.movsx(s2.r32(), s2.r8());							// s2.r32 <- sign_extend(s2.r8)
 	EmitStoreRegister(R64, data.rt, s2.r32(), true);		// rt <- s2
+}
+
+void JitX64::JALR(InstructionData& data) {
+	// PC at this point is AFTER the branch delay slot so we can store the current PC to rd
+	EmitStoreRegister(R64, data.rd, m_CompilePC, false);
+
+	EmitLoadRegister(s1, R32, data.rs);	// s1 <- rs
+	EmitJump(s1);						// pc <- s1
+	EmitBranchDelay();
+}
+
+void JitX64::DSUBU(InstructionData& data) {
+	EmitLoadRegister(s1, R64, data.rs);					// s1 <- rs
+	EmitLoadRegister(s2, R64, data.rt);					// s2 <- rt
+	cc.sub(s1, s2);										// s1 -= s2
+	EmitStoreRegister(R64, data.rd, s1.r64(), false);	// rd <- s1
+}
+
+void JitX64::NOR(InstructionData& data) {
+	EmitLoadRegister(s1, R64, data.rs);						// s1 <- rs
+	EmitLoadRegister(s2, R64, data.rt);						// s2 <- rt
+	cc.or_(s1, s2);											// s1 |= s2
+	cc.not_(s1);											// s1 = ~s1
+	EmitStoreRegister(R64, data.rd, s1, false);				// rd <- s1
 }

@@ -154,6 +154,8 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				case 0b010000: { data.ptr = &JitBackend::MFHI; break; }									// MFHI
 				case 0b001101: { data.ptr = &JitBackend::BREAK; break; }								// BREAK
 				case 0b000011: { data.ptr = &JitBackend::SRA; break; }									// SRA
+				case 0b101111: { data.ptr = &JitBackend::DSUBU; break; }								// DSUBU
+				case 0b100111: { data.ptr = &JitBackend::NOR; break; }									// NOR
 
 				// system call (HLE for now)
 				case 0b001100: { data.ptr = &JitBackend::SYSCALL; data.type = InstructionType::Syscall; break; }
@@ -163,6 +165,7 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 
 				// branch
 				case 0b001000: { data.ptr = &JitBackend::JR; data.type = InstructionType::Branch; break; }
+				case 0b001001: { data.ptr = &JitBackend::JALR; data.type = InstructionType::Branch; break; }
 
 				default: {
 					error_log("unknown special opcode {:06b} {:08x}", data.funct, instruction);
@@ -251,6 +254,14 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		// BEQL
 		case 0b010100: {
 			data.ptr = &JitBackend::BEQ;
+			data.type = InstructionType::Branch;
+			data.likely = true;
+			break;
+		}
+
+		// BNEL
+		case 0b010101: {
+			data.ptr = &JitBackend::BNE;
 			data.type = InstructionType::Branch;
 			data.likely = true;
 			break;
