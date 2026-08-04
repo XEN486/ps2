@@ -33,6 +33,8 @@ namespace GraphicsSynthesizer {
 				case PrimitiveType::TriangleFan:	return initial_kick ? 3 : 1;
 				case PrimitiveType::Sprite:			return 2;
 			}
+
+			std::unreachable();
 		}
 
 		PrimitiveType type;

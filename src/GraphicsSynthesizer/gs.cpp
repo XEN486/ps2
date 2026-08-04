@@ -110,3 +110,40 @@ void GS::WriteXYZ(AnyXYZ xyz, bool cull) {
 void GS::DrawingKick() {
 	debug_log("GS: draw {} vertices (type {})", m_VertexQueue.size(), (u8)m_IRegs.prim.type);
 }
+
+void GS::Tick() {
+	if (m_ScanlineCycles == m_Timing.hblank_start) {
+		m_EnteredHBlank = true;
+		m_LeftHBlank = false;
+
+		m_HBlank = true;
+	}
+
+	if (m_ScanlineCycles == m_Timing.cycles_per_scanline) {
+		m_EnteredHBlank = false;
+		m_LeftHBlank = true;
+
+		m_HBlank = false;
+		m_ScanlineCycles = 0;
+		m_Scanline++;
+	}
+
+	if (m_Scanline == m_Timing.visible_scanlines) {
+		m_EnteredVBlank = true;
+		m_LeftVBlank = false;
+		
+		m_VBlank = true;
+	}
+
+	if (m_Scanline == m_Timing.total_scanlines) {
+		m_EnteredVBlank = false;
+		m_LeftVBlank = true;
+
+		m_VBlank = false;
+		m_Scanline = 0;
+		m_ScanlineCycles = 0;
+		return;
+	}
+
+	m_ScanlineCycles++;
+}

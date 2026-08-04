@@ -2,6 +2,7 @@
 #define EMOTIONENGINE_EMOTION_HPP
 
 #include "Memory/memory.hpp"
+#include "Timers/timers.hpp"
 #include "DMAC/dmac.hpp"
 #include "GIF/gif.hpp"
 
@@ -288,6 +289,10 @@ namespace EmotionEngine {
 		/// @return Reference to the GIF.
 		Graphics::GIF& GetGIF() { return m_GIF; }
 
+		/// @brief Returns a reference to the EE timers.
+		/// @return Reference to the EE timers.
+		Timers::Timers& GetTimers() { return m_Timers; }
+
 		/// @brief Resets the EmotionEngine's state.
 		void Reset();
 
@@ -303,6 +308,7 @@ namespace EmotionEngine {
 		Memory m_Memory;
 		DMA::DMAC m_DMAC;
 		Graphics::GIF m_GIF;
+		Timers::Timers m_Timers;
 
 		GraphicsSynthesizer::GS* m_GS;
 		Core::JitBackend* m_JitBackend;

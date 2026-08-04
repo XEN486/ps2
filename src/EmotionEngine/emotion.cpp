@@ -49,7 +49,7 @@ EE::EE(Core::JitBackend* backend, GraphicsSynthesizer::GS* gs) : m_JitBackend(ba
 		exit(1);
 	}
 
-	m_Memory.Initialize(m_JitBackend, &m_DMAC, m_GS);
+	m_Memory.Initialize(m_JitBackend, this, m_GS);
 	m_GIF.SetGS(m_GS);
 	m_DMAC.SetPointers(&m_Memory, &m_GIF);
 }
@@ -68,12 +68,6 @@ size_t EE::RunOnce() {
 
 	// assume 1 instruction = 1 clock cycle.
 	m_R5900.cop0.count += block.instructions;
-
-	// tick dmac every other cycle
-	for (size_t i = 0; i < (block.instructions / 2); i++) {
-		m_DMAC.Tick();
-		m_GIF.ProcessQword();
-	}
 
 	return block.instructions;
 }

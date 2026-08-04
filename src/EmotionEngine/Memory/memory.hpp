@@ -14,20 +14,21 @@ namespace GraphicsSynthesizer { class GS; }
 
 namespace EmotionEngine {
 	// --- forward declarations ---
+	class EE;
 	namespace Core { class JitBackend; }
-	namespace DMA { class DMAC; }
 
 	/// @brief The EmotionEngine's virtual memory map.
 	class Memory {
 	public:
 		/// @brief Initializes and allocates everything necessary for the physical memory map.
 		/// @param backend Pointer to the JIT backend.
-		/// @param dmac Pointer to the EmotionEngine's DMAC.
-		void Initialize(Core::JitBackend* backend, DMA::DMAC* dmac, GraphicsSynthesizer::GS* gs) {
+		/// @param ee Pointer to the EmotionEngine.
+		/// @param gs Pointer to the GraphicsSynthesizer.
+		void Initialize(Core::JitBackend* backend, EE* ee, GraphicsSynthesizer::GS* gs) {
 			m_JitBackend = backend;
-			m_DMAC = dmac;
+			m_EE = ee;
 			m_GS = gs;
-			
+
 			scratchpad = static_cast<u8*>(calloc(1, 0x4000)); // 4KiB
 			rdram = static_cast<u8*>(calloc(1, 0x2000000)); // 32MiB
 			bios = static_cast<u8*>(calloc(1, 0x400000)); // 4MiB
@@ -87,7 +88,7 @@ namespace EmotionEngine {
 
 	private:
 		Core::JitBackend* m_JitBackend;
-		DMA::DMAC* m_DMAC;
+		EE* m_EE;
 		GraphicsSynthesizer::GS* m_GS;
 	};
 }

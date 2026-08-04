@@ -3,7 +3,6 @@
 #include "../../utils.hpp"
 
 #include "../emotion.hpp"
-#include "../DMAC/dmac.hpp"
 
 using namespace EmotionEngine;
 
@@ -19,13 +18,18 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 		return *(reinterpret_cast<u32*>(&rdram[address]));
 	}
 
+	// timer addresses
+	if (address >= 0x10000000 && address <= 0x10002030) {
+		return m_EE->GetTimers().Read(address);
+	}
+
 	// dmac addresses
 	if (address >= 0x10008000 && address <= 0x1000e060) {
-		return m_DMAC->ReadMemory32(address);
+		return m_EE->GetDMAC().ReadMemory32(address);
 	}
 
 	// D_ENABLER
-	if (address == 0x1000f520) return m_DMAC->ReadMemory32(address);
+	if (address == 0x1000f520) return m_EE->GetDMAC().ReadMemory32(address);
 
 	// readable GS privileged registers
 	if (address == 0x12001000) return m_GS->ReadLoCSR();
@@ -60,18 +64,30 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 		return;
 	}
 
+	// timer addresses
+	if (address >= 0x10000000 && address <= 0x10002030) {
+		m_EE->GetTimers().Write(address, word);
+		return;
+	}
+
 	// dmac addresses
 	if (address >= 0x10008000 && address <= 0x1000e060) {
-		m_DMAC->WriteMemory32(address, word);
+		m_EE->GetDMAC().WriteMemory32(address, word);
 		return;
 	}
 
 	// D_ENABLEW
-	if (address == 0x1000f590) return m_DMAC->WriteMemory32(address, word);
+	if (address == 0x1000f590) return m_EE->GetDMAC().WriteMemory32(address, word);
 
 	// GS privileged registers
 	if (address >= 0x12000000 && address <= 0x12001080) {
 		m_GS->WritePrivilegedRegEE(address, word);
+		return;
+	}
+
+	// console
+	if (address == 0x1000f180) {
+		std::print("{}", (char)(word & 0xff));
 		return;
 	}
 

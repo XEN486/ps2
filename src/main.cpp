@@ -1,9 +1,8 @@
 /// @file
 #include "EmotionEngine/x64/jit_x64.hpp"
 #include "EmotionEngine/emotion.hpp"
-#include "EmotionEngine/DMAC/dmac.hpp"
 #include "GraphicsSynthesizer/gs.hpp"
-#include "elf.hpp"
+#include "scheduler.hpp"
 
 int main(int argc, char** argv) {
 	//if (argc < 2) {
@@ -15,14 +14,22 @@ int main(int argc, char** argv) {
 	EmotionEngine::Core::JitX64 backend;
 	EmotionEngine::EE cpu(&backend, &gs);
 
+	gs.Reset();
 	cpu.Reset();
 	cpu.GetMemory().LoadBIOS("scph39001.bin");
 
 	//ElfFile elf("demo1.elf");
 	//cpu.GetR5900().pc = elf.LoadElf(cpu.GetMemory());
 	
+	Scheduler scheduler;
+	scheduler.SetComponents(&cpu, &gs);
+
 	while (true) {
-		cpu.RunOnce();
+		scheduler.Run();
+
+		if (scheduler.FrameReady()) {
+			// gs.Render();
+		}
 	}
 
 	cpu.Release();

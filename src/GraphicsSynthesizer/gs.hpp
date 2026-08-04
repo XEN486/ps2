@@ -8,6 +8,38 @@
 
 /// @brief The PlayStation2's graphics unit.
 namespace GraphicsSynthesizer {
+	enum class VideoMode {
+		NTSC,
+		PAL,
+	};
+
+	struct VideoModeTiming {
+		u32 total_scanlines;
+		u32 visible_scanlines;
+
+		size_t cycles_per_scanline;
+		size_t hblank_start;
+	};
+
+	static void CalculateTiming(VideoModeTiming& timing, VideoMode mode) {
+		switch (mode) {
+			case VideoMode::NTSC: {
+				timing.total_scanlines = 262;
+				timing.visible_scanlines = 240;
+				timing.cycles_per_scanline = 9370;
+				timing.hblank_start = 7764; // 147.456MHz * 10.9us = 1606 cycles, 9370-1606 = 7764 cycles.
+				break;
+			}
+
+			case VideoMode::PAL: {
+				timing.total_scanlines = 312;
+				timing.visible_scanlines = 286;
+				timing.cycles_per_scanline = 9436;
+				timing.hblank_start = 7667; // 147.456MHz * 12us = 1769 cycles, 9436 - 1769 = 7667
+			}
+		}
+	}
+
 	enum InternalRegisterID : u8 {
 		PRIM		= 0x00,
 		RGBAQ		= 0x01,
@@ -134,8 +166,44 @@ namespace GraphicsSynthesizer {
 	/// @brief The PlayStation2's graphics unit.
 	class GS {
 	public:
+		void Tick();
+
 		void Reset() {
+			CalculateTiming(m_Timing, VideoMode::NTSC); // assume NTSC timings for now
 			m_IRegs.prim.initial_kick = true;
+			m_ScanlineCycles = 0;
+			m_Scanline = 0;
+
+			m_HBlank = false;
+			m_VBlank = false;
+			m_LeftHBlank = false;
+			m_LeftVBlank = false;
+			m_EnteredHBlank = false;
+			m_EnteredVBlank = false;
+		}
+
+		bool GetEnteredHBlank() {
+			bool hblank = m_EnteredHBlank;
+			m_EnteredHBlank = false;
+			return hblank;
+		}
+
+		bool GetEnteredVBlank() {
+			bool vblank = m_EnteredVBlank;
+			m_EnteredVBlank = false;
+			return vblank;
+		}
+
+		bool GetLeftHBlank() {
+			bool hblank = m_LeftHBlank;
+			m_LeftHBlank = false;
+			return hblank;
+		}
+
+		bool GetLeftVBlank() {
+			bool vblank = m_LeftVBlank;
+			m_LeftVBlank = false;
+			return vblank;
 		}
 
 		u32 ReadLoCSR() const {
@@ -171,6 +239,19 @@ namespace GraphicsSynthesizer {
 		std::vector<Vertex> m_VertexQueue;
 		Vertex m_InitialVertex;
 		Vertex m_LastVertex;
+
+		VideoModeTiming m_Timing;
+		size_t m_ScanlineCycles = 0;
+		size_t m_Scanline = 0;
+
+		bool m_HBlank = false;			// true during hblank
+		bool m_VBlank = false;			// true during vblank
+
+		bool m_EnteredHBlank = false;	// true until GetEnteredHBlank() is ran or hblank ends
+		bool m_EnteredVBlank = false;	// true until GetEnteredVBlank() is ran or vblank ends
+
+		bool m_LeftHBlank = false;		// true until GetLeftHBlank() is ran or hblank starts (only starts after first hblank)
+		bool m_LeftVBlank = false;		// true until GetLeftHBlank() is ran or hblank starts (only starts after first vblank)
 	};
 }
 
