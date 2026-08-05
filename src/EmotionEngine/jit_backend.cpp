@@ -21,6 +21,7 @@ bool JitBackend::InitJit(R5900* cpu, Memory* memory) {
 
 void JitBackend::Reset() {
 	m_InBranchDelay = false;
+	memset(m_UsedRegisters, 0, sizeof(bool) * 32);
 }
 
 void JitBackend::Release() {
@@ -55,7 +56,6 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 	block.instructions = 0;
 
 	m_Instructions.clear();
-	memset(m_UsedRegisters, 0, sizeof(bool) * 32); // clear used registers
 	m_CodeHolder.reinit();
 
 	u32 end_pc = 0;
@@ -71,7 +71,6 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 		InstructionData data = AnalyzeOp(Fetch());
 		if (data.type == InstructionType::Normal) {
 			m_Instructions.push_back(data);
-			(this->*(data.ptr))(data);
 			block.instructions++;
 			continue;
 		}

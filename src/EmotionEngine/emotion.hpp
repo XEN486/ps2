@@ -188,7 +188,13 @@ namespace EmotionEngine {
 			
 		protected:
 			virtual void MFC0(InstructionData& data) = 0;
-
+			virtual void SLL(InstructionData& data) = 0;
+			virtual void SLTI(InstructionData& data) = 0;
+			virtual void BNE(InstructionData& data) = 0;
+			virtual void LUI(InstructionData& data) = 0;
+			virtual void ORI(InstructionData& data) = 0;
+			virtual void JR(InstructionData& data) = 0;
+			
 		protected:
 			R5900* m_R5900;
 			Memory* m_Memory;
@@ -202,6 +208,8 @@ namespace EmotionEngine {
 			bool m_UsedRegisters[32];
 
 		private:
+			void NOP(InstructionData&) {}
+
 			CompiledBlock& RecompileBlock(u32 pc);
 			InstructionData AnalyzeOp(u32 opcode);
 			void DecodeOp(InstructionData& data, u32 instruction);

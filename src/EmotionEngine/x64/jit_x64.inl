@@ -19,7 +19,7 @@ namespace EmotionEngine::Core {
 
 	template <typename T>
 	void JitX64::EmitJump(T address) {
-		cc.mov(asmjit::x86::dword_ptr(reinterpret_cast<uintptr_t>(m_R5900) + offsetof(R5900, next_pc)), address);
+		cc.mov(asmjit::x86::dword_ptr(r5900, offsetof(R5900, next_pc)), address);
 	}
 
 	template <typename Size, typename T>
