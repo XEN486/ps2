@@ -4,7 +4,7 @@
 #include "GraphicsSynthesizer/gs.hpp"
 #include "scheduler.hpp"
 
-int main(int argc, char** argv) {
+int main() {
 	//if (argc < 2) {
 	//	std::println(stderr, "usage: {} [bios bin]", argv[0]);
 	//	return 1;

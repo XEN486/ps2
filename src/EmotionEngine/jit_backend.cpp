@@ -2,7 +2,6 @@
 #include "../utils.hpp"
 #include "../config.hpp"
 
-#include <asmjit/x86.h>
 using namespace EmotionEngine::Core;
 using namespace asmjit;
 
@@ -55,10 +54,11 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 	block.start_pc = pc;
 	block.instructions = 0;
 
+	m_Instructions.clear();
+	memset(m_UsedRegisters, 0, sizeof(bool) * 32); // clear used registers
 	m_CodeHolder.reinit();
 
 	u32 end_pc = 0;
-	EmitBeginBlock();
 	while (true) {
 		end_pc = m_CompilePC;
 
@@ -70,6 +70,7 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 
 		InstructionData data = AnalyzeOp(Fetch());
 		if (data.type == InstructionType::Normal) {
+			m_Instructions.push_back(data);
 			(this->*(data.ptr))(data);
 			block.instructions++;
 			continue;
@@ -77,11 +78,12 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 
 		else if (data.type == InstructionType::Branch) {
 			// analyze and store branch delay slot first
-			m_BranchDelay = AnalyzeOp(Fetch());
+			InstructionData branch_delay = AnalyzeOp(Fetch());
+			data.branch_delay = std::make_shared<InstructionData>(branch_delay);
 			block.instructions++;
 
 			// recompile branch and break out of this loop
-			(this->*(data.ptr))(data);
+			m_Instructions.push_back(data);
 			block.instructions++;
 
 			// account for delay slot
@@ -92,11 +94,16 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 
 		// end the block early if this is a syscall or sync instruction
 		else if (data.type == InstructionType::Syscall || data.type == InstructionType::Sync) {
-			(this->*(data.ptr))(data);
+			m_Instructions.push_back(data);
 			block.instructions++;
 
 			break;
 		}
+	}
+
+	EmitBeginBlock();
+	for (auto& data : m_Instructions) {
+		(this->*(data.ptr))(data);
 	}
 	EmitEndBlock();
 
@@ -126,216 +133,6 @@ CompiledBlock& JitBackend::GetOrCompileBlock(u32 pc) {
     return RecompileBlock(pc);
 }
 
-inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
-	InstructionData data;
-	data.type = InstructionType::Normal;
-	data.pipeline1 = false;
-	data.likely = false;
-	DecodeOp(data, instruction);
-
-	u32 pc = m_CompilePC - 4;
-	u8 op = (instruction >> 26) & 0b111111;
-	switch (op) {
-		// SPECIAL
-		case 0b000000: {
-			switch (data.funct) {
-				case 0b000000: { data.ptr = &JitBackend::SLL; break; }									// SLL
-				case 0b101011: { data.ptr = &JitBackend::SLTU; break; }									// SLTU
-				case 0b101101: { data.ptr = &JitBackend::DADDU; break; }								// DADDU
-				case 0b011000: { data.ptr = &JitBackend::MULT; break; }									// MULT
-				case 0b100001: { data.ptr = &JitBackend::ADDU; break; }									// ADDU
-				case 0b100100: { data.ptr = &JitBackend::AND; break; }									// AND
-				case 0b111010: { data.ptr = &JitBackend::DSRL; break; }									// DSRL
-				case 0b000010: { data.ptr = &JitBackend::SRL; break; }									// SRL
-				case 0b111000: { data.ptr = &JitBackend::DSLL; break; }									// DSLL
-				case 0b100101: { data.ptr = &JitBackend::OR; break; }									// OR
-				case 0b111100: { data.ptr = &JitBackend::DSLL32; break; }								// DSLL32
-				case 0b011011: { data.ptr = &JitBackend::DIVU; break; }									// DIVU
-				case 0b010000: { data.ptr = &JitBackend::MFHI; break; }									// MFHI
-				case 0b001101: { data.ptr = &JitBackend::BREAK; break; }								// BREAK
-				case 0b000011: { data.ptr = &JitBackend::SRA; break; }									// SRA
-				case 0b101111: { data.ptr = &JitBackend::DSUBU; break; }								// DSUBU
-				case 0b100111: { data.ptr = &JitBackend::NOR; break; }									// NOR
-				case 0b011001: { data.ptr = &JitBackend::MULTU; break; }								// MULTU
-				case 0b111111: { data.ptr = &JitBackend::DSRA32; break; }								// DSRA32
-				case 0b010010: { data.ptr = &JitBackend::MFLO; break; }									// MFLO
-				case 0b101010: { data.ptr = &JitBackend::SLT; break; }									// SLT
-				case 0b001011: { data.ptr = &JitBackend::MOVN; break; }									// MOVN
-				case 0b011010: { data.ptr = &JitBackend::DIV; break; }									// DIV
-				case 0b100011: { data.ptr = &JitBackend::SUBU; break; }									// SUBU
-				case 0b111110: { data.ptr = &JitBackend::DSRL32; break; }								// DSRL32
-
-				// system call (HLE for now)
-				case 0b001100: { data.ptr = &JitBackend::SYSCALL; data.type = InstructionType::Syscall; break; }
-
-				// sync (ends the block)
-				case 0b001111: { data.ptr = &JitBackend::SYNC; data.type = InstructionType::Sync; break; }
-
-				// branch
-				case 0b001000: { data.ptr = &JitBackend::JR; data.type = InstructionType::Branch; break; }
-				case 0b001001: { data.ptr = &JitBackend::JALR; data.type = InstructionType::Branch; break; }
-
-				default: {
-					error_log("unknown special opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, pc);
-					exit(1);
-				}
-			}
-
-			break;
-		}
-
-		// REGIMM
-		case 0b000001: {
-			switch (data.rt) {
-				case 0b00000: { data.ptr = &JitBackend::BLTZ; break; }									// BLTZ
-				case 0b00001: { data.ptr = &JitBackend::BGEZ; break; }									// BGEZ
-
-				default: {
-					error_log("unknown regimm opcode {:05b} {:08x} @ {:08x}", data.rt, instruction, pc);
-					exit(1);
-				}
-			}
-			break;
-		}
-
-		// COP0
-		case 0b010000: {
-			switch (data.funct) {
-				case 0b000000: {
-					// low 11-bit == 0 -> mtc0/mfc0
-					if ((instruction & 0x7ff) == 0) {
-						switch (data.rs) {
-							case 0b00100: { data.ptr = &JitBackend::MTC0; break; }						// MTC0
-							case 0b00000: { data.ptr = &JitBackend::MFC0; break; }						// MFC0
-							
-							default: {
-								error_log("unknown cop0 opcode with lo 11-bits == 0 {:05b} {:08x} @ {:08x}", data.rs, instruction, pc);
-								exit(1);
-							}
-						}
-					}
-					
-					break;
-				}
-
-				case 0b111000: { data.ptr = &JitBackend::EI; break; }
-				case 0b000010: { data.ptr = &JitBackend::TLBWI; break; }
-
-				default: {
-					error_log("unknown cop0 opcode {:06b} {:08x}", data.funct, instruction);
-					exit(1);
-				}
-			}
-			break;
-		}
-
-		// COP1
-		case 0b010001: {
-			switch (data.funct) {
-				case 0b000000: {
-					// low 11-bit == 0 -> mtc1/mfc1
-					if ((instruction & 0x7ff) == 0) {
-						switch (data.rs) {
-							case 0b00100: { data.ptr = &JitBackend::MTC1; break; }						// MTC1
-							case 0b00000: { data.ptr = &JitBackend::MFC1; break; }						// MFC1
-							
-							default: {
-								error_log("unknown cop1 opcode with lo 11-bits == 0 {:05b} {:08x} @ {:08x}", data.rs, instruction, pc);
-								exit(1);
-							}
-						}
-					}
-					
-					break;
-				}
-
-				case 0b100000: { data.ptr = &JitBackend::CVTsw; break; }								// CVT.s.w
-				case 0b100100: { data.ptr = &JitBackend::CVTws; break; }								// CVT.w.s
-				case 0b000011: { data.ptr = &JitBackend::DIVs; break; }									// DIV.s
-				case 0b000110: { data.ptr = &JitBackend::MOVs; break; }									// MOV.s
-				case 0b000010: { data.ptr = &JitBackend::MULs; break; }									// MUL.s
-
-				default: {
-					error_log("unknown cop1 opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, pc);
-					exit(1);
-				}
-			}
-
-			break;
-		}
-
-		// MMI
-		case 0b011100: {
-			switch (data.funct) {
-				case 0b011010: { data.ptr = &JitBackend::DIV; data.pipeline1 = true; break; }			// DIV1
-				case 0b010010: { data.ptr = &JitBackend::MFLO; data.pipeline1 = true; break; }			// MFLO1
-				case 0b111110: { data.ptr = &JitBackend::PSRLW; break; }								// PSRLW
-
-				default: {
-					error_log("unknown mmi opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, pc);
-					exit(1);
-				}
-			}
-			break;
-		}
-
-		// normal
-		case 0b001111: { data.ptr = &JitBackend::LUI; break; }											// LUI
-		case 0b001001: { data.ptr = &JitBackend::ADDIU; break; }										// ADDIU
-		case 0b011111: { data.ptr = &JitBackend::SQ; break; }											// SQ
-		case 0b100011: { data.ptr = &JitBackend::LW; break; }											// LW
-		case 0b111111: { data.ptr = &JitBackend::SD; break; }											// SD
-		case 0b101011: { data.ptr = &JitBackend::SW; break; }											// SW
-		case 0b100101: { data.ptr = &JitBackend::LHU; break; }											// LHU
-		case 0b101001: { data.ptr = &JitBackend::SH; break; }											// SH
-		case 0b001101: { data.ptr = &JitBackend::ORI; break; }											// ORI
-		case 0b110111: { data.ptr = &JitBackend::LD; break; }											// LD
-		case 0b001100: { data.ptr = &JitBackend::ANDI; break; }											// ANDI
-		case 0b100100: { data.ptr = &JitBackend::LBU; break; }											// LBU
-		case 0b101000: { data.ptr = &JitBackend::SB; break; }											// SB
-		case 0b001011: { data.ptr = &JitBackend::SLTIU; break; }										// SLTIU
-		case 0b100000: { data.ptr = &JitBackend::LB; break; }											// LB
-		case 0b001010: { data.ptr = &JitBackend::SLTI; break; }											// SLTI
-
-		// cop1
-		case 0b111001: { data.ptr = &JitBackend::SWC1; break; }											// SWC1
-		case 0b110001: { data.ptr = &JitBackend::LWC1; break; }											// LWC1
-
-		// branch
-		case 0b000101: { data.ptr = &JitBackend::BNE; data.type = InstructionType::Branch; break; }		// BNE
-		case 0b000100: { data.ptr = &JitBackend::BEQ; data.type = InstructionType::Branch; break; } 	// BEQ
-		case 0b000110: { data.ptr = &JitBackend::BLEZ; data.type = InstructionType::Branch; break; }	// BLEZ
-		case 0b000111: { data.ptr = &JitBackend::BGTZ; data.type = InstructionType::Branch; break; }	// BGTZ
-
-		// BEQL
-		case 0b010100: {
-			data.ptr = &JitBackend::BEQ;
-			data.type = InstructionType::Branch;
-			data.likely = true;
-			break;
-		}
-
-		// BNEL
-		case 0b010101: {
-			data.ptr = &JitBackend::BNE;
-			data.type = InstructionType::Branch;
-			data.likely = true;
-			break;
-		}
-
-		// jump
-		case 0b000010: { data.ptr = &JitBackend::J; data.type = InstructionType::Branch; break; }		// J
-		case 0b000011: { data.ptr = &JitBackend::JAL; data.type = InstructionType::Branch; break; }		// JAL
-
-		default: {
-			error_log("unknown opcode {:06b} {:08x} @ {:08x}", op, instruction, pc);
-			exit(1);
-		}
-	}
-	
-	return data;
-}
-
 void JitBackend::DecodeOp(InstructionData& data, u32 instruction) {
 	// R-type and I-type
 	data.rs = (instruction >> 21) & 0b11111;
@@ -353,6 +150,6 @@ void JitBackend::DecodeOp(InstructionData& data, u32 instruction) {
 	data.addr = instruction & 0x3ffffff;
 }
 
-void JitBackend::EmitBranchDelay() {
-	(this->*(m_BranchDelay.ptr))(m_BranchDelay);
+void JitBackend::EmitBranchDelay(InstructionData& data) {
+	(this->*(data.branch_delay->ptr))(*data.branch_delay);
 }

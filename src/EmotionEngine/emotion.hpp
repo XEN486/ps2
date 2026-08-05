@@ -12,6 +12,7 @@
 #include <asmjit/core.h>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 /// @brief The PlayStation2's main processor unit.
 namespace EmotionEngine {
@@ -33,19 +34,16 @@ namespace EmotionEngine {
 			i8		reg_i8[16];
 		};
 
-		/// @brief GPR names in MIPS ABI.
-		/// While the CPU does not distinguish between the different GPRs, code running on the CPU does.
-		/// The names of each register according to the MIPS ABI are defined here.
-		enum class AbiNames : uint8_t {
-			zero, at,
-			v0, v1,
-			a0, a1, a2, a3,
-			t0, t1, t2, t3, t4, t5, t6, t7,
-			s0, s1, s2, s3, s4, s5, s6, s7,
-			t8, t9,
-			k0, k1,
-			gp, sp, fp,
-			ra
+		static constexpr const char* g_RegNames[32] = {
+			"$0", "at",
+			"v0", "v1",
+			"a0", "a1", "a2", "a3",
+			"t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",
+			"s0", "s1", "s2", "s3", "s4", "s5", "s6", "s7",
+			"t8", "t9",
+			"k0", "k1",
+			"gp", "sp", "fp",
+			"ra"
 		};
 
 		enum class SpecialRegName {
@@ -108,9 +106,9 @@ namespace EmotionEngine {
 			bool valid = false;		// block has been compiled
 			size_t execution_count;	// number of times this block has been executed
 			size_t instructions;	// number of instructions in block
-			u32 start_pc;		// start address of the block
-			u32 end_pc;		// end address of the block
-			u32 after_end_pc;	// instruction after the block ends
+			u32 start_pc;			// start address of the block
+			u32 end_pc;				// end address of the block
+			u32 after_end_pc;		// instruction after the block ends
 			BlockFunc fn;			// function pointer to recompiled code
 		};
 
@@ -131,6 +129,8 @@ namespace EmotionEngine {
 			InstructionType type;
 			void (JitBackend::*ptr)(InstructionData&);
 
+			std::shared_ptr<InstructionData> branch_delay;
+			u32 pc;
 			u8 rs;
 			u8 rt;
 			u8 rd;
@@ -184,76 +184,10 @@ namespace EmotionEngine {
 			virtual void EmitEndBlock() = 0;
 
 			/// @brief Emits the stored branch delay slot. Make sure to call this in branch instructions.
-			void EmitBranchDelay();
+			void EmitBranchDelay(InstructionData& data);
 			
 		protected:
-			virtual void LUI(InstructionData& data) = 0;
-			virtual void ADDIU(InstructionData& data) = 0;
-			virtual void SLL(InstructionData& data) = 0;
-			virtual void SQ(InstructionData& data) = 0;
-			virtual void SLTU(InstructionData& data) = 0;
-			virtual void JAL(InstructionData& data) = 0;
-			virtual void BNE(InstructionData& data) = 0;
-			virtual void DADDU(InstructionData& data) = 0;
-			virtual void SYSCALL(InstructionData& data) = 0;
-			virtual void JR(InstructionData& data) = 0;
-			virtual void EI(InstructionData& data) = 0;
-			virtual void LW(InstructionData& data) = 0;
-			virtual void SD(InstructionData& data) = 0;
-			virtual void SW(InstructionData& data) = 0;
-			virtual void MULT(InstructionData& data) = 0;
-			virtual void ADDU(InstructionData& data) = 0;
-			virtual void LHU(InstructionData& data) = 0;
-			virtual void SH(InstructionData& data) = 0;
-			virtual void ORI(InstructionData& data) = 0;
-			virtual void AND(InstructionData& data) = 0;
-			virtual void SYNC(InstructionData& data) = 0;
-			virtual void LD(InstructionData& data) = 0;
-			virtual void DSRL(InstructionData& data) = 0;
-			virtual void ANDI(InstructionData& data) = 0;
-			virtual void LBU(InstructionData& data) = 0;
-			virtual void SRL(InstructionData& data) = 0;
-			virtual void DSLL(InstructionData& data) = 0;
-			virtual void OR(InstructionData& data) = 0;
-			virtual void DSLL32(InstructionData& data) = 0;
-			virtual void BEQ(InstructionData& data) = 0;
-			virtual void SB(InstructionData& data) = 0;
-			virtual void SWC1(InstructionData& data) = 0;
-			virtual void SLTIU(InstructionData& data) = 0;
-			virtual void DIVU(InstructionData& data) = 0;
-			virtual void MFHI(InstructionData& data) = 0;
-			virtual void BREAK(InstructionData& data) = 0;
-			virtual void BLTZ(InstructionData& data) = 0;
-			virtual void LWC1(InstructionData& data) = 0;
-			virtual void CVTsw(InstructionData& data) = 0;
-			virtual void CVTws(InstructionData& data) = 0;
-			virtual void MTC1(InstructionData& data) = 0;
-			virtual void MFC1(InstructionData& data) = 0;
-			virtual void DIVs(InstructionData& data) = 0;
-			virtual void MOVs(InstructionData& data) = 0;
-			virtual void MULs(InstructionData& data) = 0;
-			virtual void BGEZ(InstructionData& data) = 0;
-			virtual void SRA(InstructionData& data) = 0;
-			virtual void J(InstructionData& data) = 0;
-			virtual void LB(InstructionData& data) = 0;
-			virtual void JALR(InstructionData& data) = 0;
-			virtual void DSUBU(InstructionData& data) = 0;
-			virtual void NOR(InstructionData& data) = 0;
-			virtual void MULTU(InstructionData& data) = 0;
-			virtual void MTC0(InstructionData& data) = 0;
 			virtual void MFC0(InstructionData& data) = 0;
-			virtual void SLTI(InstructionData& data) = 0;
-			virtual void TLBWI(InstructionData& data) = 0;
-			virtual void DSRA32(InstructionData& data) = 0;
-			virtual void MFLO(InstructionData& data) = 0;
-			virtual void SLT(InstructionData& data) = 0;
-			virtual void MOVN(InstructionData& data) = 0;
-			virtual void DIV(InstructionData& data) = 0;
-			virtual void SUBU(InstructionData& data) = 0;
-			virtual void BLEZ(InstructionData& data) = 0;
-			virtual void BGTZ(InstructionData& data) = 0;
-			virtual void PSRLW(InstructionData& data) = 0;
-			virtual void DSRL32(InstructionData& data) = 0;
 
 		protected:
 			R5900* m_R5900;
@@ -265,15 +199,22 @@ namespace EmotionEngine {
 
 			/// @brief PC used internally by the JIT to track where it is in MIPS code.
 			u32 m_CompilePC;
+			bool m_UsedRegisters[32];
 
 		private:
 			CompiledBlock& RecompileBlock(u32 pc);
-			inline InstructionData AnalyzeOp(u32 opcode);
+			InstructionData AnalyzeOp(u32 opcode);
 			void DecodeOp(InstructionData& data, u32 instruction);
+
+			void UseRegisters(std::initializer_list<u8>(args)) {
+				for (auto elem : args) {
+					m_UsedRegisters[elem] = true;
+				}
+			}
 
 		private:
 			std::unordered_map<u32, CompiledBlock> m_BlockCache {};
-			InstructionData m_BranchDelay;
+			std::vector<InstructionData> m_Instructions;
 			bool m_InBranchDelay;
 		};	
 	}
@@ -325,6 +266,5 @@ namespace EmotionEngine {
 		Core::JitBackend* m_JitBackend;
 	};
 }
-
 
 #endif
