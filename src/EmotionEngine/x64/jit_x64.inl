@@ -43,8 +43,9 @@ namespace EmotionEngine::Core {
 		} else {
 			static_assert(false);
 		}
-
-		asmjit::InvokeNode* node = EmitExternalCall(ptr, asmjit::FuncSignature::build<Size, Memory*, u32>());
+		
+		asmjit::InvokeNode* node;
+		cc.invoke(asmjit::Out(node), ptr, asmjit::FuncSignature::build<Size, Memory*, u32>());
 		node->set_arg(0, m_Memory);
 		node->set_arg(1, address);
 		node->set_ret(0, ret);
@@ -72,7 +73,8 @@ namespace EmotionEngine::Core {
 			static_assert(false);
 		}
 
-		asmjit::InvokeNode* node = EmitExternalCall(ptr, asmjit::FuncSignature::build<void, Memory*, u32, Size>());
+		asmjit::InvokeNode* node;
+		cc.invoke(asmjit::Out(node), ptr, asmjit::FuncSignature::build<void, Memory*, u32, Size>());
 		node->set_arg(0, m_Memory);
 		node->set_arg(1, address);
 		node->set_arg(2, value);

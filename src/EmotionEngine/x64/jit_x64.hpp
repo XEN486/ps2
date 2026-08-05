@@ -21,6 +21,10 @@ namespace EmotionEngine::Core {
 		void LUI(InstructionData& data) override;
 		void ORI(InstructionData& data) override;
 		void JR(InstructionData& data) override;
+		void MTC0(InstructionData& data) override;
+		void ADDIU(InstructionData& data) override;
+		void SW(InstructionData& data) override;
+		void JALR(InstructionData& data) override;
 
 	private:
 		template <typename T> void EmitJump(T address);

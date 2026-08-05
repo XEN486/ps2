@@ -69,7 +69,7 @@ size_t EE::RunOnce() {
 	//}
 
 	// assume 1 instruction = 1 clock cycle.
-	m_R5900.cop0.count += (size_t)block.instructions;
+	m_R5900.cop0.count += (u32)block.instructions;
 
 	return block.instructions;
 }

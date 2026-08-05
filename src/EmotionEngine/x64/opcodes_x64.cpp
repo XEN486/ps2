@@ -67,3 +67,33 @@ void JitX64::ORI(InstructionData& data) {
 void JitX64::JR(InstructionData& data) {
 	EmitJump(r[data.rs].r32());
 }
+
+void JitX64::MTC0(InstructionData& data) {
+	InvokeNode* node;
+	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(&WRAP_WriteCOP0), FuncSignature::build<void, R5900*, u8, u32>());
+	node->set_arg(0, r5900);
+	node->set_arg(1, data.rd);
+	node->set_arg(2, r[data.rt].r32());
+}
+
+void JitX64::ADDIU(InstructionData& data) {
+	if (data.rt == 0) return;
+	x86::Gp temp = cc.new_gp32();
+	cc.mov(temp, r[data.rs].r32());
+	cc.add(temp, (i32)(i16)data.imm);
+	cc.movsxd(r[data.rt], temp);
+}
+
+void JitX64::SW(InstructionData& data) {
+	x86::Gp temp = cc.new_gp32();
+	cc.mov(temp, r[data.rs].r32());
+	if (data.imm) cc.add(temp, (i32)(i16)data.imm);
+	EmitWriteVirtualMemory<u32>(temp, r[data.rt].r32());
+}
+
+void JitX64::JALR(InstructionData& data) {
+	x86::Gp temp = cc.new_gp32();
+	cc.mov(temp, r[data.rs].r32());
+	if (data.rd) cc.mov(r[data.rd], data.pc + 8);
+	EmitJump(temp);
+}

@@ -194,7 +194,11 @@ namespace EmotionEngine {
 			virtual void LUI(InstructionData& data) = 0;
 			virtual void ORI(InstructionData& data) = 0;
 			virtual void JR(InstructionData& data) = 0;
-			
+			virtual void MTC0(InstructionData& data) = 0;
+			virtual void ADDIU(InstructionData& data) = 0;
+			virtual void SW(InstructionData& data) = 0;
+			virtual void JALR(InstructionData& data) = 0;
+
 		protected:
 			R5900* m_R5900;
 			Memory* m_Memory;

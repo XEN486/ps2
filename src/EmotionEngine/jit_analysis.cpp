@@ -27,10 +27,25 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 					break;
 				}
 
+				// SYNC.stype
+				case 0b001111: {
+					data.ptr = &JitBackend::NOP; // backend doesnt have to do anything
+					data.type = InstructionType::Sync;
+					break;
+				}
+
 				// JR
 				case 0b001000: {
 					UseRegisters({data.rs});
 					data.ptr = &JitBackend::JR;
+					data.type = InstructionType::Branch;
+					break;
+				}
+
+				// JALR
+				case 0b001001: {
+					UseRegisters({data.rs, data.rd});
+					data.ptr = &JitBackend::JALR;
 					data.type = InstructionType::Branch;
 					break;
 				}
@@ -47,20 +62,25 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b010000: {
 			if ((instruction & 0b11111111111) == 0) {
 				switch (data.rs) {
-					// MFC0
-					case 0b00000: {
-						UseRegisters({data.rt});
-						data.ptr = &JitBackend::MFC0;
-						break;
-					}
+					case 0b00000: { UseRegisters({data.rt, data.rd}); data.ptr = &JitBackend::MFC0; break; } // MFC0
+					case 0b00100: { UseRegisters({data.rt, data.rd}); data.ptr = &JitBackend::MTC0; break; } // MTC0
 
 					default: {
-						error_log("unknown cop0 opcode {:06b} {:08x} @ {:08x}", data.rs, instruction, data.pc);
+						error_log("unknown cop0 opcode (lo 11-bits == 0) {:05b} {:08x} @ {:08x}", data.rs, instruction, data.pc);
 						exit(1);
 					}
 				}
 				break;
 			}
+
+			switch (data.funct) {
+				case 0b000010: { data.ptr = &JitBackend::NOP; break; } // TLBWI (don't care about emulating TLB)
+				default: {
+					error_log("unknown cop0 opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, data.pc);;
+					exit(1);
+				}
+			}
+
 			break;
 		}
 
@@ -68,6 +88,8 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b001010: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::SLTI; break; }
 		case 0b001111: { UseRegisters({data.rt}); data.ptr = &JitBackend::LUI; break; }
 		case 0b001101: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::ORI; break; }
+		case 0b001001: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::ADDIU; break; }
+		case 0b101011: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::SW; break; }
 		
 		// BNE
 		case 0b000101: {
