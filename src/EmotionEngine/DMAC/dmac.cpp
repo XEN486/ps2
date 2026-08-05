@@ -146,7 +146,6 @@ void DMAC::WriteToReg(u32 address, u32 word) {
 
 u32 DMAC::ReadFromReg(u32 address) {
 	DmacReg reg = static_cast<DmacReg>(address & 0xffff);
-	debug_log("read <- D_{}", reg);
 
 	switch (reg) {
 		case DmacReg::CTRL:		{ return m_Regs.ctrl; }

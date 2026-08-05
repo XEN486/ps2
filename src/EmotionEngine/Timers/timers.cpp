@@ -181,8 +181,10 @@ u32 Timer::Read(u32 addr) {
 void Timer::Increment() {
 	if (!m_Mode.timer_enable || m_Disable) return;
 	m_Count++;
+	//debug_log("{} {} {} {}", m_Count, m_Compare, m_Mode.compare_interrupt_enable, m_Mode.overflow_interrupt_enable);
 
 	if (m_Count == m_Compare) {
+		debug_log("ok");
 		CompareInterrupt();
 		if (m_Mode.clear_on_compare) {
 			m_Count = 0;
@@ -196,6 +198,7 @@ void Timer::Increment() {
 
 void Timer::CompareInterrupt() {
 	if (m_Mode.compare_interrupt_enable) {
+		debug_log("compare interrupt");
 		// intc->interrupt(compare)
 		m_Mode.compare_interrupt_flag = true;
 	}
@@ -203,6 +206,7 @@ void Timer::CompareInterrupt() {
 
 void Timer::OverflowInterrupt() {
 	if (m_Mode.overflow_interrupt_enable) {
+		debug_log("overflow interrupt");
 		// intc->interrupt(overflow)
 		m_Mode.overflow_interrupt_enable = true;
 	}

@@ -6,6 +6,68 @@ using namespace asmjit;
 static u32 WRAP_ReadCOP0(EmotionEngine::Core::R5900* r5900, u8 reg) { return r5900->ReadCOP0(reg); }
 static void WRAP_WriteCOP0(EmotionEngine::Core::R5900* r5900, u8 reg, u32 val) { r5900->WriteCOP0(reg, val); }
 
+static void IMPL_div(EmotionEngine::Core::R5900* r5900, bool pipeline1, u8 index_rs, u8 index_rt) {
+	GPR& rs = r5900->gpr[index_rs];
+	GPR& rt = r5900->gpr[index_rt];
+
+	u64& hi = pipeline1 ? r5900->hi1 : r5900->hi;
+	u64& lo = pipeline1 ? r5900->lo1 : r5900->lo;
+
+	if (rs.reg_i32[0] == INT32_MIN && rt.reg_i32[0] == -1) {
+		lo = (u64)(i64)(i32)0x80000000;
+		hi = 0;
+	} else if (rt.reg_i32[0] != 0) {
+		lo = (u64)(i64)(i32)(rs.reg_i32[0] / rt.reg_i32[0]);
+		hi = (u64)(i64)(i32)(rs.reg_i32[0] % rt.reg_i32[0]);
+	} else {
+		lo = (u64)(i64)((rs.reg_i32[0] < 0) ? 1 : -1);
+		hi = (u64)(i64)(i32)rs.reg_i32[0];
+	}
+
+	if (index_rs && !pipeline1) r5900->gpr[index_rs].reg_u64[0] = lo;
+}
+
+static void IMPL_divu(EmotionEngine::Core::R5900* r5900, bool pipeline1, u8 index_rs, u8 index_rt) {
+	u32 numerator   = r5900->gpr[index_rs].reg_u32[0];
+	u32 denominator = r5900->gpr[index_rt].reg_u32[0];
+
+	u64& hi = pipeline1 ? r5900->hi1 : r5900->hi;
+	u64& lo = pipeline1 ? r5900->lo1 : r5900->lo;
+
+	if (denominator != 0) {
+		lo = (u64)(i64)(i32)(numerator / denominator);
+		hi = (u64)(i64)(i32)(numerator % denominator);
+	} else {
+		lo = (u64)(i64)-1;
+		hi = (u64)(i64)(i32)numerator;
+	}
+
+	if (index_rs && !pipeline1) r5900->gpr[index_rs].reg_u64[0] = lo;
+}
+
+static void IMPL_mult(EmotionEngine::Core::R5900* r5900, bool pipeline1, u8 index_rs, u8 index_rt, u8 index_rd) {
+	i64 result = (i64)r5900->gpr[index_rs].reg_i32[0] * (i64)r5900->gpr[index_rt].reg_i32[0];
+
+	u64& hi = pipeline1 ? r5900->hi1 : r5900->hi;
+	u64& lo = pipeline1 ? r5900->lo1 : r5900->lo;
+
+	lo = (u64)(i64)(i32)result;
+	hi = (u64)(i64)(i32)(result >> 32);
+
+	if (index_rd) r5900->gpr[index_rd].reg_u64[0] = lo;
+}
+
+static void IMPL_multu(EmotionEngine::Core::R5900* r5900, bool pipeline1, u8 index_rs, u8 index_rt, u8 index_rd) {
+	u64 result = (u64)r5900->gpr[index_rs].reg_u32[0] * (u64)r5900->gpr[index_rt].reg_u32[0];
+	u64& hi = pipeline1 ? r5900->hi1 : r5900->hi;
+	u64& lo = pipeline1 ? r5900->lo1 : r5900->lo;
+
+	lo = (u64)(i64)(i32)result;
+	hi = (u64)(i64)(i32)(result >> 32);
+
+	if (index_rd) r5900->gpr[index_rd].reg_u64[0] = lo;
+}
+
 void JitX64::LUI(InstructionData& data) {
 	u32 shifted = data.imm << 16;
 	EmitStoreRegister(R64, data.rt, shifted, true);
@@ -41,16 +103,16 @@ void JitX64::SQ(InstructionData& data) {
 
 void JitX64::SLTU(InstructionData& data) {
 	// compare rs and rt
-    EmitLoadRegister(s1, R64, data.rs);
-    EmitLoadRegister(s2, R64, data.rt);
-    cc.cmp(s1, s2);
+	EmitLoadRegister(s1, R64, data.rs);
+	EmitLoadRegister(s2, R64, data.rt);
+	cc.cmp(s1, s2);
 
-    // s1 < s2 (unsigned) -> s1 = 1, else s1 = 0
-    cc.setb(s1.r8());
-    cc.movzx(s1, s1.r8()); // zero extend to 64-bit
+	// s1 < s2 (unsigned) -> s1 = 1, else s1 = 0
+	cc.setb(s1.r8());
+	cc.movzx(s1, s1.r8()); // zero extend to 64-bit
 
 	// rd <- s1
-    EmitStoreRegister(R64, data.rd, s1, false);
+	EmitStoreRegister(R64, data.rd, s1, false);
 }
 
 void JitX64::JAL(InstructionData& data) {
@@ -64,13 +126,13 @@ void JitX64::JAL(InstructionData& data) {
 
 void JitX64::BNE(InstructionData& data) {
 	// compare rs and rt
-    EmitLoadRegister(s1, R64, data.rs);
-    EmitLoadRegister(s2, R64, data.rt);
+	EmitLoadRegister(s1, R64, data.rs);
+	EmitLoadRegister(s2, R64, data.rt);
 
 	Label exit_bne = cc.new_label();
 	Label end = cc.new_label();
 
-    cc.cmp(s1, s2);
+	cc.cmp(s1, s2);
 	cc.j(x86::CondCode::kEqual, exit_bne);
 
 	// PC is after the branch delay slot so we have to go back 1 instruction to use it as a base for the branch
@@ -93,7 +155,7 @@ void JitX64::DADDU(InstructionData& data) {
 	EmitStoreRegister(R64, data.rd, s1.r64(), false);	// rd <- s1
 }
 
-void JitX64::SYSCALL(InstructionData& data) {
+void JitX64::SYSCALL(InstructionData&) {
 	error_log("syscall unimplemented");
 	exit(1);
 }
@@ -106,7 +168,7 @@ void JitX64::JR(InstructionData& data) {
 	// TODO: Exception(AddressError);
 }
 
-void JitX64::EI(InstructionData& data) {
+void JitX64::EI(InstructionData&) {
 	// TODO: implement interrupts
 }
 
@@ -138,6 +200,7 @@ void JitX64::SW(InstructionData& data) {
 }
 
 void JitX64::MULT(InstructionData& data) {
+#if 0
 	EmitLoadRegister(s1, R32, data.rs);						// s1 <- rs
 	EmitLoadRegister(s2, R32, data.rt);						// s2 <- rt
 
@@ -171,6 +234,18 @@ void JitX64::MULT(InstructionData& data) {
 	cc.pop(x86::rcx);
 	cc.pop(x86::rbx);
 	cc.pop(x86::rax);
+#else
+	InvokeNode* node = EmitExternalCall(
+		reinterpret_cast<uintptr_t>(&IMPL_mult),
+		FuncSignature::build<void, R5900*, bool, u8, u8, u8>()
+	);
+
+	node->set_arg(0, m_R5900);
+	node->set_arg(1, data.pipeline1);
+	node->set_arg(2, data.rs);
+	node->set_arg(3, data.rt);
+	node->set_arg(4, data.rd);
+#endif
 }
 
 void JitX64::ADDU(InstructionData& data) {
@@ -211,7 +286,7 @@ void JitX64::AND(InstructionData& data) {
 	EmitStoreRegister(R64, data.rd, s1, false);				// rd <- s1
 }
 
-void JitX64::SYNC(InstructionData& data) {
+void JitX64::SYNC(InstructionData&) {
 	// this instruction is handled by the backend
 }
 
@@ -279,13 +354,13 @@ void JitX64::BEQ(InstructionData& data) {
 	}
 
 	// compare rs and rt
-    EmitLoadRegister(s1, R64, data.rs);
-    EmitLoadRegister(s2, R64, data.rt);
+	EmitLoadRegister(s1, R64, data.rs);
+	EmitLoadRegister(s2, R64, data.rt);
 
 	Label exit_beq = cc.new_label();
 	Label end = cc.new_label();
 
-    cc.cmp(s1, s2);
+	cc.cmp(s1, s2);
 	cc.j(x86::CondCode::kNotEqual, exit_beq);
 
 	// PC is after the branch delay slot so we have to go back 1 instruction to use it as a base for the branch
@@ -313,7 +388,7 @@ void JitX64::SB(InstructionData& data) {
 void JitX64::SWC1(InstructionData& data) {
 	// base = rs
 	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
-	if (data.imm) cc.add(s1.r32(), (i16)data.imm);			// vaddr += (i16)imm
+	if (data.imm) cc.add(s1.r32(), (i32)(i16)data.imm);		// vaddr += (i16)imm
 
 	EmitLoadFPR(s2.r32(), data.rt);							// s2 <- ft
 	EmitWriteVirtualMemory<u32>(s1, s2.r32());				// [vaddr] <- rt
@@ -321,18 +396,19 @@ void JitX64::SWC1(InstructionData& data) {
 
 void JitX64::SLTIU(InstructionData& data) {
 	// compare rs and imm
-    EmitLoadRegister(s1, R64, data.rs);
-    cc.cmp(s1, (i32)(i16)data.imm);
+	EmitLoadRegister(s1, R64, data.rs);
+	cc.cmp(s1, (i32)(i16)data.imm);
 
-    // s1 < imm (unsigned) -> s1 = 1, else s1 = 0
-    cc.setb(s1.r8());
-    cc.movzx(s1, s1.r8()); // zero extend to 64-bit
+	// s1 < imm (unsigned) -> s1 = 1, else s1 = 0
+	cc.setb(s1.r8());
+	cc.movzx(s1, s1.r8()); // zero extend to 64-bit
 
 	// rt <- s1
-    EmitStoreRegister(R64, data.rt, s1, false);
+	EmitStoreRegister(R64, data.rt, s1, false);
 }
 
 void JitX64::DIVU(InstructionData& data) {
+#if 0
 	EmitLoadRegister(s1.r32(), R32, data.rs);
 	EmitLoadRegister(s2.r32(), R32, data.rt);
 
@@ -390,6 +466,17 @@ void JitX64::DIVU(InstructionData& data) {
 	cc.pop(x86::rax);
 
 	cc.bind(done);
+#else
+	InvokeNode* node = EmitExternalCall(
+		reinterpret_cast<uintptr_t>(&IMPL_divu),
+		FuncSignature::build<void, R5900*, bool, u8, u8>()
+	);
+
+	node->set_arg(0, m_R5900);
+	node->set_arg(1, data.pipeline1);
+	node->set_arg(2, data.rs);
+	node->set_arg(3, data.rt);
+#endif
 }
 
 void JitX64::MFHI(InstructionData& data) {
@@ -401,17 +488,17 @@ void JitX64::MFHI(InstructionData& data) {
 	EmitStoreRegister(R64, data.rd, t1, false);
 }
 
-void JitX64::BREAK(InstructionData& data) {
+void JitX64::BREAK(InstructionData&) {
 	//cc.int3();
 }
 
 void JitX64::BLTZ(InstructionData& data) {
-    EmitLoadRegister(s1, R64, data.rs);
+	EmitLoadRegister(s1, R64, data.rs);
 
 	Label exit_bltz = cc.new_label();
 	Label end = cc.new_label();
 
-    cc.cmp(s1, 0);
+	cc.cmp(s1, 0);
 	cc.j(x86::CondCode::kGE, exit_bltz);
 
 	// PC is after the branch delay slot so we have to go back 1 instruction to use it as a base for the branch
@@ -430,7 +517,7 @@ void JitX64::BLTZ(InstructionData& data) {
 void JitX64::LWC1(InstructionData& data) {
 	// base = rs
 	EmitLoadRegister(s1, R32, data.rs);						// vaddr <- base
-	if (data.imm) cc.add(s1.r32(), (i16)data.imm);			// vaddr += (i16)imm
+	if (data.imm) cc.add(s1.r32(), (i32)(i16)data.imm);		// vaddr += (i16)imm
 
 	EmitReadVirtualMemory<u32>(s2.r32(), s1);				// s2 <- [vaddr]
 	EmitStoreFPR(data.rt, s2.r32());						// ft <- s2
@@ -483,17 +570,17 @@ void JitX64::MULs(InstructionData& data) {
 	// TODO: flags
 	EmitLoadFPR(v1, data.rd);								// v1 <- fs
 	EmitLoadFPR(v2, data.rt);								// v2 <- ft
-	cc.vmulss(v1, v1, v2);									// v1 /= v2
+	cc.vmulss(v1, v1, v2);									// v1 *= v2
 	EmitStoreFPR(data.sa, v1);								// fd <- v1
 }
 
 void JitX64::BGEZ(InstructionData& data) {
-    EmitLoadRegister(s1, R64, data.rs);
+	EmitLoadRegister(s1, R64, data.rs);
 
 	Label exit_bgez = cc.new_label();
 	Label end = cc.new_label();
 
-    cc.cmp(s1, 0);
+	cc.cmp(s1, 0);
 	cc.j(x86::CondCode::kL, exit_bgez);
 
 	// PC is after the branch delay slot so we have to go back 1 instruction to use it as a base for the branch
@@ -556,6 +643,7 @@ void JitX64::NOR(InstructionData& data) {
 }
 
 void JitX64::MULTU(InstructionData& data) {
+#if 0
 	EmitLoadRegister(s1, R32, data.rs);						// s1 <- rs
 	EmitLoadRegister(s2, R32, data.rt);						// s2 <- rt
 
@@ -589,10 +677,21 @@ void JitX64::MULTU(InstructionData& data) {
 	cc.pop(x86::rcx);
 	cc.pop(x86::rbx);
 	cc.pop(x86::rax);
+#else
+	InvokeNode* node = EmitExternalCall(
+		reinterpret_cast<uintptr_t>(&IMPL_multu),
+		FuncSignature::build<void, R5900*, bool, u8, u8, u8>()
+	);
+
+	node->set_arg(0, m_R5900);
+	node->set_arg(1, data.pipeline1);
+	node->set_arg(2, data.rs);
+	node->set_arg(3, data.rt);
+	node->set_arg(4, data.rd);
+#endif
 }
 
 void JitX64::MTC0(InstructionData& data) {
-	// TODO: LLE emulation of BIOS
 	InvokeNode* node = EmitExternalCall(
 		reinterpret_cast<uintptr_t>(&WRAP_WriteCOP0),
 		FuncSignature::build<void, R5900*, u8, u32>()
@@ -605,7 +704,6 @@ void JitX64::MTC0(InstructionData& data) {
 }
 
 void JitX64::MFC0(InstructionData& data) {
-	// TODO: LLE emulation of BIOS
 	InvokeNode* node = EmitExternalCall(
 		reinterpret_cast<uintptr_t>(&WRAP_ReadCOP0),
 		FuncSignature::build<u32, R5900*, u8>()
@@ -620,18 +718,18 @@ void JitX64::MFC0(InstructionData& data) {
 
 void JitX64::SLTI(InstructionData& data) {
 	// compare rs and imm
-    EmitLoadRegister(s1, R64, data.rs);
-    cc.cmp(s1, (i32)(i16)data.imm);
+	EmitLoadRegister(s1, R64, data.rs);
+	cc.cmp(s1, (i32)(i16)data.imm);
 
-    // s1 < imm (signed) -> s1 = 1, else s1 = 0
-    cc.setl(s1.r8());
-    cc.movzx(s1, s1.r8()); // zero extend to 64-bit
+	// s1 < imm (signed) -> s1 = 1, else s1 = 0
+	cc.setl(s1.r8());
+	cc.movzx(s1, s1.r8()); // zero extend to 64-bit
 
 	// rt <- s1
-    EmitStoreRegister(R64, data.rt, s1, false);
+	EmitStoreRegister(R64, data.rt, s1, false);
 }
 
-void JitX64::TLBWI(InstructionData& data) {
+void JitX64::TLBWI(InstructionData&) {
 	// don't care about TLB emulation
 }
 
@@ -652,16 +750,16 @@ void JitX64::MFLO(InstructionData& data) {
 
 void JitX64::SLT(InstructionData& data) {
 	// compare rs and rt
-    EmitLoadRegister(s1, R64, data.rs);
-    EmitLoadRegister(s2, R64, data.rt);
-    cc.cmp(s1, s2);
+	EmitLoadRegister(s1, R64, data.rs);
+	EmitLoadRegister(s2, R64, data.rt);
+	cc.cmp(s1, s2);
 
-    // s1 < s2 (signed) -> s1 = 1, else s1 = 0
-    cc.setl(s1.r8());
-    cc.movzx(s1, s1.r8()); // zero extend to 64-bit
+	// s1 < s2 (signed) -> s1 = 1, else s1 = 0
+	cc.setl(s1.r8());
+	cc.movzx(s1, s1.r8()); // zero extend to 64-bit
 
 	// rd <- s1
-    EmitStoreRegister(R64, data.rd, s1, false);
+	EmitStoreRegister(R64, data.rd, s1, false);
 }
 
 void JitX64::MOVN(InstructionData& data) {
@@ -677,6 +775,7 @@ void JitX64::MOVN(InstructionData& data) {
 }
 
 void JitX64::DIV(InstructionData& data) {
+#if 0
 	EmitLoadRegister(s1.r32(), R32, data.rs);
 	EmitLoadRegister(s2.r32(), R32, data.rt);
 
@@ -708,7 +807,6 @@ void JitX64::DIV(InstructionData& data) {
 
 	cc.mov(x86::rbx, r5900);								// save r5900 as if it was in rax, rcx or rdx it would get corrupted
 
-	cc.xor_(x86::edx, x86::edx);							// edx <- 0
 	cc.mov(x86::eax, s1.r32());								// eax <- s1
 	cc.emit(x86::Inst::kIdCdq);
 
@@ -736,4 +834,78 @@ void JitX64::DIV(InstructionData& data) {
 	cc.pop(x86::rax);
 
 	cc.bind(done);
+#else
+	InvokeNode* node = EmitExternalCall(
+		reinterpret_cast<uintptr_t>(&IMPL_div),
+		FuncSignature::build<void, R5900*, bool, u8, u8>()
+	);
+
+	node->set_arg(0, m_R5900);
+	node->set_arg(1, data.pipeline1);
+	node->set_arg(2, data.rs);
+	node->set_arg(3, data.rt);
+#endif
+}
+
+void JitX64::SUBU(InstructionData& data) {
+	EmitLoadRegister(s1, R32, data.rs);						// s1 <- rs
+	EmitLoadRegister(s2, R32, data.rt);						// s2 <- rt
+	cc.sub(s1.r32(), s2.r32());								// s1 -= s2
+	EmitStoreRegister(R64, data.rd, s1.r32(), true);		// rd <- s1
+}
+
+void JitX64::BLEZ(InstructionData& data) {
+	EmitLoadRegister(s1, R64, data.rs);
+
+	Label exit_blez = cc.new_label();
+	Label end = cc.new_label();
+
+	cc.cmp(s1, 0);
+	cc.j(x86::CondCode::kG, exit_blez);
+
+	// PC is after the branch delay slot so we have to go back 1 instruction to use it as a base for the branch
+	EmitJump((m_CompilePC - 4) + (i32)((i16)data.imm << 2));
+	EmitBranchDelay();
+	cc.jmp(end);
+
+	cc.bind(exit_blez);
+	if (!data.likely) {
+		EmitBranchDelay();
+	}
+
+	cc.bind(end);
+}
+
+void JitX64::BGTZ(InstructionData& data) {
+	EmitLoadRegister(s1, R64, data.rs);
+
+	Label exit_bgtz = cc.new_label();
+	Label end = cc.new_label();
+
+	cc.cmp(s1, 0);
+	cc.j(x86::CondCode::kLE, exit_bgtz);
+
+	// PC is after the branch delay slot so we have to go back 1 instruction to use it as a base for the branch
+	EmitJump((m_CompilePC - 4) + (i32)((i16)data.imm << 2));
+	EmitBranchDelay();
+	cc.jmp(end);
+
+	cc.bind(exit_bgtz);
+	if (!data.likely) {
+		EmitBranchDelay();
+	}
+
+	cc.bind(end);
+}
+
+void JitX64::PSRLW(InstructionData& data) {
+	EmitLoadRegister128(v1, data.rt);
+	cc.vpsrlw(v1, v1, data.sa);
+	EmitStoreRegister128(data.rd, v1);
+}
+
+void JitX64::DSRL32(InstructionData& data) {
+	EmitLoadRegister(s1, R64, data.rt);						// s1 <- rt
+	cc.shr(s1, data.sa + 32);								// s1 >> (sa + 32) (logical)
+	EmitStoreRegister(R64, data.rd, s1, false);				// rd <- s1
 }

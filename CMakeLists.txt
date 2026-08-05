@@ -25,3 +25,10 @@ target_link_libraries(ps2
 	asmjit::asmjit
 	SDL3::SDL3
 )
+
+
+if(MSVC)
+	target_compile_options(ps2 PRIVATE /W4)
+else()
+	target_compile_options(ps2 PRIVATE -Wall -Wextra)
+endif()

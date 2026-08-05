@@ -10,6 +10,7 @@ u32 Core::R5900::ReadCOP0(u8 reg) {
 		case 2: return cop0.entrylo0;
 		case 3: return cop0.entrylo1;
 		case 5: return cop0.pagemask;
+		case 6: return cop0.wired;
 		case 9: return cop0.count;
 		case 10: return cop0.entryhi;
 		case 11: return cop0.compare;
@@ -30,6 +31,7 @@ void Core::R5900::WriteCOP0(u8 reg, u32 val) {
 		case 2: { cop0.entrylo0 = val; break; }
 		case 3: { cop0.entrylo1 = val; break; }
 		case 5: { cop0.pagemask = val; break; }
+		case 6: { cop0.wired = val; break; }
 		case 9: { cop0.count = val; break; }
 		case 10: { cop0.entryhi = val; break; }
 		case 11: { cop0.compare = val; break; }
@@ -84,6 +86,7 @@ void EE::Reset() {
 	m_R5900.pc = 0xbfc00000;
 
 	// COP0 registers
+	memset(&m_R5900.cop0, 0, sizeof(EmotionEngine::Core::Cop0));
 	m_R5900.cop0.prid	= 0x00002e20; // Imp=2E, Rev=20 on reset
 	m_R5900.cop0.config	= 0x00000440; // IC=010, DC=001 on reset
 	m_R5900.cop0.status	= 0x00400004; // BEV=1, ERL=1 on reset

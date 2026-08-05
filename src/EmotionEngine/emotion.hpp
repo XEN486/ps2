@@ -61,6 +61,7 @@ namespace EmotionEngine {
 			u32 entrylo0;	// $2: Lower part of the TLB entry 0
 			u32 entrylo1;	// $2: Lower part of the TLB entry 1
 			u32 pagemask;	// $5: Page size comparison mask
+			u32 wired;		// $6: The number of Wired TLB entries
 			u32 count;		// $9: Timer count value
 			u32 entryhi;	// $10: Upper parts of a TLB entry
 			u32 compare;	// $11: Timer stable value
@@ -248,6 +249,11 @@ namespace EmotionEngine {
 			virtual void SLT(InstructionData& data) = 0;
 			virtual void MOVN(InstructionData& data) = 0;
 			virtual void DIV(InstructionData& data) = 0;
+			virtual void SUBU(InstructionData& data) = 0;
+			virtual void BLEZ(InstructionData& data) = 0;
+			virtual void BGTZ(InstructionData& data) = 0;
+			virtual void PSRLW(InstructionData& data) = 0;
+			virtual void DSRL32(InstructionData& data) = 0;
 
 		protected:
 			R5900* m_R5900;

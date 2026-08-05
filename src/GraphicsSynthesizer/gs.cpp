@@ -6,7 +6,7 @@ void GS::WritePrim(u16 value) {
 }
 
 void GS::WritePrivilegedRegEE(u32 address, u32 word) {
-	auto id = static_cast<PrivilegedRegisterID>(address & 0xffff);
+	u16 id = address & 0xffff;
 	switch (id) {
 		case PMODE		+ 0: { m_PRegs.pmode = word; break; }
 		case PMODE		+ 4: { m_PRegs.pmode |= ((u64)word << 32); break; }
@@ -69,7 +69,7 @@ void GS::WriteInternalReg(InternalRegisterID id, u64 dword) {
 		case XYOFFSET_2:	{ m_IRegs.ctx2.xyoffset = dword; break; }
 		case SCISSOR_1:		{ m_IRegs.ctx1.scissor = dword; break; }
 		case SCISSOR_2:		{ m_IRegs.ctx2.scissor = dword; break; }
-		case PRIM:			{ m_IRegs.prim = dword; break; }
+		case PRIM:			{ m_IRegs.prim = dword & 0xffff; break; }
 		case RGBAQ:			{ m_IRegs.rgbaq = RegRGBAQ(dword, true); break; }
 		case XYZF2:			{ WriteXYZ(RegXYZF(dword), false); break; }
 		case XYZF3:			{ WriteXYZ(RegXYZF(dword), true); break; }

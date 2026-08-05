@@ -87,6 +87,11 @@ namespace EmotionEngine::Core {
 		void SLT(InstructionData& data) override;
 		void MOVN(InstructionData& data) override;
 		void DIV(InstructionData& data) override;
+		void SUBU(InstructionData& data) override;
+		void BLEZ(InstructionData& data) override;
+		void BGTZ(InstructionData& data) override;
+		void PSRLW(InstructionData& data) override;
+		void DSRL32(InstructionData& data) override;
 
 	private:
 		asmjit::InvokeNode* EmitExternalCall(uintptr_t address, const asmjit::FuncSignature& sig);

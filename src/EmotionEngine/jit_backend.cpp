@@ -35,6 +35,7 @@ void JitBackend::Release() {
 
 void JitBackend::Invalidate(u32 pc) {
 #ifdef ENABLE_SELF_MODIFYING_CODE
+	pc &= 0x1fffffff;
 	for (auto& element : m_BlockCache) {
 		CompiledBlock& block = element.second;
 		if (!block.valid) continue;
@@ -57,15 +58,11 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 	m_CodeHolder.reinit();
 
 	u32 end_pc = 0;
-	bool delay_slot = false;
-	bool do_recompile = true;
-
 	EmitBeginBlock();
-
 	while (true) {
 		end_pc = m_CompilePC;
 
-		// recompile the delay slot when the branch is finished
+		// skip delay slot if we fell through
 		if (m_InBranchDelay) {
 			m_InBranchDelay = false;
 			continue;
@@ -81,6 +78,7 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 		else if (data.type == InstructionType::Branch) {
 			// analyze and store branch delay slot first
 			m_BranchDelay = AnalyzeOp(Fetch());
+			block.instructions++;
 
 			// recompile branch and break out of this loop
 			(this->*(data.ptr))(data);
@@ -164,6 +162,8 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				case 0b101010: { data.ptr = &JitBackend::SLT; break; }									// SLT
 				case 0b001011: { data.ptr = &JitBackend::MOVN; break; }									// MOVN
 				case 0b011010: { data.ptr = &JitBackend::DIV; break; }									// DIV
+				case 0b100011: { data.ptr = &JitBackend::SUBU; break; }									// SUBU
+				case 0b111110: { data.ptr = &JitBackend::DSRL32; break; }								// DSRL32
 
 				// system call (HLE for now)
 				case 0b001100: { data.ptr = &JitBackend::SYSCALL; data.type = InstructionType::Syscall; break; }
@@ -269,7 +269,8 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 			switch (data.funct) {
 				case 0b011010: { data.ptr = &JitBackend::DIV; data.pipeline1 = true; break; }			// DIV1
 				case 0b010010: { data.ptr = &JitBackend::MFLO; data.pipeline1 = true; break; }			// MFLO1
-				
+				case 0b111110: { data.ptr = &JitBackend::PSRLW; break; }								// PSRLW
+
 				default: {
 					error_log("unknown mmi opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, pc);
 					exit(1);
@@ -303,6 +304,8 @@ inline InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		// branch
 		case 0b000101: { data.ptr = &JitBackend::BNE; data.type = InstructionType::Branch; break; }		// BNE
 		case 0b000100: { data.ptr = &JitBackend::BEQ; data.type = InstructionType::Branch; break; } 	// BEQ
+		case 0b000110: { data.ptr = &JitBackend::BLEZ; data.type = InstructionType::Branch; break; }	// BLEZ
+		case 0b000111: { data.ptr = &JitBackend::BGTZ; data.type = InstructionType::Branch; break; }	// BGTZ
 
 		// BEQL
 		case 0b010100: {

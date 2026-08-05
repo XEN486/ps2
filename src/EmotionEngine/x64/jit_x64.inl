@@ -2,6 +2,8 @@
 #include "../Memory/memory.hpp"
 
 namespace EmotionEngine::Core {
+#pragma warning(push)
+#pragma warning(disable:4505)
 	static void WRAP_WriteVirtualMemory64(EmotionEngine::Memory* mem, u32 addr, u64 val) { mem->WriteVirtualMemory64(addr, val); }
 	static void WRAP_WriteVirtualMemory32(EmotionEngine::Memory* mem, u32 addr, u32 val) { mem->WriteVirtualMemory32(addr, val); }
 	static void WRAP_WriteVirtualMemory16(EmotionEngine::Memory* mem, u32 addr, u16 val) { mem->WriteVirtualMemory16(addr, val); }
@@ -10,6 +12,7 @@ namespace EmotionEngine::Core {
 	static u32 WRAP_ReadVirtualMemory32(EmotionEngine::Memory* mem, u32 addr) { return mem->ReadVirtualMemory32(addr); }
 	static u16 WRAP_ReadVirtualMemory16(EmotionEngine::Memory* mem, u32 addr) { return mem->ReadVirtualMemory16(addr); }
 	static u8 WRAP_ReadVirtualMemory8(EmotionEngine::Memory* mem, u32 addr) { return mem->ReadVirtualMemory8(addr); }
+#pragma warning(pop)
 
 	template <typename T>
 	constexpr void JitX64::EmitLoadRegister(T reg, RegisterSize size, u8 index) {
