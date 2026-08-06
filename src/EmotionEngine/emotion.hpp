@@ -213,6 +213,10 @@ namespace EmotionEngine {
 			virtual void OR(InstructionData& data) = 0;
 			virtual void DADDU(InstructionData& data) = 0;
 			virtual void LW(InstructionData& data) = 0;
+			virtual void MULT(InstructionData& data) = 0;
+			virtual void MULTU(InstructionData& data) = 0;
+			virtual void DIV(InstructionData& data) = 0;
+			virtual void DIVU(InstructionData& data) = 0;
 
 		protected:
 			R5900* m_R5900;

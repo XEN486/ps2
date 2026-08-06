@@ -76,6 +76,34 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 					break;
 				}
 
+				// MULT
+				case 0b011000: {
+					UseRegisters({data.rs, data.rt, data.rd});
+					data.ptr = &JitBackend::MULT;
+					break;
+				}
+
+				// MULTU
+				case 0b011001: {
+					UseRegisters({data.rs, data.rt});
+					data.ptr = &JitBackend::MULTU;
+					break;
+				}
+
+				// DIV
+				case 0b011010: {
+					UseRegisters({data.rs, data.rt});
+					data.ptr = &JitBackend::DIV;
+					break;
+				}
+
+				// DIVU
+				case 0b011011: {
+					UseRegisters({data.rs, data.rt});
+					data.ptr = &JitBackend::DIVU;
+					break;
+				}
+
 				// SYNC.stype
 				case 0b001111: {
 					data.ptr = &JitBackend::NOP; // backend doesnt have to do anything
@@ -144,11 +172,54 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 			switch (data.funct) {
 				case 0b000010: { data.ptr = &JitBackend::NOP; break; } // TLBWI (don't care about emulating TLB)
 				default: {
-					error_log("unknown cop0 opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, data.pc);;
+					error_log("unknown cop0 opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, data.pc);
 					exit(1);
 				}
 			}
 
+			break;
+		}
+
+		// MMI
+		case 0b011100: {
+			switch (data.funct) {
+				// MULT1
+				case 0b011000: {
+					UseRegisters({data.rs, data.rt, data.rd});
+					data.ptr = &JitBackend::MULT;
+					data.pipeline1 = true;
+					break;
+				}
+
+				// MULTU1
+				case 0b011001: {
+					UseRegisters({data.rs, data.rt});
+					data.ptr = &JitBackend::MULTU;
+					data.pipeline1 = true;
+					break;
+				}
+
+				// DIV1
+				case 0b011010: {
+					UseRegisters({data.rs, data.rt});
+					data.ptr = &JitBackend::DIV;
+					data.pipeline1 = true;
+					break;
+				}
+
+				// DIVU1
+				case 0b011011: {
+					UseRegisters({data.rs, data.rt});
+					data.ptr = &JitBackend::DIVU;
+					data.pipeline1 = true;
+					break;
+				}
+
+				default: {
+					error_log("unknown mmi opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, data.pc);
+					exit(1);
+				}
+			}
 			break;
 		}
 

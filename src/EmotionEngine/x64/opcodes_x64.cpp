@@ -6,6 +6,68 @@ using namespace asmjit;
 static u32 WRAP_ReadCOP0(EmotionEngine::Core::R5900* r5900, u8 reg) { return r5900->ReadCOP0(reg); }
 static void WRAP_WriteCOP0(EmotionEngine::Core::R5900* r5900, u8 reg, u32 val) { r5900->WriteCOP0(reg, val); }
 
+static void IMPL_div(EmotionEngine::Core::R5900* r5900, bool pipeline1, u8 index_rs, u8 index_rt) {
+	GPR& rs = r5900->gpr[index_rs];
+	GPR& rt = r5900->gpr[index_rt];
+
+	u64& hi = pipeline1 ? r5900->hi1 : r5900->hi;
+	u64& lo = pipeline1 ? r5900->lo1 : r5900->lo;
+
+	if (rs.reg_i32[0] == INT32_MIN && rt.reg_i32[0] == -1) {
+		lo = (u64)(i64)(i32)0x80000000;
+		hi = 0;
+	} else if (rt.reg_i32[0] != 0) {
+		lo = (u64)(i64)(i32)(rs.reg_i32[0] / rt.reg_i32[0]);
+		hi = (u64)(i64)(i32)(rs.reg_i32[0] % rt.reg_i32[0]);
+	} else {
+		lo = (u64)(i64)((rs.reg_i32[0] < 0) ? 1 : -1);
+		hi = (u64)(i64)(i32)rs.reg_i32[0];
+	}
+
+	if (index_rs && !pipeline1) r5900->gpr[index_rs].reg_u64[0] = lo;
+}
+
+static void IMPL_divu(EmotionEngine::Core::R5900* r5900, bool pipeline1, u8 index_rs, u8 index_rt) {
+	u32 numerator   = r5900->gpr[index_rs].reg_u32[0];
+	u32 denominator = r5900->gpr[index_rt].reg_u32[0];
+
+	u64& hi = pipeline1 ? r5900->hi1 : r5900->hi;
+	u64& lo = pipeline1 ? r5900->lo1 : r5900->lo;
+
+	if (denominator != 0) {
+		lo = (u64)(i64)(i32)(numerator / denominator);
+		hi = (u64)(i64)(i32)(numerator % denominator);
+	} else {
+		lo = (u64)(i64)-1;
+		hi = (u64)(i64)(i32)numerator;
+	}
+
+	//if (index_rs && !pipeline1) r5900->gpr[index_rs].reg_u64[0] = lo;
+}
+
+static void IMPL_mult(EmotionEngine::Core::R5900* r5900, bool pipeline1, u8 index_rs, u8 index_rt, u8 index_rd) {
+	i64 result = (i64)r5900->gpr[index_rs].reg_i32[0] * (i64)r5900->gpr[index_rt].reg_i32[0];
+
+	u64& hi = pipeline1 ? r5900->hi1 : r5900->hi;
+	u64& lo = pipeline1 ? r5900->lo1 : r5900->lo;
+
+	lo = (u64)(i64)(i32)result;
+	hi = (u64)(i64)(i32)(result >> 32);
+
+	if (index_rd) r5900->gpr[index_rd].reg_u64[0] = lo;
+}
+
+static void IMPL_multu(EmotionEngine::Core::R5900* r5900, bool pipeline1, u8 index_rs, u8 index_rt) {
+	u64 result = (u64)r5900->gpr[index_rs].reg_u32[0] * (u64)r5900->gpr[index_rt].reg_u32[0];
+	u64& hi = pipeline1 ? r5900->hi1 : r5900->hi;
+	u64& lo = pipeline1 ? r5900->lo1 : r5900->lo;
+
+	lo = (u64)(i64)(i32)result;
+	hi = (u64)(i64)(i32)(result >> 32);
+
+	//if (index_rd) r5900->gpr[index_rd].reg_u64[0] = lo;
+}
+
 void JitX64::MFC0(InstructionData& data) {
 	if (data.rt == 0) return;
 	InvokeNode* node;
@@ -215,4 +277,49 @@ void JitX64::LW(InstructionData& data) {
 	cc.mov(temp.r32(), r[data.rs].r32());
 	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
 	EmitReadVirtualMemory<u32>(r[data.rt].r32(), temp.r32());
+}
+
+void JitX64::MULT(InstructionData& data) {
+	FlushRegisters();
+	InvokeNode* node;
+	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(IMPL_mult), FuncSignature::build<void, R5900*, bool, u8, u8, u8>());
+	node->set_arg(0, r5900);
+	node->set_arg(1, data.pipeline1);
+	node->set_arg(2, data.rs);
+	node->set_arg(3, data.rt);
+	node->set_arg(4, data.rd);
+	LoadRegisters();
+}
+
+void JitX64::MULTU(InstructionData& data) {
+	FlushRegisters();
+	InvokeNode* node;
+	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(IMPL_multu), FuncSignature::build<void, R5900*, bool, u8, u8>());
+	node->set_arg(0, r5900);
+	node->set_arg(1, data.pipeline1);
+	node->set_arg(2, data.rs);
+	node->set_arg(3, data.rt);
+	LoadRegisters();
+}
+
+void JitX64::DIV(InstructionData& data) {
+	FlushRegisters();
+	InvokeNode* node;
+	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(IMPL_div), FuncSignature::build<void, R5900*, bool, u8, u8>());
+	node->set_arg(0, r5900);
+	node->set_arg(1, data.pipeline1);
+	node->set_arg(2, data.rs);
+	node->set_arg(3, data.rt);
+	LoadRegisters();
+}
+
+void JitX64::DIVU(InstructionData& data) {
+	FlushRegisters();
+	InvokeNode* node;
+	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(IMPL_divu), FuncSignature::build<void, R5900*, bool, u8, u8>());
+	node->set_arg(0, r5900);
+	node->set_arg(1, data.pipeline1);
+	node->set_arg(2, data.rs);
+	node->set_arg(3, data.rt);
+	LoadRegisters();
 }

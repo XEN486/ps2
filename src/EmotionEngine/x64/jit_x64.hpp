@@ -40,12 +40,17 @@ namespace EmotionEngine::Core {
 		void OR(InstructionData& data) override;
 		void DADDU(InstructionData& data) override;
 		void LW(InstructionData& data) override;
+		void MULT(InstructionData& data) override;
+		void MULTU(InstructionData& data) override;
+		void DIV(InstructionData& data) override;
+		void DIVU(InstructionData& data) override;
 
 	private:
 		template <typename T> void EmitJump(T address);
 		template <typename Size, typename T> void EmitReadVirtualMemory(const asmjit::x86::Gp& ret, T address);
 		template <typename Size, typename T> void EmitWriteVirtualMemory(T address, const asmjit::x86::Gp& value);
 		void FlushRegisters();
+		void LoadRegisters();
 
 	private:
 		asmjit::x86::Compiler cc; 

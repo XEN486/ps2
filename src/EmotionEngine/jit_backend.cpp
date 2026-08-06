@@ -55,6 +55,7 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 	block.start_pc = pc;
 	block.instructions = 0;
 
+	memset(m_UsedRegisters, 0, sizeof(bool) * 32);
 	m_Instructions.clear();
 	m_CodeHolder.reinit();
 

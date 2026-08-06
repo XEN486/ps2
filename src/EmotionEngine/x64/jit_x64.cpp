@@ -44,7 +44,19 @@ void JitX64::EmitEndBlock() {
 void JitX64::FlushRegisters() {
 	for (u8 i = 1; i < 32; i++) {
 		if (!m_UsedRegisters[i]) continue;
-		m_UsedRegisters[i] = false;
+		//m_UsedRegisters[i] = false;
 		cc.mov(x86::qword_ptr(r5900, offsetof(R5900, gpr) + (i * sizeof(GPR))), r[i]);
+	}
+}
+
+void JitX64::LoadRegisters() {
+	for (u8 i = 0; i < 32; i++) {
+		if (!m_UsedRegisters[i]) continue;
+		if (i == 0) {
+			cc.xor_(r[i], r[i]);
+			continue;
+		}
+
+		cc.mov(r[i], x86::qword_ptr(r5900, offsetof(R5900, gpr) + (i * sizeof(GPR))));
 	}
 }
