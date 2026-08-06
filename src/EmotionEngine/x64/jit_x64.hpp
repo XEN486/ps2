@@ -25,6 +25,21 @@ namespace EmotionEngine::Core {
 		void ADDIU(InstructionData& data) override;
 		void SW(InstructionData& data) override;
 		void JALR(InstructionData& data) override;
+		void SD(InstructionData& data) override;
+		void JAL(InstructionData& data) override;
+		void SRA(InstructionData& data) override;
+		void BGEZ(InstructionData& data) override;
+		void LBU(InstructionData& data) override;
+		void ANDI(InstructionData& data) override;
+		void BEQ(InstructionData& data) override;
+		void LD(InstructionData& data) override;
+		void DSRL(InstructionData& data) override;
+		void DSLL(InstructionData& data) override;
+		void DSLL32(InstructionData& data) override;
+		void DSRA32(InstructionData& data) override;
+		void OR(InstructionData& data) override;
+		void DADDU(InstructionData& data) override;
+		void LW(InstructionData& data) override;
 
 	private:
 		template <typename T> void EmitJump(T address);
@@ -36,6 +51,7 @@ namespace EmotionEngine::Core {
 		asmjit::x86::Compiler cc; 
 		asmjit::x86::Gp r5900;
 		asmjit::x86::Gp r[32];
+		asmjit::x86::Gp temp;
 	};
 }
 

@@ -19,6 +19,8 @@ void JitX64::EmitBeginBlock() {
 	cc.add_func(FuncSignature::build<void>());
 
 	r5900 = cc.new_gp64("r5900");
+	temp = cc.new_gp64("temp");
+	
 	cc.movabs(r5900, reinterpret_cast<uintptr_t>(m_R5900));
 	for (u8 i = 0; i < 32; i++) {
 		if (!m_UsedRegisters[i]) continue;

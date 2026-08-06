@@ -35,7 +35,7 @@ namespace EmotionEngine {
 		};
 
 		static constexpr const char* g_RegNames[32] = {
-			"$0", "at",
+			"zero", "at",
 			"v0", "v1",
 			"a0", "a1", "a2", "a3",
 			"t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",
@@ -198,6 +198,21 @@ namespace EmotionEngine {
 			virtual void ADDIU(InstructionData& data) = 0;
 			virtual void SW(InstructionData& data) = 0;
 			virtual void JALR(InstructionData& data) = 0;
+			virtual void SD(InstructionData& data) = 0;
+			virtual void JAL(InstructionData& data) = 0;
+			virtual void SRA(InstructionData& data) = 0;
+			virtual void BGEZ(InstructionData& data) = 0;
+			virtual void LBU(InstructionData& data) = 0;
+			virtual void ANDI(InstructionData& data) = 0;
+			virtual void BEQ(InstructionData& data) = 0;
+			virtual void LD(InstructionData& data) = 0;
+			virtual void DSRL(InstructionData& data) = 0;
+			virtual void DSLL(InstructionData& data) = 0;
+			virtual void DSLL32(InstructionData& data) = 0;
+			virtual void DSRA32(InstructionData& data) = 0;
+			virtual void OR(InstructionData& data) = 0;
+			virtual void DADDU(InstructionData& data) = 0;
+			virtual void LW(InstructionData& data) = 0;
 
 		protected:
 			R5900* m_R5900;

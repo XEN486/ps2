@@ -18,15 +18,13 @@ void JitX64::MFC0(InstructionData& data) {
 
 void JitX64::SLL(InstructionData& data) {
 	if (data.rd == 0) return;
-	x86::Gp temp = cc.new_gp32();
-	cc.mov(temp, r[data.rt].r32());
-	cc.shl(temp, data.sa);
-	cc.movsxd(r[data.rd], temp);
+	cc.mov(temp.r32(), r[data.rt].r32());
+	cc.shl(temp.r32(), data.sa);
+	cc.movsxd(r[data.rd], temp.r32());
 }
 
 void JitX64::SLTI(InstructionData& data) {
 	if (data.rt == 0) return;
-	x86::Gp temp = cc.new_gp64();
 	cc.cmp(r[data.rs], (u64)(i16)data.imm);
 	cc.set(x86::CondCode::kSignedLT, temp.r8());
 	cc.movzx(r[data.rt], temp.r8());
@@ -58,7 +56,6 @@ void JitX64::LUI(InstructionData& data) {
 
 void JitX64::ORI(InstructionData& data) {
 	if (data.rt == 0) return;
-	x86::Gp temp = cc.new_gp64();
 	cc.mov(temp, r[data.rs]);
 	cc.or_(temp, data.imm);
 	cc.mov(r[data.rt], temp);
@@ -78,22 +75,144 @@ void JitX64::MTC0(InstructionData& data) {
 
 void JitX64::ADDIU(InstructionData& data) {
 	if (data.rt == 0) return;
-	x86::Gp temp = cc.new_gp32();
-	cc.mov(temp, r[data.rs].r32());
-	cc.add(temp, (i32)(i16)data.imm);
-	cc.movsxd(r[data.rt], temp);
+	cc.mov(temp.r32(), r[data.rs].r32());
+	cc.add(temp.r32(), (i32)(i16)data.imm);
+	cc.movsxd(r[data.rt], temp.r32());
 }
 
 void JitX64::SW(InstructionData& data) {
-	x86::Gp temp = cc.new_gp32();
-	cc.mov(temp, r[data.rs].r32());
-	if (data.imm) cc.add(temp, (i32)(i16)data.imm);
-	EmitWriteVirtualMemory<u32>(temp, r[data.rt].r32());
+	cc.mov(temp.r32(), r[data.rs].r32());
+	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	EmitWriteVirtualMemory<u32>(temp.r32(), r[data.rt].r32());
 }
 
 void JitX64::JALR(InstructionData& data) {
-	x86::Gp temp = cc.new_gp32();
-	cc.mov(temp, r[data.rs].r32());
+	cc.mov(temp.r32(), r[data.rs].r32());
 	if (data.rd) cc.mov(r[data.rd], data.pc + 8);
-	EmitJump(temp);
+	EmitJump(temp.r32());
+}
+
+void JitX64::SD(InstructionData& data) {
+	cc.mov(temp.r32(), r[data.rs].r32());
+	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	EmitWriteVirtualMemory<u64>(temp.r32(), r[data.rt]);
+}
+
+void JitX64::JAL(InstructionData& data) {
+	cc.mov(r[31], data.pc + 8);
+	EmitJump((data.pc & 0xf0000000) | (data.addr << 2));
+}
+
+void JitX64::SRA(InstructionData& data) {
+	if (data.rd == 0) return;
+	cc.mov(temp.r32(), r[data.rt].r32());
+	cc.sar(temp.r32(), data.sa);
+	cc.movsxd(r[data.rd], temp.r32());
+}
+
+void JitX64::BGEZ(InstructionData& data) {
+	Label exit_bgez = cc.new_label();
+	Label end = cc.new_label();
+	cc.cmp(r[data.rs], 0);
+	cc.j(x86::CondCode::kSignedLT, exit_bgez);
+
+	EmitJump((data.pc + 4) + (i32)((i16)data.imm << 2));
+	EmitBranchDelay(data);
+	cc.jmp(end);
+
+	cc.bind(exit_bgez);
+	if (!data.likely) {
+		EmitBranchDelay(data);
+	}
+
+	cc.bind(end);	
+}
+
+void JitX64::LBU(InstructionData& data) {
+	if (data.rt == 0) return;
+	cc.mov(temp.r32(), r[data.rs].r32());
+	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	EmitReadVirtualMemory<u8>(r[data.rt].r8(), temp.r32());
+	cc.movzx(r[data.rt].r64(), r[data.rt].r8());
+}
+
+void JitX64::ANDI(InstructionData& data) {
+	if (data.rt == 0) return;
+	cc.mov(temp, r[data.rs]);
+	cc.and_(temp.r32(), data.imm);
+	cc.mov(r[data.rt], temp);
+}
+
+void JitX64::BEQ(InstructionData& data) {
+	Label exit_beq = cc.new_label();
+	Label end = cc.new_label();
+	cc.cmp(r[data.rs], r[data.rt]);
+	cc.j(x86::CondCode::kNotEqual, exit_beq);
+
+	EmitJump((data.pc + 4) + (i32)((i16)data.imm << 2));
+	EmitBranchDelay(data);
+	cc.jmp(end);
+
+	cc.bind(exit_beq);
+	if (!data.likely) {
+		EmitBranchDelay(data);
+	}
+
+	cc.bind(end);
+}
+
+void JitX64::LD(InstructionData& data) {
+	if (data.rt == 0) return;
+	cc.mov(temp.r32(), r[data.rs].r32());
+	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	EmitReadVirtualMemory<u64>(r[data.rt], temp.r32());
+}
+
+void JitX64::DSRL(InstructionData& data) {
+	if (data.rd == 0) return;
+	cc.mov(temp, r[data.rt]);
+	cc.shr(temp, data.sa);
+	cc.mov(r[data.rd], temp);
+}
+
+void JitX64::DSLL(InstructionData& data) {
+	if (data.rd == 0) return;
+	cc.mov(temp, r[data.rt]);
+	cc.shl(temp, data.sa);
+	cc.mov(r[data.rd], temp);
+}
+
+void JitX64::DSLL32(InstructionData& data) {
+	if (data.rd == 0) return;
+	cc.mov(temp, r[data.rt]);
+	cc.shl(temp, data.sa + 32);
+	cc.mov(r[data.rd], temp);
+}
+
+void JitX64::DSRA32(InstructionData& data) {
+	if (data.rd == 0) return;
+	cc.mov(temp, r[data.rt]);
+	cc.sar(temp, data.sa + 32);
+	cc.mov(r[data.rd], temp);
+}
+
+void JitX64::OR(InstructionData& data) {
+	if (data.rd == 0) return;
+	cc.mov(temp, r[data.rs]);
+	cc.or_(temp, r[data.rt]);
+	cc.mov(r[data.rd], temp);
+}
+
+void JitX64::DADDU(InstructionData& data) {
+	if (data.rd == 0) return;
+	cc.mov(temp, r[data.rs]);
+	cc.add(temp, r[data.rt]);
+	cc.mov(r[data.rd], temp);
+}
+
+void JitX64::LW(InstructionData& data) {
+	if (data.rt == 0) return;
+	cc.mov(temp.r32(), r[data.rs].r32());
+	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	EmitReadVirtualMemory<u32>(r[data.rt].r32(), temp.r32());
 }

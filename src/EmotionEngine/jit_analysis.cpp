@@ -27,6 +27,55 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 					break;
 				}
 
+				// SRA
+				case 0b000011: {
+					UseRegisters({data.rt, data.rd});
+					data.ptr = &JitBackend::SRA;
+					break;
+				}
+
+				// DSRL
+				case 0b111010: {
+					UseRegisters({data.rt, data.rd});
+					data.ptr = &JitBackend::DSRL;
+					break;
+				}
+
+				// DSLL
+				case 0b111000: {
+					UseRegisters({data.rt, data.rd});
+					data.ptr = &JitBackend::DSLL;
+					break;
+				}
+
+				// DSLL32
+				case 0b111100: {
+					UseRegisters({data.rt, data.rd});
+					data.ptr = &JitBackend::DSLL32;
+					break;
+				}
+
+				// DSRA32
+				case 0b111111: {
+					UseRegisters({data.rt, data.rd});
+					data.ptr = &JitBackend::DSRA32;
+					break;
+				}
+
+				// OR
+				case 0b100101: {
+					UseRegisters({data.rs, data.rt, data.rd});
+					data.ptr = &JitBackend::OR;
+					break;
+				}
+
+				// DADDU
+				case 0b101101: {
+					UseRegisters({data.rs, data.rt, data.rd});
+					data.ptr = &JitBackend::DADDU;
+					break;
+				}
+
 				// SYNC.stype
 				case 0b001111: {
 					data.ptr = &JitBackend::NOP; // backend doesnt have to do anything
@@ -52,6 +101,25 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 
 				default: {
 					error_log("unknown special opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, data.pc);
+					exit(1);
+				}
+			}
+			break;
+		}
+
+		// REGIMM
+		case 0b000001: {
+			switch (data.rt) {
+				// BGEZ
+				case 0b00001: {
+					UseRegisters({data.rs});
+					data.ptr = &JitBackend::BGEZ;
+					data.type = InstructionType::Branch;
+					break;
+				}
+
+				default: {
+					error_log("unknown regimm opcode {:05b} {:08x} @ {:08x}", data.rt, instruction, data.pc);
 					exit(1);
 				}
 			}
@@ -90,11 +158,32 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b001101: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::ORI; break; }
 		case 0b001001: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::ADDIU; break; }
 		case 0b101011: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::SW; break; }
+		case 0b111111: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::SD; break; }
+		case 0b100100: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::LBU; break; }
+		case 0b001100: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::ANDI; break; }
+		case 0b110111: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::LD; break; }
+		case 0b100011: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::LW; break; }
 		
 		// BNE
 		case 0b000101: {
 			UseRegisters({data.rs, data.rt});
 			data.ptr = &JitBackend::BNE;
+			data.type = InstructionType::Branch;
+			break;
+		}
+
+		// BEQ
+		case 0b000100: {
+			UseRegisters({data.rs, data.rt});
+			data.ptr = &JitBackend::BEQ;
+			data.type = InstructionType::Branch;
+			break;
+		}
+
+		// JAL
+		case 0b000011: {
+			UseRegisters({31});
+			data.ptr = &JitBackend::JAL;
 			data.type = InstructionType::Branch;
 			break;
 		}
