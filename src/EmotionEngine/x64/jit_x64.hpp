@@ -47,6 +47,13 @@ namespace EmotionEngine::Core {
 		void BREAK(InstructionData& data) override;
 		void MFLO(InstructionData& data) override;
 		void ADDU(InstructionData& data) override;
+		void SLT(InstructionData& data) override;
+		void MOVN(InstructionData& data) override;
+		void SLTIU(InstructionData& data) override;
+		void LB(InstructionData& data) override;
+		void SWC1(InstructionData& data) override;
+		void J(InstructionData& data) override;
+		void SB(InstructionData& data) override;
 
 	private:
 		template <typename T> void EmitJump(T address);

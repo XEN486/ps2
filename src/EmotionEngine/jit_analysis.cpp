@@ -124,6 +124,20 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 					break;
 				}
 
+				// SLT
+				case 0b101010: {
+					UseRegisters({data.rs, data.rt, data.rd});
+					data.ptr = &JitBackend::SLT;
+					break;
+				}
+
+				// MOVN
+				case 0b001011: {
+					UseRegisters({data.rs, data.rt, data.rd});
+					data.ptr = &JitBackend::MOVN;
+					break;
+				}
+
 				// SYNC.stype
 				case 0b001111: {
 					data.ptr = &JitBackend::NOP; // backend doesnt have to do anything
@@ -235,6 +249,14 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 					break;
 				}
 
+				// MFLO1
+				case 0b010010: {
+					UseRegisters({data.rd});
+					data.ptr = &JitBackend::MFLO;
+					data.pipeline1 = true;
+					break;
+				}
+
 				default: {
 					error_log("unknown mmi opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, data.pc);
 					exit(1);
@@ -254,12 +276,25 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b001100: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::ANDI; break; }
 		case 0b110111: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::LD; break; }
 		case 0b100011: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::LW; break; }
+		case 0b001011: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::SLTIU; break; }
+		case 0b100000: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::LB; break;}
+		case 0b111001: { UseRegisters({data.rs}); data.ptr = &JitBackend::SWC1; break; }
+		case 0b101000: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::SB; break;}
 		
 		// BNE
 		case 0b000101: {
 			UseRegisters({data.rs, data.rt});
 			data.ptr = &JitBackend::BNE;
 			data.type = InstructionType::Branch;
+			break;
+		}
+
+		// BNEL
+		case 0b010101: {
+			UseRegisters({data.rs, data.rt});
+			data.ptr = &JitBackend::BNE;
+			data.type = InstructionType::Branch;
+			data.likely = true;
 			break;
 		}
 
@@ -284,6 +319,13 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b000011: {
 			UseRegisters({31});
 			data.ptr = &JitBackend::JAL;
+			data.type = InstructionType::Branch;
+			break;
+		}
+
+		// J
+		case 0b000010: {
+			data.ptr = &JitBackend::J;
 			data.type = InstructionType::Branch;
 			break;
 		}

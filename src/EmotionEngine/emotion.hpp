@@ -220,6 +220,13 @@ namespace EmotionEngine {
 			virtual void BREAK(InstructionData& data) = 0;
 			virtual void MFLO(InstructionData& data) = 0;
 			virtual void ADDU(InstructionData& data) = 0;
+			virtual void SLT(InstructionData& data) = 0;
+			virtual void MOVN(InstructionData& data) = 0;
+			virtual void SLTIU(InstructionData& data) = 0;
+			virtual void LB(InstructionData& data) = 0;
+			virtual void SWC1(InstructionData& data) = 0;
+			virtual void J(InstructionData& data) = 0;
+			virtual void SB(InstructionData& data) = 0;
 
 		protected:
 			R5900* m_R5900;
