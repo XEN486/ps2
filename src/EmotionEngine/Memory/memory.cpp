@@ -45,8 +45,31 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 		return *(reinterpret_cast<u32*>(&bios[address - 0x1fc00000]));
 	}
 
-	// just shut up
+	// RDRAM stuff (copied directly from PS2TEK)
 	if (address == 0x1000f130) return 0;
+	if (address == 0x1000f430) return 0;
+	if (address == 0x1000f440) {
+		u8 SOP = (MCH_RICM >> 6) & 0xf;
+		u16 SA = (MCH_RICM >> 16) & 0xfff;
+		if (!SOP) {
+			switch (SA) {
+				case 0x21: {
+					if (rdram_sdevid < 2) {
+						rdram_sdevid++;
+						return 0x1f;
+					}
+
+					return 0;
+				}
+
+				case 0x23: return 0x0d0d;
+				case 0x24: return 0x0090;
+				case 0x40: return MCH_RICM & 0x1f;
+			}
+		}
+
+		return 0;
+	}
 	
 	error_log("unknown physical address {:08x}", address);
 	return 0;
@@ -93,6 +116,25 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 		std::print("{}", (char)(word & 0xff));
 		return;
 	}
+
+	// RDRAM stuff (copied directly from PS2TEK)
+	if (address == 0x1000f430) {
+		u16 SA = (word >> 16) & 0xfff;
+		u8 SBC = (word >> 6) & 0xf;
+		if (SA == 0x21 && SBC == 0x1 && ((MCH_DRD >> 7) & 1) == 0) {
+			rdram_sdevid = 0;
+		}
+
+		MCH_RICM = word & ~0x80000000;
+		return;
+	}
+
+	if (address == 0x1000f440) {
+		MCH_DRD = word;
+		return;
+	}
+
+
 	error_log("{:08x} -> unknown physical address {:08x}", word, address);
 }
 

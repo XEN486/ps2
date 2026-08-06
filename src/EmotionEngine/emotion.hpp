@@ -227,6 +227,25 @@ namespace EmotionEngine {
 			virtual void SWC1(InstructionData& data) = 0;
 			virtual void J(InstructionData& data) = 0;
 			virtual void SB(InstructionData& data) = 0;
+			virtual void MFHI(InstructionData& data) = 0;
+			virtual void SLTU(InstructionData& data) = 0;
+			virtual void BLEZ(InstructionData& data) = 0;
+			virtual void SUBU(InstructionData& data) = 0;
+			virtual void BGTZ(InstructionData& data) = 0;
+			virtual void AND(InstructionData& data) = 0;
+			virtual void SRL(InstructionData& data) = 0;
+			virtual void DSRL32(InstructionData& data) = 0;
+			virtual void LHU(InstructionData& data) = 0;
+			virtual void BLTZ(InstructionData& data) = 0;
+			virtual void SH(InstructionData& data) = 0;
+			virtual void DSRAV(InstructionData& data) = 0;
+			virtual void XORI(InstructionData& data) = 0;
+			virtual void LWU(InstructionData& data) = 0;
+			virtual void MOVZ(InstructionData& data) = 0;
+			virtual void DSLLV(InstructionData& data) = 0;
+			virtual void DADDIU(InstructionData& data) = 0;
+			virtual void LQ(InstructionData& data) = 0;
+			virtual void SQ(InstructionData& data) = 0;
 
 		protected:
 			R5900* m_R5900;

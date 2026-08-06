@@ -54,6 +54,25 @@ namespace EmotionEngine::Core {
 		void SWC1(InstructionData& data) override;
 		void J(InstructionData& data) override;
 		void SB(InstructionData& data) override;
+		void MFHI(InstructionData& data) override;
+		void SLTU(InstructionData& data) override;
+		void BLEZ(InstructionData& data) override;
+		void SUBU(InstructionData& data) override;
+		void BGTZ(InstructionData& data) override;
+		void AND(InstructionData& data) override;
+		void SRL(InstructionData& data) override;
+		void DSRL32(InstructionData& data) override;
+		void LHU(InstructionData& data) override;
+		void BLTZ(InstructionData& data) override;
+		void SH(InstructionData& data) override;
+		void DSRAV(InstructionData& data) override;
+		void XORI(InstructionData& data) override;
+		void LWU(InstructionData& data) override;
+		void MOVZ(InstructionData& data) override;
+		void DSLLV(InstructionData& data) override;
+		void DADDIU(InstructionData& data) override;
+		void LQ(InstructionData& data) override;
+		void SQ(InstructionData& data) override;
 
 	private:
 		template <typename T> void EmitJump(T address);

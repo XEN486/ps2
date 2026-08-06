@@ -90,6 +90,11 @@ namespace EmotionEngine {
 		Core::JitBackend* m_JitBackend;
 		EE* m_EE;
 		GraphicsSynthesizer::GS* m_GS;
+
+		// EE RDRAM stuff
+		u32 MCH_DRD;
+		u32 MCH_RICM;
+		u32 rdram_sdevid;
 	};
 }
 

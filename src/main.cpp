@@ -4,11 +4,11 @@
 #include "GraphicsSynthesizer/gs.hpp"
 #include "scheduler.hpp"
 
-int main() {
-	//if (argc < 2) {
-	//	std::println(stderr, "usage: {} [bios bin]", argv[0]);
-	//	return 1;
-	//}
+int main(int argc, char** argv) {
+	if (argc < 2) {
+		std::println(stderr, "usage: {} [bios bin]", argv[0]);
+		return 1;
+	}
 
 	GraphicsSynthesizer::GS gs;
 	EmotionEngine::Core::JitX64 backend;
@@ -16,7 +16,7 @@ int main() {
 
 	gs.Reset();
 	cpu.Reset();
-	cpu.GetMemory().LoadBIOS("scph39001.bin");
+	cpu.GetMemory().LoadBIOS(argv[1]);
 
 	//ElfFile elf("demo1.elf");
 	//cpu.GetR5900().pc = elf.LoadElf(cpu.GetMemory());
