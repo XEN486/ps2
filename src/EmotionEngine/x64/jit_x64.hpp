@@ -44,6 +44,9 @@ namespace EmotionEngine::Core {
 		void MULTU(InstructionData& data) override;
 		void DIV(InstructionData& data) override;
 		void DIVU(InstructionData& data) override;
+		void BREAK(InstructionData& data) override;
+		void MFLO(InstructionData& data) override;
+		void ADDU(InstructionData& data) override;
 
 	private:
 		template <typename T> void EmitJump(T address);

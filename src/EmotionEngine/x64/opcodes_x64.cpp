@@ -57,7 +57,7 @@ static void IMPL_mult(EmotionEngine::Core::R5900* r5900, bool pipeline1, u8 inde
 	if (index_rd) r5900->gpr[index_rd].reg_u64[0] = lo;
 }
 
-static void IMPL_multu(EmotionEngine::Core::R5900* r5900, bool pipeline1, u8 index_rs, u8 index_rt) {
+static void IMPL_multu(EmotionEngine::Core::R5900* r5900, bool pipeline1, u8 index_rs, u8 index_rt, u8 index_rd) {
 	u64 result = (u64)r5900->gpr[index_rs].reg_u32[0] * (u64)r5900->gpr[index_rt].reg_u32[0];
 	u64& hi = pipeline1 ? r5900->hi1 : r5900->hi;
 	u64& lo = pipeline1 ? r5900->lo1 : r5900->lo;
@@ -65,7 +65,7 @@ static void IMPL_multu(EmotionEngine::Core::R5900* r5900, bool pipeline1, u8 ind
 	lo = (u64)(i64)(i32)result;
 	hi = (u64)(i64)(i32)(result >> 32);
 
-	//if (index_rd) r5900->gpr[index_rd].reg_u64[0] = lo;
+	if (index_rd) r5900->gpr[index_rd].reg_u64[0] = lo;
 }
 
 void JitX64::MFC0(InstructionData& data) {
@@ -294,11 +294,12 @@ void JitX64::MULT(InstructionData& data) {
 void JitX64::MULTU(InstructionData& data) {
 	FlushRegisters();
 	InvokeNode* node;
-	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(IMPL_multu), FuncSignature::build<void, R5900*, bool, u8, u8>());
+	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(IMPL_multu), FuncSignature::build<void, R5900*, bool, u8, u8, u8>());
 	node->set_arg(0, r5900);
 	node->set_arg(1, data.pipeline1);
 	node->set_arg(2, data.rs);
 	node->set_arg(3, data.rt);
+	node->set_arg(4, data.rd);
 	LoadRegisters();
 }
 
@@ -322,4 +323,19 @@ void JitX64::DIVU(InstructionData& data) {
 	node->set_arg(2, data.rs);
 	node->set_arg(3, data.rt);
 	LoadRegisters();
+}
+
+void JitX64::BREAK(InstructionData&) {
+	cc.int3();
+}
+
+void JitX64::MFLO(InstructionData& data) {
+	cc.mov(r[data.rd], x86::qword_ptr(r5900, (data.pipeline1) ? offsetof(R5900, lo1) : offsetof(R5900, lo)));
+}
+
+void JitX64::ADDU(InstructionData& data) {
+	if (data.rd == 0) return;
+	cc.mov(temp.r32(), r[data.rs].r32());
+	cc.add(temp.r32(), r[data.rt].r32());
+	cc.movsxd(r[data.rd], temp.r32());
 }

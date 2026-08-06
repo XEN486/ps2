@@ -85,7 +85,7 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 
 				// MULTU
 				case 0b011001: {
-					UseRegisters({data.rs, data.rt});
+					UseRegisters({data.rs, data.rt, data.rd});
 					data.ptr = &JitBackend::MULTU;
 					break;
 				}
@@ -101,6 +101,26 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				case 0b011011: {
 					UseRegisters({data.rs, data.rt});
 					data.ptr = &JitBackend::DIVU;
+					break;
+				}
+
+				// BREAK
+				case 0b001101: {
+					data.ptr = &JitBackend::BREAK;
+					break;
+				}
+
+				// MFLO
+				case 0b010010: {
+					UseRegisters({data.rd});
+					data.ptr = &JitBackend::MFLO;
+					break;
+				}
+
+				// ADDU
+				case 0b100001: {
+					UseRegisters({data.rs, data.rt, data.rd});
+					data.ptr = &JitBackend::ADDU;
 					break;
 				}
 
@@ -193,7 +213,7 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 
 				// MULTU1
 				case 0b011001: {
-					UseRegisters({data.rs, data.rt});
+					UseRegisters({data.rs, data.rt, data.rd});
 					data.ptr = &JitBackend::MULTU;
 					data.pipeline1 = true;
 					break;
@@ -248,6 +268,15 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 			UseRegisters({data.rs, data.rt});
 			data.ptr = &JitBackend::BEQ;
 			data.type = InstructionType::Branch;
+			break;
+		}
+
+		// BEQL
+		case 0b010100: {
+			UseRegisters({data.rs, data.rt});
+			data.ptr = &JitBackend::BEQ;
+			data.type = InstructionType::Branch;
+			data.likely = true;
 			break;
 		}
 
