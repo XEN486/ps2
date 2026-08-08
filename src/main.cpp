@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 	
 	Scheduler scheduler;
 	scheduler.SetComponents(&cpu, &gs);
-
+	
 	while (true) {
 		scheduler.Run();
 

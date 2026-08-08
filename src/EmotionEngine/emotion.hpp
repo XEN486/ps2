@@ -275,7 +275,6 @@ namespace EmotionEngine {
 		private:
 			std::unordered_map<u32, CompiledBlock> m_BlockCache {};
 			std::vector<InstructionData> m_Instructions;
-			bool m_InBranchDelay;
 		};	
 	}
 

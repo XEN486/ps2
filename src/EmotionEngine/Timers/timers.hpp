@@ -64,7 +64,7 @@ namespace EmotionEngine::Timers {
 		u16 m_Compare = 0;
 		u16 m_Hold;
 
-		TimerMode m_Mode;
+		TimerMode m_Mode = {};
 		bool m_Disable = false;
 
 		// BUSCLK cycle count

@@ -7,8 +7,9 @@
 using namespace EmotionEngine;
 
 u32 Memory::ReadVirtualMemory32(u32 address) {
-	if (address >= 0x70000000 && address <= 0x70003fff) {
-		return *(reinterpret_cast<u32*>(&scratchpad[address - 0x70000000]));
+	u32 virt = address;
+	if (virt >= 0x70000000 && virt <= 0x70003fff) {
+		return *(reinterpret_cast<u32*>(&scratchpad[virt - 0x70000000]));
 	}
 
 	address &= 0x1fffffff;
@@ -47,10 +48,12 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 
 	// RDRAM stuff (copied directly from PS2TEK)
 	if (address == 0x1000f130) return 0;
+	if (address == 0x1000f400) return 0;
+	if (address == 0x1000f410) return 0;
 	if (address == 0x1000f430) return 0;
 	if (address == 0x1000f440) {
 		u8 SOP = (MCH_RICM >> 6) & 0xf;
-		u16 SA = (MCH_RICM >> 16) & 0xfff;
+		u8 SA = (MCH_RICM >> 16) & 0xfff;
 		if (!SOP) {
 			switch (SA) {
 				case 0x21: {
@@ -70,14 +73,15 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 
 		return 0;
 	}
-	
-	error_log("unknown physical address {:08x}", address);
+
+	error_log("unknown address v:{:08x} p:{:08x}", virt, address);
 	return 0;
 }
 
 void Memory::WriteVirtualMemory32(u32 address, u32 word) {
-	if (address >= 0x70000000 && address <= 0x70003fff) {
-		*(reinterpret_cast<u32*>(&scratchpad[address - 0x70000000])) = word;
+	u32 virt = address;
+	if (virt >= 0x70000000 && virt <= 0x70003fff) {
+		*(reinterpret_cast<u32*>(&scratchpad[virt - 0x70000000])) = word;
 		return;
 	}
 
@@ -119,7 +123,7 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 
 	// RDRAM stuff (copied directly from PS2TEK)
 	if (address == 0x1000f430) {
-		u16 SA = (word >> 16) & 0xfff;
+		u8 SA = (word >> 16) & 0xfff;
 		u8 SBC = (word >> 6) & 0xf;
 		if (SA == 0x21 && SBC == 0x1 && ((MCH_DRD >> 7) & 1) == 0) {
 			rdram_sdevid = 0;
@@ -134,8 +138,21 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 		return;
 	}
 
+	if (address == 0x1000f100) return;
+	if (address == 0x1000f120) return;
+	if (address == 0x1000f140) return;
+	if (address == 0x1000f150) return;
+	if (address == 0x1000f400) return;
+	if (address == 0x1000f410) return;
+	if (address == 0x1000f420) return;
+	if (address == 0x1000f450) return;
+	if (address == 0x1000f460) return;
+	if (address == 0x1000f480) return;
+	if (address == 0x1000f490) return;
+	if (address == 0x1000f500) return;
+	if (address == 0x1000f510) return;
 
-	error_log("{:08x} -> unknown physical address {:08x}", word, address);
+	error_log("{:08x} -> unknown address v:{:08x} p:{:08x}", word, virt, address);
 }
 
 u64 Memory::ReadVirtualMemory64(u32 address) {
@@ -150,18 +167,64 @@ void Memory::WriteVirtualMemory64(u32 address, u64 dword) {
 }
 
 u16 Memory::ReadVirtualMemory16(u32 address) {
+	u32 phys = address;
+	if (phys >= 0x70000000 && phys <= 0x70003fff) {
+		return *(reinterpret_cast<u16*>(&scratchpad[phys - 0x70000000]));
+	}
+
+	u32 addr = address & 0x1fffffff;
+	if (addr <= RDRAM_LAST_ADDR) {
+		return *(reinterpret_cast<u16*>(&rdram[addr]));
+	}
+
 	return ReadVirtualMemory32(address) & 0xffff;
 }
 
 void Memory::WriteVirtualMemory16(u32 address, u16 hword) {
+	u32 phys = address;
+	if (phys >= 0x70000000 && phys <= 0x70003fff) {
+		*(reinterpret_cast<u16*>(&scratchpad[phys - 0x70000000])) = hword;
+		return;
+	}
+
+	u32 addr = address & 0x1fffffff;
+	if (addr <= RDRAM_LAST_ADDR) {
+		*(reinterpret_cast<u16*>(&rdram[addr])) = hword;
+		m_JitBackend->Invalidate(addr);
+		return;
+	}
+
 	WriteVirtualMemory32(address, hword);
 }
 
 u8 Memory::ReadVirtualMemory8(u32 address) {
+	u32 phys = address;
+	if (phys >= 0x70000000 && phys <= 0x70003fff) {
+		return scratchpad[phys - 0x70000000];
+	}
+
+	u32 addr = address & 0x1fffffff;
+	if (addr <= RDRAM_LAST_ADDR) {
+		return rdram[addr];
+	}
+
 	return ReadVirtualMemory32(address) & 0xff;
 }
 
 void Memory::WriteVirtualMemory8(u32 address, u8 byte) {
+	u32 phys = address;
+	if (phys >= 0x70000000 && phys <= 0x70003fff) {
+		scratchpad[phys - 0x70000000] = byte;
+		return;
+	}
+
+	u32 addr = address & 0x1fffffff;
+	if (addr <= RDRAM_LAST_ADDR) {
+		rdram[addr] = byte;
+		m_JitBackend->Invalidate(addr);
+		return;
+	}
+
 	WriteVirtualMemory32(address, byte);
 }
 

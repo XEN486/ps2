@@ -13,21 +13,23 @@ void Timer::Tick() {
 		case ClockType::BUSCLK_16: {
 			if ((m_Cycles % 16) == 0) {
 				Increment();
-				break;
 			}
+
+			break;
 		}
 
 		case ClockType::BUSCLK_256: {
 			if ((m_Cycles % 256) == 0) {
 				Increment();
-				break;
 			}
+
+			break;
 		}
 	}
 }
 
 void Timer::NotifyHBlank(bool start) {
-	if (m_Mode.gate_type == GateType::HBlank && m_Mode.timer_enable) {
+	if (m_Mode.gate_type == GateType::HBlank && m_Mode.timer_enable && m_Mode.gate_enable) {
 		switch (m_Mode.gate_mode) {
 			// force disable while high
 			case GateMode::CountWhileLow: {
@@ -67,7 +69,7 @@ void Timer::NotifyHBlank(bool start) {
 }
 
 void Timer::NotifyVBlank(bool start) {
-	if (m_Mode.gate_type == GateType::VBlank && m_Mode.timer_enable) {
+	if (m_Mode.gate_type == GateType::VBlank && m_Mode.timer_enable && m_Mode.gate_enable) {
 		switch (m_Mode.gate_mode) {
 			// force disable while high
 			case GateMode::CountWhileLow: {
@@ -184,7 +186,6 @@ void Timer::Increment() {
 	//debug_log("{} {} {} {}", m_Count, m_Compare, m_Mode.compare_interrupt_enable, m_Mode.overflow_interrupt_enable);
 
 	if (m_Count == m_Compare) {
-		debug_log("ok");
 		CompareInterrupt();
 		if (m_Mode.clear_on_compare) {
 			m_Count = 0;
@@ -208,6 +209,6 @@ void Timer::OverflowInterrupt() {
 	if (m_Mode.overflow_interrupt_enable) {
 		debug_log("overflow interrupt");
 		// intc->interrupt(overflow)
-		m_Mode.overflow_interrupt_enable = true;
+		m_Mode.overflow_interrupt_flag = true;
 	}
 }

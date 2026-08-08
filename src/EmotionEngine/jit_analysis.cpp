@@ -16,8 +16,8 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 			switch (data.funct) {
 				// SLL
 				case 0b000000: {
-					// rt == rd && sa == 0 -> NOP
-					if (data.rt == data.rd && data.sa == 0) {
+					// rt == 0 && rd == 0 && sa == 0 -> NOP
+					if (data.rt == 0 && data.rd == 0 && data.sa == 0) {
 						data.ptr = &JitBackend::NOP;
 						break;
 					}
@@ -274,8 +274,18 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				break;
 			}
 
-			switch (data.funct) {
-				case 0b000010: { data.ptr = &JitBackend::NOP; break; } // TLBWI (don't care about emulating TLB)
+			switch (data.rs) {
+				case 0b010000: {
+					switch (data.funct) {
+						case 0b000010: { data.ptr = &JitBackend::NOP; break; } // TLBWI (don't care about emulating TLB)
+						default: {
+							error_log("unknown C0 opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, data.pc);
+							exit(1);
+						}
+					}
+					break;
+				}
+
 				default: {
 					error_log("unknown cop0 opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, data.pc);
 					exit(1);

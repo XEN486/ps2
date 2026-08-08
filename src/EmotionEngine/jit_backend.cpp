@@ -20,7 +20,7 @@ bool JitBackend::InitJit(R5900* cpu, Memory* memory) {
 }
 
 void JitBackend::Reset() {
-	m_InBranchDelay = false;
+	//m_InBranchDelay = false;
 	memset(m_UsedRegisters, 0, sizeof(bool) * 32);
 }
 
@@ -29,13 +29,14 @@ void JitBackend::Release() {
 		CompiledBlock& block = element.second;
 		if (!block.valid) continue;
 
+		block.valid = false;
 		m_Runtime.release(block.fn);
 	}
 }
 
 void JitBackend::Invalidate(u32 pc) {
 #ifdef ENABLE_SELF_MODIFYING_CODE
-	pc &= 0x1fffffff;
+	//pc &= 0x1fffffff;
 	for (auto& element : m_BlockCache) {
 		CompiledBlock& block = element.second;
 		if (!block.valid) continue;
@@ -63,12 +64,6 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 	while (true) {
 		end_pc = m_CompilePC;
 
-		// skip delay slot if we fell through
-		if (m_InBranchDelay) {
-			m_InBranchDelay = false;
-			continue;
-		}
-
 		InstructionData data = AnalyzeOp(Fetch());
 		if (data.type == InstructionType::Normal) {
 			m_Instructions.push_back(data);
@@ -88,7 +83,7 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 
 			// account for delay slot
 			end_pc += 4;
-			m_InBranchDelay = true;
+			//m_InBranchDelay = true;
 			break;
 		}
 
