@@ -43,8 +43,8 @@ static void IMPL_div(EmotionEngine::Core::R5900* r5900, bool pipeline1, u8 index
 }
 
 static void IMPL_divu(EmotionEngine::Core::R5900* r5900, bool pipeline1, u8 index_rs, u8 index_rt) {
-	u32 numerator   = r5900->gpr[index_rs].reg_u32[0];
-	u32 denominator = r5900->gpr[index_rt].reg_u32[0];
+	u32 numerator	= r5900->gpr[index_rs].reg_u32[0];
+	u32 denominator	= r5900->gpr[index_rt].reg_u32[0];
 
 	u64& hi = pipeline1 ? r5900->hi1 : r5900->hi;
 	u64& lo = pipeline1 ? r5900->lo1 : r5900->lo;
@@ -132,8 +132,9 @@ void JitX64::LUI(InstructionData& data) {
 
 void JitX64::ORI(InstructionData& data) {
 	if (data.rt == 0) return;
-	cc.mov(r[data.rt], r[data.rs]);
-	cc.or_(r[data.rt], (u32)data.imm);
+	cc.mov(temp, r[data.rs]);
+	cc.or_(temp, (u32)data.imm);
+	cc.mov(r[data.rt], temp);
 }
 
 void JitX64::JR(InstructionData& data) {
@@ -151,33 +152,30 @@ void JitX64::MTC0(InstructionData& data) {
 
 void JitX64::ADDIU(InstructionData& data) {
 	if (data.rt == 0) return;
-	cc.mov(r[data.rt].r32(), r[data.rs].r32());
-	cc.add(r[data.rt].r32(), (i32)(i16)data.imm);
+	cc.lea(r[data.rt].r32(), x86::ptr(r[data.rs].r32(), (i32)(i16)data.imm));
 	cc.movsxd(r[data.rt], r[data.rt].r32());
 }
 
 void JitX64::SW(InstructionData& data) {
-	cc.mov(temp.r32(), r[data.rs].r32());
-	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (i32)(i16)data.imm));
 	EmitWriteVirtualMemory<u32>(temp.r32(), r[data.rt].r32());
 }
 
 void JitX64::JALR(InstructionData& data) {
 	EmitJump(r[data.rs].r32());
-	if (data.rd) cc.mov(r[data.rd], data.pc + 8);
 	EmitBranchDelay(data);
+	if (data.rd) cc.mov(r[data.rd], data.pc + 8);
 }
 
 void JitX64::SD(InstructionData& data) {
-	cc.mov(temp.r32(), r[data.rs].r32());
-	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (i32)(i16)data.imm));
 	EmitWriteVirtualMemory<u64>(temp.r32(), r[data.rt]);
 }
 
 void JitX64::JAL(InstructionData& data) {
-	cc.mov(r[31], data.pc + 8);
 	EmitJump(((data.pc + 4) & 0xf0000000) | (data.addr << 2));
 	EmitBranchDelay(data);
+	cc.mov(r[31], data.pc + 8);
 }
 
 void JitX64::SRA(InstructionData& data) {
@@ -207,8 +205,7 @@ void JitX64::BGEZ(InstructionData& data) {
 }
 
 void JitX64::LBU(InstructionData& data) {
-	cc.mov(temp.r32(), r[data.rs].r32());
-	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (i32)(i16)data.imm));
 	if (data.rt == 0) {
 		EmitReadVirtualMemory<u8>(temp.r8(), temp.r32());
 		return;
@@ -220,8 +217,9 @@ void JitX64::LBU(InstructionData& data) {
 
 void JitX64::ANDI(InstructionData& data) {
 	if (data.rt == 0) return;
-	cc.mov(r[data.rt], r[data.rs]);
-	cc.and_(r[data.rt], (u32)data.imm);
+	cc.mov(temp, r[data.rs]);
+	cc.and_(temp, (u32)data.imm);
+	cc.mov(r[data.rt], temp);
 }
 
 void JitX64::BEQ(InstructionData& data) {
@@ -244,8 +242,7 @@ void JitX64::BEQ(InstructionData& data) {
 }
 
 void JitX64::LD(InstructionData& data) {
-	cc.mov(temp.r32(), r[data.rs].r32());
-	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (i32)(i16)data.imm));
 	if (data.rt == 0) {
 		EmitReadVirtualMemory<u64>(temp.r64(), temp.r32());
 		return;
@@ -279,19 +276,18 @@ void JitX64::DSRA32(InstructionData& data) {
 
 void JitX64::OR(InstructionData& data) {
 	if (data.rd == 0) return;
-	cc.mov(r[data.rd], r[data.rs]);
-	cc.or_(r[data.rd], r[data.rt]);
+	cc.mov(temp, r[data.rs]);
+	cc.or_(temp, r[data.rt]);
+	cc.mov(r[data.rd], temp);
 }
 
 void JitX64::DADDU(InstructionData& data) {
 	if (data.rd == 0) return;
-	cc.mov(r[data.rd], r[data.rs]);
-	cc.add(r[data.rd], r[data.rt]);
+	cc.lea(r[data.rd], x86::ptr(r[data.rs], r[data.rt]));
 }
 
 void JitX64::LW(InstructionData& data) {
-	cc.mov(temp.r32(), r[data.rs].r32());
-	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (i32)(i16)data.imm));
 	if (data.rt == 0) {
 		EmitReadVirtualMemory<u32>(temp.r32(), temp.r32());
 		return;
@@ -358,8 +354,7 @@ void JitX64::MFLO(InstructionData& data) {
 
 void JitX64::ADDU(InstructionData& data) {
 	if (data.rd == 0) return;
-	cc.mov(r[data.rd].r32(), r[data.rs].r32());
-	cc.add(r[data.rd].r32(), r[data.rt].r32());
+	cc.lea(r[data.rd].r32(), x86::ptr(r[data.rs].r32(), r[data.rt].r32()));
 	cc.movsxd(r[data.rd], r[data.rd].r32());
 }
 
@@ -389,8 +384,7 @@ void JitX64::SLTIU(InstructionData& data) {
 }
 
 void JitX64::LB(InstructionData& data) {
-	cc.mov(temp.r32(), r[data.rs].r32());
-	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (i32)(i16)data.imm));
 	if (data.rt == 0) {
 		EmitReadVirtualMemory<u8>(temp.r8(), temp.r32());
 		return;
@@ -402,8 +396,7 @@ void JitX64::LB(InstructionData& data) {
 
 void JitX64::SWC1(InstructionData& data) {
 	x86::Gp address = cc.new_gp32();
-	cc.mov(address, r[data.rs].r32());
-	if (data.imm) cc.add(address, (i32)(i16)data.imm);
+	cc.lea(address, x86::ptr(r[data.rs].r32(), (i32)(i16)data.imm));
 	cc.mov(temp.r32(), x86::dword_ptr(r5900, offsetof(R5900, fpr) + (sizeof(float) * data.rt)));
 	EmitWriteVirtualMemory<u32>(address, temp.r32());
 }
@@ -414,8 +407,7 @@ void JitX64::J(InstructionData& data) {
 }
 
 void JitX64::SB(InstructionData& data) {
-	cc.mov(temp.r32(), r[data.rs].r32());
-	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (i32)(i16)data.imm));
 	EmitWriteVirtualMemory<u8>(temp.r32(), r[data.rt].r8());
 }
 
@@ -452,9 +444,9 @@ void JitX64::BLEZ(InstructionData& data) {
 
 void JitX64::SUBU(InstructionData& data) {
 	if (data.rd == 0) return;
-	cc.mov(r[data.rd].r32(), r[data.rs].r32());
-	cc.sub(r[data.rd].r32(), r[data.rt].r32());
-	cc.movsxd(r[data.rd], r[data.rd].r32());
+	cc.mov(temp.r32(), r[data.rs].r32());
+	cc.sub(temp.r32(), r[data.rt].r32());
+	cc.movsxd(r[data.rd], temp.r32());
 }
 
 void JitX64::BGTZ(InstructionData& data) {
@@ -478,8 +470,9 @@ void JitX64::BGTZ(InstructionData& data) {
 
 void JitX64::AND(InstructionData& data) {
 	if (data.rd == 0) return;
-	cc.mov(r[data.rd], r[data.rs]);
-	cc.and_(r[data.rd], r[data.rt]);
+	cc.mov(temp, r[data.rs]);
+	cc.and_(temp, r[data.rt]);
+	cc.mov(r[data.rd], temp);
 }
 
 void JitX64::SRL(InstructionData& data) {
@@ -496,8 +489,7 @@ void JitX64::DSRL32(InstructionData& data) {
 }
 
 void JitX64::LHU(InstructionData& data) {
-	cc.mov(temp.r32(), r[data.rs].r32());
-	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (i32)(i16)data.imm));
 	if (data.rt == 0) {
 		EmitReadVirtualMemory<u16>(temp.r16(), temp.r32());
 		return;
@@ -526,8 +518,7 @@ void JitX64::BLTZ(InstructionData& data) {
 }
 
 void JitX64::SH(InstructionData& data) {
-	cc.mov(temp.r32(), r[data.rs].r32());
-	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (i32)(i16)data.imm));
 	EmitWriteVirtualMemory<u16>(temp.r32(), r[data.rt].r16());
 }
 
@@ -541,13 +532,13 @@ void JitX64::DSRAV(InstructionData& data) {
 
 void JitX64::XORI(InstructionData& data) {
 	if (data.rt == 0) return;
-	cc.mov(r[data.rt], r[data.rs]);
-	cc.xor_(r[data.rt], (u32)data.imm);
+	cc.mov(temp, r[data.rs]);
+	cc.xor_(temp, (u32)data.imm);
+	cc.mov(r[data.rt], temp);
 }
 
 void JitX64::LWU(InstructionData& data) {
-	cc.mov(temp.r32(), r[data.rs].r32());
-	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (i32)(i16)data.imm));
 	if (data.rt == 0) {
 		EmitReadVirtualMemory<u32>(temp.r32(), temp.r32());
 		return;
@@ -576,13 +567,11 @@ void JitX64::DSLLV(InstructionData& data) {
 
 void JitX64::DADDIU(InstructionData& data) {
 	if (data.rt == 0) return;
-	cc.mov(r[data.rt], r[data.rs]);
-	cc.add(r[data.rt], (i32)(i16)data.imm);
+	cc.lea(r[data.rt], x86::ptr(r[data.rs], (i32)(i16)data.imm));
 }
 
 void JitX64::LQ(InstructionData& data) {
-	cc.mov(temp.r32(), r[data.rs].r32());
-	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (i32)(i16)data.imm));
 
 	FlushRegisters();
 	InvokeNode* node;
@@ -595,8 +584,7 @@ void JitX64::LQ(InstructionData& data) {
 }
 
 void JitX64::SQ(InstructionData& data) {
-	cc.mov(temp.r32(), r[data.rs].r32());
-	if (data.imm) cc.add(temp.r32(), (i32)(i16)data.imm);
+	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (i32)(i16)data.imm));
 	
 	FlushRegisters();
 	InvokeNode* node;

@@ -48,6 +48,7 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 
 	// RDRAM stuff (copied directly from PS2TEK)
 	if (address == 0x1000f130) return 0;
+	if (address == 0x1000f180) return 0;
 	if (address == 0x1000f400) return 0;
 	if (address == 0x1000f410) return 0;
 	if (address == 0x1000f430) return 0;
@@ -177,7 +178,8 @@ u16 Memory::ReadVirtualMemory16(u32 address) {
 		return *(reinterpret_cast<u16*>(&rdram[addr]));
 	}
 
-	return ReadVirtualMemory32(address) & 0xffff;
+	u32 aligned = address & ~3;
+	return (ReadVirtualMemory32(aligned) >> ((address & 2) * 8)) & 0xffff;
 }
 
 void Memory::WriteVirtualMemory16(u32 address, u16 hword) {
@@ -194,7 +196,11 @@ void Memory::WriteVirtualMemory16(u32 address, u16 hword) {
 		return;
 	}
 
-	WriteVirtualMemory32(address, hword);
+	u32 aligned = address & ~3;
+	u32 word = ReadVirtualMemory32(aligned);
+	u32 shift = (address & 2) * 8;
+	word = (word & ~(0xffffu << shift)) | (static_cast<u32>(hword) << shift);
+	WriteVirtualMemory32(aligned, word);
 }
 
 u8 Memory::ReadVirtualMemory8(u32 address) {
@@ -208,7 +214,8 @@ u8 Memory::ReadVirtualMemory8(u32 address) {
 		return rdram[addr];
 	}
 
-	return ReadVirtualMemory32(address) & 0xff;
+	u32 aligned = address & ~3;
+	return (ReadVirtualMemory32(aligned) >> ((address & 3) * 8)) & 0xff;
 }
 
 void Memory::WriteVirtualMemory8(u32 address, u8 byte) {
@@ -225,7 +232,11 @@ void Memory::WriteVirtualMemory8(u32 address, u8 byte) {
 		return;
 	}
 
-	WriteVirtualMemory32(address, byte);
+	u32 aligned = address & ~3;
+	u32 word = ReadVirtualMemory32(aligned);
+	u32 shift = (address & 3) * 8;
+	word = (word & ~(0xffu << shift)) | (static_cast<u32>(byte) << shift);
+	WriteVirtualMemory32(aligned, word);
 }
 
 void Memory::LoadBIOS(std::filesystem::path path) {

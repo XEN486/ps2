@@ -74,7 +74,7 @@ namespace EmotionEngine {
 		/// @param byte Value to write.
 		void WriteVirtualMemory8(u32 address, u8 byte);
 
-		/// @brief Releases the resources used by the memory map. Called by EmotionEngine::EE::Reset();
+		/// @brief Releases the resources used by the memory map. Called by EmotionEngine::EE::Release();
 		void Release() {
 			free(rdram);
 			free(bios);
