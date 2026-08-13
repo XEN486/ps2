@@ -11,7 +11,6 @@ u32 Core::R5900::ReadCOP0(u8 reg) {
 		case 3: return cop0.entrylo1;
 		case 5: return cop0.pagemask;
 		case 6: return cop0.wired;
-		case 8: return 0; // TODO: FIX
 		case 9: return cop0.count;
 		case 10: return cop0.entryhi;
 		case 11: return cop0.compare;
@@ -23,7 +22,7 @@ u32 Core::R5900::ReadCOP0(u8 reg) {
 
 		default: {
 			error_log("read unknown register {}", reg);
-			exit(1);
+			return 0;
 		}
 	}
 }
@@ -43,7 +42,7 @@ void Core::R5900::WriteCOP0(u8 reg, u32 val) {
 
 		default: {
 			error_log("write {:08x} -> unknown register {}", val, reg);
-			exit(1);
+			//exit(1);
 		}
 	}
 }
