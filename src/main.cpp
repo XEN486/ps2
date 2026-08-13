@@ -6,8 +6,9 @@
 #include "elf.hpp"
 
 int main(int argc, char** argv) {
+	bool has_elf = argc > 2;
 	if (argc < 2) {
-		std::println(stderr, "usage: {} [bios bin]", argv[0]);
+		std::println(stderr, "usage: {} [bios bin] <elf file>", argv[0]);
 		return 1;
 	}
 
@@ -21,6 +22,13 @@ int main(int argc, char** argv) {
 	
 	Scheduler scheduler;
 	scheduler.SetComponents(&cpu, &gs);
+
+	// sideload elf
+	if (has_elf) {
+		while (cpu.GetR5900().pc != 0x80001000) scheduler.Run();
+		ElfFile elf(argv[2]);
+		cpu.GetR5900().pc = elf.LoadElf(&cpu.GetMemory());
+	}
 	
 	while (true) {
 		scheduler.Run();
