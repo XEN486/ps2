@@ -66,5 +66,6 @@ void JitX64::EmitLoad128(asmjit::x86::Vec& v, u8 idx) {
 }
 
 void JitX64::EmitStore128(u8 idx, asmjit::x86::Vec& v) {
+	if (idx == 0) return;
 	cc.movdqu(x86::oword_ptr(r5900, offsetof(R5900, gpr) + (idx * sizeof(GPR))), v);
 }
