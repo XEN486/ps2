@@ -71,11 +71,19 @@ namespace EmotionEngine::Core {
 		void MOVZ(InstructionData& data) override;
 		void DSLLV(InstructionData& data) override;
 		void DADDIU(InstructionData& data) override;
+		void LH(InstructionData& data) override;
+		void SYSCALL(InstructionData& data) override;
+		void MFSA(InstructionData& data) override;
+
+	protected:
 		void LQ(InstructionData& data) override;
 		void SQ(InstructionData& data) override;
-		void LH(InstructionData& data) override;
 		void POR(InstructionData& data) override;
-		void SYSCALL(InstructionData& data) override;
+		void PMFHI(InstructionData& data) override;
+		void PMFLO(InstructionData& data) override;
+		void PCPYLD(InstructionData& data) override;
+		void PCPYHD(InstructionData& data) override;
+		void PEXTLW(InstructionData& data) override;
 
 	private:
 		template <typename T> void EmitJump(T address);
@@ -83,6 +91,9 @@ namespace EmotionEngine::Core {
 		template <typename Size, typename T> void EmitWriteVirtualMemory(T address, const asmjit::x86::Gp& value);
 		void FlushRegisters();
 		void LoadRegisters();
+
+		void FlushRegisters(std::initializer_list<u8> args);
+		void LoadRegisters(std::initializer_list<u8> args);
 
 		// call FlushRegisters() before this function
 		void EmitLoad128(asmjit::x86::Vec& v, u8 idx);

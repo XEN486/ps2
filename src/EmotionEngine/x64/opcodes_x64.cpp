@@ -285,7 +285,7 @@ void JitX64::LW(InstructionData& data) {
 }
 
 void JitX64::MULT(InstructionData& data) {
-	FlushRegisters();
+	FlushRegisters({data.rs, data.rt});
 	InvokeNode* node;
 	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(IMPL_mult), FuncSignature::build<void, R5900*, bool, u8, u8, u8>());
 	node->set_arg(0, m_R5900);
@@ -293,11 +293,11 @@ void JitX64::MULT(InstructionData& data) {
 	node->set_arg(2, data.rs);
 	node->set_arg(3, data.rt);
 	node->set_arg(4, data.rd);
-	LoadRegisters();
+	LoadRegisters({data.rd});
 }
 
 void JitX64::MULTU(InstructionData& data) {
-	FlushRegisters();
+	FlushRegisters({data.rs, data.rt});
 	InvokeNode* node;
 	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(IMPL_multu), FuncSignature::build<void, R5900*, bool, u8, u8, u8>());
 	node->set_arg(0, m_R5900);
@@ -305,29 +305,27 @@ void JitX64::MULTU(InstructionData& data) {
 	node->set_arg(2, data.rs);
 	node->set_arg(3, data.rt);
 	node->set_arg(4, data.rd);
-	LoadRegisters();
+	LoadRegisters({data.rd});
 }
 
 void JitX64::DIV(InstructionData& data) {
-	FlushRegisters();
+	FlushRegisters({data.rs, data.rt});
 	InvokeNode* node;
 	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(IMPL_div), FuncSignature::build<void, R5900*, bool, u8, u8>());
 	node->set_arg(0, m_R5900);
 	node->set_arg(1, data.pipeline1);
 	node->set_arg(2, data.rs);
 	node->set_arg(3, data.rt);
-	LoadRegisters();
 }
 
 void JitX64::DIVU(InstructionData& data) {
-	FlushRegisters();
+	FlushRegisters({data.rs, data.rt});
 	InvokeNode* node;
 	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(IMPL_divu), FuncSignature::build<void, R5900*, bool, u8, u8>());
 	node->set_arg(0, m_R5900);
 	node->set_arg(1, data.pipeline1);
 	node->set_arg(2, data.rs);
 	node->set_arg(3, data.rt);
-	LoadRegisters();
 }
 
 void JitX64::BREAK(InstructionData&) {
@@ -575,4 +573,9 @@ void JitX64::SYSCALL(InstructionData& data) {
 	node->set_arg(1, ExceptionCause::Syscall);
 	node->set_arg(2, data.pc);
 	node->set_arg(3, data.in_branch_delay);
+}
+
+void JitX64::MFSA(InstructionData& data) {
+	if (data.rd == 0) return;
+	cc.mov(r[data.rd], x86::qword_ptr(r5900, offsetof(R5900, sa)));
 }

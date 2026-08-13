@@ -202,6 +202,14 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 					break;
 				}
 
+				// MFSA
+				case 0b101000: {
+					UseRegisters({data.rd});
+					data.ptr = &JitBackend::MFSA;
+					break;
+				}
+
+				// SYSCALL
 				case 0b001100: {
 					data.ptr = &JitBackend::SYSCALL;
 					data.type = InstructionType::Syscall;
@@ -305,6 +313,57 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		// MMI
 		case 0b011100: {
 			switch (data.funct) {
+				// MMI0
+				case 0b001000: {
+					switch (data.sa) {
+						case 0b10010: {
+							UseRegisters({data.rs, data.rt, data.rd});
+							data.ptr = &JitBackend::PEXTLW;
+							break;
+						}
+
+						default: {
+							error_log("unknown mmi0 opcode {:05b} {:08x} @ {:08x}", data.sa, instruction, data.sa);
+							exit(1);
+						}
+					}
+
+					break;
+				}
+
+				// MMI2
+				case 0b001001: {
+					switch (data.sa) {
+						// PMFHI
+						case 0b01000: {
+							UseRegisters({data.rd});
+							data.ptr = &JitBackend::PMFHI;
+							break;
+						}
+
+						// PMFLO
+						case 0b01001: {
+							UseRegisters({data.rd});
+							data.ptr = &JitBackend::PMFLO;
+							break;
+						}
+
+						// PCPYLD
+						case 0b01110: {
+							UseRegisters({data.rs, data.rt, data.rd});
+							data.ptr = &JitBackend::PCPYLD;
+							break;
+						}
+
+						default: {
+							error_log("unknown mmi2 opcode {:05b} {:08x} @ {:08x}", data.sa, instruction, data.pc);
+							exit(1);
+						}
+					}
+
+					break;
+				}
+
 				// MMI3
 				case 0b101001: {
 					switch (data.sa) {
@@ -312,6 +371,13 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 						case 0b10010: {
 							UseRegisters({data.rs, data.rt, data.rd});
 							data.ptr = &JitBackend::POR;
+							break;
+						}
+
+						// PCPYHD
+						case 0b01110: {
+							UseRegisters({data.rs, data.rt, data.rd});
+							data.ptr = &JitBackend::PCPYHD;
 							break;
 						}
 

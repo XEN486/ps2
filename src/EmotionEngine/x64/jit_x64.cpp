@@ -61,6 +61,24 @@ void JitX64::LoadRegisters() {
 	}
 }
 
+void JitX64::FlushRegisters(std::initializer_list<u8> args) {
+	for (u8 i : args) {
+		if (!m_UsedRegisters[i]) continue;
+		if (i == 0) continue;
+		//m_UsedRegisters[i] = false;
+		cc.mov(x86::qword_ptr(r5900, offsetof(R5900, gpr) + (i * sizeof(GPR))), r[i]);
+	}
+}
+
+void JitX64::LoadRegisters(std::initializer_list<u8> args) {
+	for (u8 i : args) {
+		if (!m_UsedRegisters[i]) continue;
+		if (i == 0) continue;
+		//m_UsedRegisters[i] = false;
+		cc.mov(r[i], x86::qword_ptr(r5900, offsetof(R5900, gpr) + (i * sizeof(GPR))));
+	}
+}
+
 void JitX64::EmitLoad128(asmjit::x86::Vec& v, u8 idx) {
 	cc.movdqu(v, x86::oword_ptr(r5900, offsetof(R5900, gpr) + (idx * sizeof(GPR))));
 }

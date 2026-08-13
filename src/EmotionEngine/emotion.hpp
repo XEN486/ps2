@@ -95,9 +95,10 @@ namespace EmotionEngine {
 
 			// special registers
 			u64 hi;
-			u64 lo;
 			u64 hi1;
+			u64 lo;
 			u64 lo1;
+			u64 sa;
 
 			// cop0
 			Cop0 cop0;
@@ -267,11 +268,19 @@ namespace EmotionEngine {
 			virtual void MOVZ(InstructionData& data) = 0;
 			virtual void DSLLV(InstructionData& data) = 0;
 			virtual void DADDIU(InstructionData& data) = 0;
+			virtual void LH(InstructionData& data) = 0;
+			virtual void SYSCALL(InstructionData& data) = 0;
+			virtual void MFSA(InstructionData& data) = 0;
+
+		protected:
 			virtual void LQ(InstructionData& data) = 0;
 			virtual void SQ(InstructionData& data) = 0;
-			virtual void LH(InstructionData& data) = 0;
 			virtual void POR(InstructionData& data) = 0;
-			virtual void SYSCALL(InstructionData& data) = 0;
+			virtual void PMFHI(InstructionData& data) = 0;
+			virtual void PMFLO(InstructionData& data) = 0;
+			virtual void PCPYLD(InstructionData& data) = 0;
+			virtual void PCPYHD(InstructionData& data) = 0;
+			virtual void PEXTLW(InstructionData& data) = 0;
 
 		protected:
 			R5900* m_R5900;
@@ -292,7 +301,7 @@ namespace EmotionEngine {
 			InstructionData AnalyzeOp(u32 opcode);
 			void DecodeOp(InstructionData& data, u32 instruction);
 
-			void UseRegisters(std::initializer_list<u8>(args)) {
+			void UseRegisters(std::initializer_list<u8> args) {
 				for (auto elem : args) {
 					m_UsedRegisters[elem] = true;
 				}
