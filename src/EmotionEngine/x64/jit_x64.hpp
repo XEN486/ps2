@@ -73,6 +73,9 @@ namespace EmotionEngine::Core {
 		void DADDIU(InstructionData& data) override;
 		void LQ(InstructionData& data) override;
 		void SQ(InstructionData& data) override;
+		void LH(InstructionData& data) override;
+		void POR(InstructionData& data) override;
+		void SYSCALL(InstructionData& data) override;
 
 	private:
 		template <typename T> void EmitJump(T address);
@@ -80,6 +83,12 @@ namespace EmotionEngine::Core {
 		template <typename Size, typename T> void EmitWriteVirtualMemory(T address, const asmjit::x86::Gp& value);
 		void FlushRegisters();
 		void LoadRegisters();
+
+		// call FlushRegisters() before this function
+		void EmitLoad128(asmjit::x86::Vec& v, u8 idx);
+
+		// call LoadRegisters() after this function
+		void EmitStore128(u8 idx, asmjit::x86::Vec& v);
 
 	private:
 		asmjit::x86::Compiler cc; 

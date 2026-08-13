@@ -60,3 +60,11 @@ void JitX64::LoadRegisters() {
 		cc.mov(r[i], x86::qword_ptr(r5900, offsetof(R5900, gpr) + (i * sizeof(GPR))));
 	}
 }
+
+void JitX64::EmitLoad128(asmjit::x86::Vec& v, u8 idx) {
+	cc.movdqu(v, x86::oword_ptr(r5900, offsetof(R5900, gpr) + (idx * sizeof(GPR))));
+}
+
+void JitX64::EmitStore128(u8 idx, asmjit::x86::Vec& v) {
+	cc.movdqu(x86::oword_ptr(r5900, offsetof(R5900, gpr) + (idx * sizeof(GPR))), v);
+}

@@ -74,6 +74,7 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 		else if (data.type == InstructionType::Branch) {
 			// analyze and store branch delay slot first
 			InstructionData branch_delay = AnalyzeOp(Fetch());
+			branch_delay.in_branch_delay = true;
 			data.branch_delay = std::make_shared<InstructionData>(branch_delay);
 			block.instructions++;
 
@@ -118,7 +119,7 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 }
 
 CompiledBlock& JitBackend::GetOrCompileBlock(u32 pc) {
-	pc &= 0x1fffffff;
+	//pc &= 0x1fffffff;
     auto it = m_BlockCache.find(pc);
     if (it != m_BlockCache.end() && it->second.valid) {
 		return it->second;

@@ -11,10 +11,13 @@ u32 Core::R5900::ReadCOP0(u8 reg) {
 		case 3: return cop0.entrylo1;
 		case 5: return cop0.pagemask;
 		case 6: return cop0.wired;
+		case 8: return 0; // TODO: FIX
 		case 9: return cop0.count;
 		case 10: return cop0.entryhi;
 		case 11: return cop0.compare;
 		case 12: return cop0.status;
+		case 13: return cop0.cause;
+		case 14: return cop0.epc;
 		case 15: return cop0.prid;
 		case 16: return cop0.config;
 
@@ -43,6 +46,31 @@ void Core::R5900::WriteCOP0(u8 reg, u32 val) {
 			exit(1);
 		}
 	}
+}
+
+// https://github.com/allkern/iris/blob/master/src/ee/ee_uncached.c#L443-L468
+void Core::R5900::ExceptionLevel1(Core::ExceptionCause cause, u32 epc, bool in_branch_delay) {
+	u32 vec = 0x00000180;
+	cop0.cause &= ~(0x0000007c);
+	cop0.cause |= static_cast<u8>(cause);
+
+	if (!(cop0.status & 2)) {
+		cop0.epc = epc;
+
+		if (in_branch_delay) {
+			cop0.epc -= 4;
+			cop0.cause |= (1 << 31);
+		} else {
+			cop0.cause &= (1 << 31);
+		}
+	}
+
+	cop0.status |= 2;
+	if (cause == Core::ExceptionCause::Interrupt) {
+		vec = 0x00000200;
+	}
+
+	next_pc = ((cop0.status & 0x04000000) ? 0xbfc00200 : 0x80000000) + vec;
 }
 
 EE::EE(Core::JitBackend* backend, GraphicsSynthesizer::GS* gs) : m_JitBackend(backend), m_GS(gs) {

@@ -53,6 +53,23 @@ namespace EmotionEngine {
 			LO1,
 		};
 
+		enum class ExceptionCause : u8 {
+			Interrupt,
+			TLBModified,
+			TLBRefillFetch,
+			TLBRefillStore,
+			AddressErrorFetch,
+			AddressErrorStore,
+			BusErrorInstruction,
+			BusErrorData,
+			Syscall,
+			Breakpoint,
+			ReservedInstruction,
+			CoprocessorUnusable,
+			Overflow,
+			Trap
+		};
+
 		/// @brief The EmotionEngine's System Control Coprocessor
 		struct Cop0 {
 			u32 index;		// $0: Index that specifies TLB entry for reading or writing
@@ -64,6 +81,8 @@ namespace EmotionEngine {
 			u32 entryhi;	// $10: Upper parts of a TLB entry
 			u32 compare;	// $11: Timer stable value
 			u32 status;		// $12: COP0 Status
+			u32 cause;		// $13: Cause
+			u32 epc;		// $14: Exception PC
 			u32 prid;		// $15: Processor Revision Identifier
 			u32 config;		// $16: Processor Configuration
 		};
@@ -94,6 +113,8 @@ namespace EmotionEngine {
 
 			u32 ReadCOP0(u8 reg);
 			void WriteCOP0(u8 reg, u32 val);
+
+			void ExceptionLevel1(ExceptionCause cause, u32 epc, bool in_branch_delay);
 		};
 
 
@@ -130,6 +151,8 @@ namespace EmotionEngine {
 			void (JitBackend::*ptr)(InstructionData&);
 
 			std::shared_ptr<InstructionData> branch_delay;
+			bool in_branch_delay;
+
 			u32 pc;
 			u8 rs;
 			u8 rt;
@@ -246,6 +269,9 @@ namespace EmotionEngine {
 			virtual void DADDIU(InstructionData& data) = 0;
 			virtual void LQ(InstructionData& data) = 0;
 			virtual void SQ(InstructionData& data) = 0;
+			virtual void LH(InstructionData& data) = 0;
+			virtual void POR(InstructionData& data) = 0;
+			virtual void SYSCALL(InstructionData& data) = 0;
 
 		protected:
 			R5900* m_R5900;

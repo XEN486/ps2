@@ -5,6 +5,7 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 	InstructionData data;
 	data.pc = m_CompilePC - 4;
 	data.type = InstructionType::Normal;
+	data.in_branch_delay = false;
 	data.pipeline1 = false;
 	data.likely = false;
 	DecodeOp(data, instruction);
@@ -201,6 +202,12 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 					break;
 				}
 
+				case 0b001100: {
+					data.ptr = &JitBackend::SYSCALL;
+					data.type = InstructionType::Syscall;
+					break;
+				}
+
 				// SYNC.stype
 				case 0b001111: {
 					data.ptr = &JitBackend::NOP; // backend doesnt have to do anything
@@ -298,6 +305,25 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		// MMI
 		case 0b011100: {
 			switch (data.funct) {
+				// MMI3
+				case 0b101001: {
+					switch (data.sa) {
+						// POR
+						case 0b10010: {
+							UseRegisters({data.rs, data.rt, data.rd});
+							data.ptr = &JitBackend::POR;
+							break;
+						}
+
+						default: {
+							error_log("unknown mmi3 opcode {:05b} {:08x} @ {:08x}", data.sa, instruction, data.pc);
+							exit(1);
+						}
+					}	
+
+					break;
+				}
+
 				// MULT1
 				case 0b011000: {
 					UseRegisters({data.rs, data.rt, data.rd});
@@ -376,6 +402,10 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b011001: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::DADDIU; break; }
 		case 0b011110: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::LQ; break; }
 		case 0b011111: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::SQ; break; }
+		case 0b100001: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::LH; break; }
+
+		// don't care about emulating CACHE instructions
+		case 0b101111: { data.ptr = &JitBackend::NOP; break; }
 		
 		// BNE
 		case 0b000101: {

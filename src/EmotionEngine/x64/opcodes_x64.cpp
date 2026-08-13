@@ -6,6 +6,10 @@ using namespace asmjit;
 static u32 WRAP_ReadCOP0(EmotionEngine::Core::R5900* r5900, u8 reg) { return r5900->ReadCOP0(reg); }
 static void WRAP_WriteCOP0(EmotionEngine::Core::R5900* r5900, u8 reg, u32 val) { r5900->WriteCOP0(reg, val); }
 
+static void WRAP_ExceptionLevel1(EmotionEngine::Core::R5900* r5900, ExceptionCause cause, u32 pc, bool in_delay) {
+	r5900->ExceptionLevel1(cause, pc, in_delay);
+}
+
 static void IMPL_lq(EmotionEngine::Core::R5900* r5900, EmotionEngine::Memory* memory, u32 addr, u8 reg) {
 	addr &= ~0xf;
 	u64 lo = memory->ReadVirtualMemory64(addr);
@@ -594,4 +598,36 @@ void JitX64::SQ(InstructionData& data) {
 	node->set_arg(2, temp.r32());
 	node->set_arg(3, data.rt);
 	LoadRegisters();
+}
+
+void JitX64::LH(InstructionData& data) {
+	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (i32)(i16)data.imm));
+	if (data.rt == 0) {
+		EmitReadVirtualMemory<u16>(temp.r16(), temp.r32());
+		return;
+	}
+
+	EmitReadVirtualMemory<u16>(r[data.rt].r16(), temp.r32());
+	cc.movsx(r[data.rt], r[data.rt].r16());
+}
+
+void JitX64::POR(InstructionData& data) {
+	x86::Vec rs = cc.new_vec128();
+	x86::Vec rt = cc.new_vec128();
+
+	FlushRegisters();
+	EmitLoad128(rs, data.rs);
+	EmitLoad128(rt, data.rt);
+	cc.por(rs, rt);
+	EmitStore128(data.rd, rs);
+	LoadRegisters();
+}
+
+void JitX64::SYSCALL(InstructionData& data) {
+	InvokeNode* node;
+	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(&WRAP_ExceptionLevel1), FuncSignature::build<void, R5900*, ExceptionCause, u32, bool>());
+	node->set_arg(0, r5900);
+	node->set_arg(1, ExceptionCause::Syscall);
+	node->set_arg(2, data.pc);
+	node->set_arg(3, data.in_branch_delay);
 }
