@@ -109,7 +109,7 @@ void JitX64::PEXTLW(InstructionData& data) {
 	EmitLoad128(rs, data.rs);
 	EmitLoad128(rt, data.rt);
 
-	cc.punpckldq(rs, rt);
-	EmitStore128(data.rd, rs);
+	cc.punpckldq(rt, rs);
+	EmitStore128(data.rd, rt);
 	LoadRegisters({data.rd});
 }
