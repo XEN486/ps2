@@ -211,14 +211,12 @@ namespace EmotionEngine {
 			void EmitBranchDelay(InstructionData& data);
 			
 		protected:
-			virtual void MFC0(InstructionData& data) = 0;
 			virtual void SLL(InstructionData& data) = 0;
 			virtual void SLTI(InstructionData& data) = 0;
 			virtual void BNE(InstructionData& data) = 0;
 			virtual void LUI(InstructionData& data) = 0;
 			virtual void ORI(InstructionData& data) = 0;
 			virtual void JR(InstructionData& data) = 0;
-			virtual void MTC0(InstructionData& data) = 0;
 			virtual void ADDIU(InstructionData& data) = 0;
 			virtual void SW(InstructionData& data) = 0;
 			virtual void JALR(InstructionData& data) = 0;
@@ -271,6 +269,13 @@ namespace EmotionEngine {
 			virtual void LH(InstructionData& data) = 0;
 			virtual void SYSCALL(InstructionData& data) = 0;
 			virtual void MFSA(InstructionData& data) = 0;
+
+		protected:
+			virtual void MFC0(InstructionData& data) = 0;
+			virtual void MTC0(InstructionData& data) = 0;
+
+		protected:
+			virtual void CFC2(InstructionData& data) = 0;
 
 		protected:
 			virtual void LQ(InstructionData& data) = 0;

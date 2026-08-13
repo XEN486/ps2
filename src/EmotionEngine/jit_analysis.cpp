@@ -290,9 +290,10 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 			}
 
 			switch (data.rs) {
-				case 0b010000: {
+				case 0b10000: {
 					switch (data.funct) {
 						case 0b000010: { data.ptr = &JitBackend::NOP; break; } // TLBWI (don't care about emulating TLB)
+						
 						default: {
 							error_log("unknown C0 opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, data.pc);
 							exit(1);
@@ -302,7 +303,21 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				}
 
 				default: {
-					error_log("unknown cop0 opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, data.pc);
+					error_log("unknown cop0 opcode {:05b} {:08x} @ {:08x}", data.rs, instruction, data.pc);
+					exit(1);
+				}
+			}
+
+			break;
+		}
+
+		// COP2
+		case 0b010010: {
+			switch (data.rs) {
+				case 0b00010: { UseRegisters({data.rs, data.rd}); data.ptr = &JitBackend::CFC2; break; }
+
+				default: {
+					error_log("unknown cop2 opcode {:05b} {:08x} @ {:08x}", data.rs, instruction, data.pc);
 					exit(1);
 				}
 			}

@@ -14,14 +14,12 @@ namespace EmotionEngine::Core {
 		void EmitEndBlock() override;
 
 	protected:
-		void MFC0(InstructionData& data) override;
 		void SLL(InstructionData& data) override;
 		void SLTI(InstructionData& data) override;
 		void BNE(InstructionData& data) override;
 		void LUI(InstructionData& data) override;
 		void ORI(InstructionData& data) override;
 		void JR(InstructionData& data) override;
-		void MTC0(InstructionData& data) override;
 		void ADDIU(InstructionData& data) override;
 		void SW(InstructionData& data) override;
 		void JALR(InstructionData& data) override;
@@ -74,6 +72,13 @@ namespace EmotionEngine::Core {
 		void LH(InstructionData& data) override;
 		void SYSCALL(InstructionData& data) override;
 		void MFSA(InstructionData& data) override;
+
+	protected:
+		void MFC0(InstructionData& data) override;
+		void MTC0(InstructionData& data) override;
+
+	protected:
+		void CFC2(InstructionData& data) override;
 
 	protected:
 		void LQ(InstructionData& data) override;
