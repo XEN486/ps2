@@ -72,7 +72,7 @@ void Core::R5900::ExceptionLevel1(Core::ExceptionCause cause, u32 epc, bool in_b
 	next_pc = ((cop0.status & 0x04000000) ? 0xbfc00200 : 0x80000000) + vec;
 }
 
-EE::EE(Core::JitBackend* backend, GraphicsSynthesizer::GS* gs) : m_JitBackend(backend), m_GS(gs) {
+EE::EE(Core::JitBackend* backend, GraphicsSynthesizer::GS* gs) : m_JitBackend(backend), m_GS(gs), m_INTC(this) {
 	if (!m_JitBackend->InitJit(&m_R5900, &m_Memory)) {
 		error_log("failed to initialize backend");
 		exit(1);
@@ -91,9 +91,14 @@ size_t EE::RunOnce() {
 	block.fn();
 	m_R5900.pc = m_R5900.next_pc;
 
-	//if (block.execution_count == 1) {
-	//	debug_log("execute new block {:04x}->{:04x} [{} instructions]", block.start_pc, block.end_pc, block.instructions);
-	//}
+	// check for interrupts
+	// https://github.com/allkern/iris/blob/master/src/ee/ee_uncached.c#L503-L506
+	bool irq_enabled = (m_R5900.cop0.status & 1) && (m_R5900.cop0.status & 0x10000) && (!(m_R5900.cop0.status & 2)) && (!(m_R5900.cop0.status & 4));
+	bool int0_pending = (m_R5900.cop0.status & 0x400) && (m_R5900.cop0.cause & 0x400);
+	bool int1_pending = (m_R5900.cop0.status & 0x800) && (m_R5900.cop0.cause & 0x800);
+	if (irq_enabled && (int0_pending || int1_pending)) {
+		m_R5900.ExceptionLevel1(Core::ExceptionCause::Interrupt, m_R5900.pc, false);
+	}
 
 	// assume 1 instruction = 1 clock cycle.
 	m_R5900.cop0.count += (u32)block.instructions;
@@ -120,6 +125,7 @@ void EE::Reset() {
 
 	m_JitBackend->Reset();
 	m_DMAC.Reset();
+	m_INTC.Reset();
 	m_GIF.Reset();
 }
 

@@ -37,6 +37,10 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 	if (address == 0x12001004) return m_GS->ReadHiCSR();
 	if (address == 0x12001080) return m_GS->ReadLoSIGLBLID();
 	if (address == 0x12001084) return m_GS->ReadHiSIGLBLID();
+	
+	// intc addresses
+	if (address == 0x1000f000) return m_EE->GetINTC().GetSTAT();
+	if (address == 0x1000f010) return m_EE->GetINTC().GetMASK();
 
 	// undocumented registers
 	if (address == 0x1f803204) return 0x00000020;
@@ -115,6 +119,10 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 		m_GS->WritePrivilegedRegEE(address, word);
 		return;
 	}
+
+	// intc addresses
+	if (address == 0x1000f000) return m_EE->GetINTC().SetSTAT(word);
+	if (address == 0x1000f010) return m_EE->GetINTC().SetMASK(word);
 
 	// console
 	if (address == 0x1000f180) {

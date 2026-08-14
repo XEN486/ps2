@@ -4,6 +4,7 @@
 #include "Memory/memory.hpp"
 #include "Timers/timers.hpp"
 #include "DMAC/dmac.hpp"
+#include "INTC/intc.hpp"
 #include "GIF/gif.hpp"
 
 #include "../GraphicsSynthesizer/gs.hpp"
@@ -344,6 +345,10 @@ namespace EmotionEngine {
 		/// @return Reference to the EE timers.
 		Timers::Timers& GetTimers() { return m_Timers; }
 
+		/// @brief Returns a reference to the interrupt controller.
+		/// @return Reference to the interrupt controller.
+		Interrupt::INTC& GetINTC() { return m_INTC; }
+
 		/// @brief Resets the EmotionEngine's state.
 		void Reset();
 
@@ -359,6 +364,7 @@ namespace EmotionEngine {
 		Memory m_Memory;
 		DMA::DMAC m_DMAC;
 		Graphics::GIF m_GIF;
+		Interrupt::INTC m_INTC;
 		Timers::Timers m_Timers;
 
 		GraphicsSynthesizer::GS* m_GS;
