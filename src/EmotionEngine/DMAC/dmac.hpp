@@ -1,5 +1,5 @@
-#ifndef DMAC_DMAC_HPP
-#define DMAC_DMAC_HPP
+#ifndef EMOTIONENGINE_DMAC_HPP
+#define EMOTIONENGINE_DMAC_HPP
 
 #include "../Memory/memory.hpp"
 #include "../GIF/gif.hpp"

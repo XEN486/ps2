@@ -1,5 +1,5 @@
-#ifndef EMOTIONENGINE_X64_JIT_X64_HPP
-#define EMOTIONENGINE_X64_JIT_X64_HPP
+#ifndef EMOTIONENGINE_X64_JIT_HPP
+#define EMOTIONENGINE_X64_JIT_HPP
 
 #include "../emotion.hpp"
 #include <asmjit/x86.h>
