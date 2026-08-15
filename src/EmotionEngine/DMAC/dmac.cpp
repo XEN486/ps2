@@ -124,7 +124,7 @@ u32 DMAC::ReadFromChannel(ChannelID channel, u32 address) {
 
 void DMAC::WriteToReg(u32 address, u32 word) {
 	DmacReg reg = static_cast<DmacReg>(address & 0xffff);
-	debug_log("write {:08x} -> D_{}", word, reg);
+	//debug_log("write {:08x} -> D_{}", word, reg);
 
 	switch (reg) {
 		case DmacReg::STAT: {
