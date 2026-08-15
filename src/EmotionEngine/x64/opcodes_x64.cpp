@@ -558,3 +558,29 @@ void JitX64::MFSA(InstructionData& data) {
 	if (data.rd == 0) return;
 	cc.mov(r[data.rd], x86::qword_ptr(r5900, offsetof(R5900, sa)));
 }
+
+void JitX64::SLLV(InstructionData& data) {
+	if (data.rd == 0) return;
+	cc.mov(temp.r32(), r[data.rs].r32());
+	cc.and_(temp.r32(), 0b11111);
+	cc.mov(r[data.rd].r32(), r[data.rt].r32());
+	cc.shl(r[data.rd].r32(), temp.r32());
+	cc.movsxd(r[data.rd], r[data.rd].r32());
+}
+
+void JitX64::SRAV(InstructionData& data) {
+	if (data.rd == 0) return;
+	cc.mov(temp.r32(), r[data.rs].r32());
+	cc.and_(temp.r32(), 0b11111);
+	cc.mov(r[data.rd].r32(), r[data.rt].r32());
+	cc.sar(r[data.rd].r32(), temp.r32());
+	cc.movsxd(r[data.rd], r[data.rd].r32());
+}
+
+void JitX64::NOR(InstructionData& data) {
+	if (data.rd == 0) return;
+	cc.mov(temp, r[data.rs]);
+	cc.or_(temp, r[data.rt]);
+	cc.not_(temp);
+	cc.mov(r[data.rd], temp);
+}

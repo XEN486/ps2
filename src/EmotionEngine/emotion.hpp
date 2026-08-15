@@ -270,6 +270,9 @@ namespace EmotionEngine {
 			virtual void LH(InstructionData& data) = 0;
 			virtual void SYSCALL(InstructionData& data) = 0;
 			virtual void MFSA(InstructionData& data) = 0;
+			virtual void SLLV(InstructionData& data) = 0;
+			virtual void SRAV(InstructionData& data) = 0;
+			virtual void NOR(InstructionData& data) = 0;
 
 		protected:
 			virtual void MFC0(InstructionData& data) = 0;

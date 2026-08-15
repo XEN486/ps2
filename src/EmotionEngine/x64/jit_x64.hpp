@@ -72,6 +72,9 @@ namespace EmotionEngine::Core {
 		void LH(InstructionData& data) override;
 		void SYSCALL(InstructionData& data) override;
 		void MFSA(InstructionData& data) override;
+		void SLLV(InstructionData& data) override;
+		void SRAV(InstructionData& data) override;
+		void NOR(InstructionData& data) override;
 
 	protected:
 		void MFC0(InstructionData& data) override;

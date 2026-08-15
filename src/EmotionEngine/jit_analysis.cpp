@@ -209,6 +209,27 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 					break;
 				}
 
+				// SLLV
+				case 0b000100: {
+					UseRegisters({data.rs, data.rt, data.rd});
+					data.ptr = &JitBackend::SLLV;
+					break;
+				}
+
+				// SRAV
+				case 0b000111: {
+					UseRegisters({data.rs, data.rt, data.rd});
+					data.ptr = &JitBackend::SRAV;
+					break;
+				}
+
+				// NOR
+				case 0b100111: {
+					UseRegisters({data.rs, data.rt, data.rd});
+					data.ptr = &JitBackend::NOR;
+					break;
+				}
+
 				// SYSCALL
 				case 0b001100: {
 					data.ptr = &JitBackend::SYSCALL;
