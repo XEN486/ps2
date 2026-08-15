@@ -44,6 +44,7 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 
 	// undocumented registers
 	if (address == 0x1f803204) return 0x00000020;
+	if (address == 0x1a000004) return 0x00020000;
 
 	// BIOS
 	if (address >= 0x1fc00000 && address <= 0x1fffffff) {
@@ -123,6 +124,9 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 	// intc addresses
 	if (address == 0x1000f000) return m_EE->GetINTC().SetSTAT(word);
 	if (address == 0x1000f010) return m_EE->GetINTC().SetMASK(word);
+
+	// GIF FIFO
+	if (address >= 0x10006000 && address <= 0x1000600c) return m_EE->GetGIF().WriteFifo(address, word);
 
 	// console
 	if (address == 0x1000f180) {

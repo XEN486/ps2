@@ -51,6 +51,7 @@ namespace EmotionEngine::Graphics {
 
 		void Reset();
 
+		void WriteFifo(u32 address, u32 word);
 		void ReceivePath1(u128 qword);
 		void ReceivePath2(u128 qword);
 		void ReceivePath3(u128 qword);

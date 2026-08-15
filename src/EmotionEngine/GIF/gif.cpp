@@ -14,6 +14,18 @@ void GIF::Reset() {
 	std::swap(m_Path3Fifo, empty);
 }
 
+void GIF::WriteFifo(u32 address, u32 word) {
+	static u128 qword = 0;
+	u32 off = address - 0x10006000;
+	qword |= word << (off * 8);
+
+	// send to PATH3
+	if (off == 0xc) {
+		ReceivePath3(qword);
+		qword = 0;
+	}
+}
+
 void GIF::ReceivePath1(u128 qword) {
 	m_Path1.qword = qword;
 	m_Path1.queued = true;
@@ -105,9 +117,10 @@ void GIF::ProcessQword() {
 		// NLOOP == 0 case
 		if (m_LastTag.nloop == 0) {
 			if (m_LastTag.eop) {
-				//debug_log("end of packet");
+				debug_log("end of packet");
 				return;
 			}
+
 			m_State = GIFstate::ReceiveTag;
 			return;
 		}
@@ -124,6 +137,7 @@ void GIF::ProcessQword() {
 
 	switch (m_LastTag.data_format) {
 		case DataFormat::Packed: {
+			//debug_log("packed data {:016x}{:016x} {} {}", (u64)(m_RecentGIFtag >> 64), (u64)m_RecentGIFtag, m_CurrentReg + 1, m_LastTag.nloop);
 			u64 reg_field = static_cast<u64>((m_RecentGIFtag >> 64) & 0xffffffffffffffff);
 			u8 reg_idx = (reg_field >> (m_CurrentReg * 4)) & 0b1111;
 
@@ -178,6 +192,11 @@ void GIF::ProcessQword() {
 					break;
 				}
 
+				// nop
+				case 0xf: {
+					break;
+				}
+
 				// low 64-bit -> GS register directly
 				default: {
 					m_GS->WriteInternalReg(static_cast<GraphicsSynthesizer::InternalRegisterID>(reg_idx), static_cast<u64>(qword & 0xffffffffffffffff));
@@ -193,7 +212,7 @@ void GIF::ProcessQword() {
 				if (m_LastTag.nloop == 0) {
 					m_State = GIFstate::ReceiveTag;
 					if (m_LastTag.eop) {
-						//debug_log("end of packet");
+						debug_log("end of packet");
 						m_ActivePath = ActivePath::None;
 						return;
 					}
