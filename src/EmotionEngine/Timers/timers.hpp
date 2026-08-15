@@ -110,7 +110,6 @@ namespace EmotionEngine::Timers {
 		}
 
 		void Write(u32 addr, u32 val) {
-			debug_log("{:08x} -> {:08x}", val, addr);
 			m_Timers[((addr >> 8) & 0xff) / 8].Write(addr, val);
 		}
 
