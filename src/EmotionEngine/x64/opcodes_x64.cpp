@@ -267,6 +267,11 @@ void JitX64::DSRA32(InstructionData& data) {
 
 void JitX64::OR(InstructionData& data) {
 	if (data.rd == 0) return;
+	if (data.rt == 0) {
+		cc.mov(r[data.rd], r[data.rs]);
+		return;
+	}
+
 	cc.mov(temp, r[data.rs]);
 	cc.or_(temp, r[data.rt]);
 	cc.mov(r[data.rd], temp);
