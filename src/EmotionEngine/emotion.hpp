@@ -274,16 +274,24 @@ namespace EmotionEngine {
 			virtual void SRAV(InstructionData& data) = 0;
 			virtual void NOR(InstructionData& data) = 0;
 
+		// COP0
 		protected:
 			virtual void MFC0(InstructionData& data) = 0;
 			virtual void MTC0(InstructionData& data) = 0;
 
+		// COP1
+		protected:
+			virtual void MTC1(InstructionData& data) = 0;
+			virtual void CTC1(InstructionData& data) = 0;
+
+		// COP2
 		protected:
 			virtual void CFC2(InstructionData& data) = 0;
 			virtual void CTC2(InstructionData& data) = 0;
 			virtual void QMFC2(InstructionData& data) = 0;
 			virtual void QMTC2(InstructionData& data) = 0;
 
+		// MMI
 		protected:
 			virtual void LQ(InstructionData& data) = 0;
 			virtual void SQ(InstructionData& data) = 0;

@@ -76,16 +76,24 @@ namespace EmotionEngine::Core {
 		void SRAV(InstructionData& data) override;
 		void NOR(InstructionData& data) override;
 
+	// COP0
 	protected:
 		void MFC0(InstructionData& data) override;
 		void MTC0(InstructionData& data) override;
 
+	// COP1
+	protected:
+		void MTC1(InstructionData& data) override;
+		void CTC1(InstructionData& data) override;
+
+	// COP2
 	protected:
 		void CFC2(InstructionData& data) override;
 		void CTC2(InstructionData& data) override;
 		void QMFC2(InstructionData& data) override;
 		void QMTC2(InstructionData& data) override;
 
+	// MMI
 	protected:
 		void LQ(InstructionData& data) override;
 		void SQ(InstructionData& data) override;

@@ -332,6 +332,33 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 			break;
 		}
 
+		// COP1
+		case 0b010001: {
+			switch (data.rs) {
+				case 0b10000: {
+					switch (data.funct) {
+						default: {
+							error_log("unknown cop1 S opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, data.pc);
+							data.ptr = &JitBackend::NOP;
+							break;
+						}
+					}
+
+					break;
+				}
+
+				case 0b00100: { UseRegisters({data.rt, data.rd}); data.ptr = &JitBackend::MTC1; break; }
+				case 0b00110: { UseRegisters({data.rt, data.rd}); data.ptr = &JitBackend::CTC1; break; }
+
+				default: {
+					error_log("unknown cop1 opcode {:05b} {:08x} @ {:08x}", data.rs, instruction, data.pc);
+					exit(1);
+				}
+			}
+
+			break;
+		}
+
 		// COP2
 		case 0b010010: {
 			if (data.rs & 0b10000) {
