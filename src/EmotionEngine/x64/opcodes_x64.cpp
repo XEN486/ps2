@@ -764,3 +764,12 @@ void JitX64::SDR(InstructionData& data) {
 	node->set_arg(4, data.imm);
 	LoadRegisters({data.rt});
 }
+
+void JitX64::SRLV(InstructionData& data) {
+	if (data.rd == 0) return;
+	cc.mov(temp.r32(), r[data.rs].r32());
+	cc.and_(temp.r32(), 0b11111);
+	cc.mov(r[data.rd].r32(), r[data.rt].r32());
+	cc.shr(r[data.rd].r32(), temp.r32());
+	cc.movsxd(r[data.rd], r[data.rd].r32());
+}

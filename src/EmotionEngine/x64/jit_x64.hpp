@@ -79,6 +79,7 @@ namespace EmotionEngine::Core {
 		void LDR(InstructionData& data) override;
 		void SDL(InstructionData& data) override;
 		void SDR(InstructionData& data) override;
+		void SRLV(InstructionData& data) override;
 
 	// COP0
 	protected:
