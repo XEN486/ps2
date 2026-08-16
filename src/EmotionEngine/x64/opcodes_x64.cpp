@@ -118,12 +118,22 @@ void JitX64::JR(InstructionData& data) {
 
 void JitX64::ADDIU(InstructionData& data) {
 	if (data.rt == 0) return;
+	if (data.imm == 0) {
+		cc.movsxd(r[data.rt], r[data.rs].r32());
+		return;
+	}
+
 	cc.lea(r[data.rt].r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
 	cc.movsxd(r[data.rt], r[data.rt].r32());
 }
 
 void JitX64::SW(InstructionData& data) {
-	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	if (data.imm == 0) {
+		cc.mov(temp.r32(), r[data.rs].r32());
+	} else {
+		cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	}
+
 	EmitWriteVirtualMemory<u32>(temp.r32(), r[data.rt].r32());
 }
 
@@ -134,7 +144,11 @@ void JitX64::JALR(InstructionData& data) {
 }
 
 void JitX64::SD(InstructionData& data) {
-	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	if (data.imm == 0) {
+		cc.mov(temp.r32(), r[data.rs].r32());
+	} else {
+		cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	}
 	EmitWriteVirtualMemory<u64>(temp.r32(), r[data.rt]);
 }
 
@@ -171,7 +185,12 @@ void JitX64::BGEZ(InstructionData& data) {
 }
 
 void JitX64::LBU(InstructionData& data) {
-	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	if (data.imm == 0) {
+		cc.mov(temp.r32(), r[data.rs].r32());
+	} else {
+		cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	}
+
 	if (data.rt == 0) {
 		EmitReadVirtualMemory<u8>(temp.r8(), temp.r32());
 		return;
@@ -208,11 +227,17 @@ void JitX64::BEQ(InstructionData& data) {
 }
 
 void JitX64::LD(InstructionData& data) {
-	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	if (data.imm == 0) {
+		cc.mov(temp.r32(), r[data.rs].r32());
+	} else {
+		cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	}
+
 	if (data.rt == 0) {
 		EmitReadVirtualMemory<u64>(temp.r64(), temp.r32());
 		return;
 	}
+
 	EmitReadVirtualMemory<u64>(r[data.rt], temp.r32());
 }
 
@@ -253,7 +278,12 @@ void JitX64::DADDU(InstructionData& data) {
 }
 
 void JitX64::LW(InstructionData& data) {
-	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	if (data.imm == 0) {
+		cc.mov(temp.r32(), r[data.rs].r32());
+	} else {
+		cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	}
+
 	if (data.rt == 0) {
 		EmitReadVirtualMemory<u32>(temp.r32(), temp.r32());
 		return;
@@ -348,7 +378,12 @@ void JitX64::SLTIU(InstructionData& data) {
 }
 
 void JitX64::LB(InstructionData& data) {
-	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	if (data.imm == 0) {
+		cc.mov(temp.r32(), r[data.rs].r32());
+	} else {
+		cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	}
+
 	if (data.rt == 0) {
 		EmitReadVirtualMemory<u8>(temp.r8(), temp.r32());
 		return;
@@ -371,7 +406,12 @@ void JitX64::J(InstructionData& data) {
 }
 
 void JitX64::SB(InstructionData& data) {
-	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	if (data.imm == 0) {
+		cc.mov(temp.r32(), r[data.rs].r32());
+	} else {
+		cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	}
+
 	EmitWriteVirtualMemory<u8>(temp.r32(), r[data.rt].r8());
 }
 
@@ -453,11 +493,17 @@ void JitX64::DSRL32(InstructionData& data) {
 }
 
 void JitX64::LHU(InstructionData& data) {
-	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	if (data.imm == 0) {
+		cc.mov(temp.r32(), r[data.rs].r32());
+	} else {
+		cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	}
+
 	if (data.rt == 0) {
 		EmitReadVirtualMemory<u16>(temp.r16(), temp.r32());
 		return;
 	}
+
 	EmitReadVirtualMemory<u16>(r[data.rt].r16(), temp.r32());
 	cc.movzx(r[data.rt], r[data.rt].r16());
 }
@@ -482,7 +528,12 @@ void JitX64::BLTZ(InstructionData& data) {
 }
 
 void JitX64::SH(InstructionData& data) {
-	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	if (data.imm == 0) {
+		cc.mov(temp.r32(), r[data.rs].r32());
+	} else {
+		cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	}
+
 	EmitWriteVirtualMemory<u16>(temp.r32(), r[data.rt].r16());
 }
 
@@ -502,11 +553,17 @@ void JitX64::XORI(InstructionData& data) {
 }
 
 void JitX64::LWU(InstructionData& data) {
-	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	if (data.imm == 0) {
+		cc.mov(temp.r32(), r[data.rs].r32());
+	} else {
+		cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	}
+
 	if (data.rt == 0) {
 		EmitReadVirtualMemory<u32>(temp.r32(), temp.r32());
 		return;
 	}
+	
 	EmitReadVirtualMemory<u32>(r[data.rt].r32(), temp.r32());
 }
 
@@ -531,11 +588,21 @@ void JitX64::DSLLV(InstructionData& data) {
 
 void JitX64::DADDIU(InstructionData& data) {
 	if (data.rt == 0) return;
+	if (data.imm == 0) {
+		cc.mov(r[data.rd], r[data.rs]);
+		return;
+	}
+
 	cc.lea(r[data.rt], x86::ptr(r[data.rs], (u64)(i16)data.imm));
 }
 
 void JitX64::LH(InstructionData& data) {
-	cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	if (data.imm == 0) {
+		cc.mov(temp.r32(), r[data.rs].r32());
+	} else {
+		cc.lea(temp.r32(), x86::ptr(r[data.rs].r32(), (u64)(i16)data.imm));
+	}
+
 	if (data.rt == 0) {
 		EmitReadVirtualMemory<u16>(temp.r16(), temp.r32());
 		return;
