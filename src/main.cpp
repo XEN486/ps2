@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
 
 	// sideload elf
 	if (has_elf) {
-		while (cpu.GetR5900().pc != 0x80001000) scheduler.Run();
+		while (cpu.GetR5900().pc != 0x82000) scheduler.Run();
 		ElfFile elf(argv[2]);
 		cpu.GetR5900().pc = elf.LoadElf(&cpu.GetMemory());
 	}
