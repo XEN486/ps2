@@ -168,7 +168,7 @@ void JitX64::SRA(InstructionData& data) {
 void JitX64::BGEZ(InstructionData& data) {
 	Label exit_bgez = cc.new_label();
 	Label end = cc.new_label();
-	cc.cmp(r[data.rs], 0);
+	cc.test(r[data.rs], r[data.rs]);
 	cc.j(x86::CondCode::kSignedLT, exit_bgez);
 
 	EmitJump((data.pc + 4) + (i32)((i16)data.imm << 2));
@@ -435,7 +435,7 @@ void JitX64::SLTU(InstructionData& data) {
 void JitX64::BLEZ(InstructionData& data) {
 	Label exit_blez = cc.new_label();
 	Label end = cc.new_label();
-	cc.cmp(r[data.rs], 0);
+	cc.test(r[data.rs], r[data.rs]);
 	cc.j(x86::CondCode::kSignedGT, exit_blez);
 
 	EmitJump((data.pc + 4) + (i32)((i16)data.imm << 2));
@@ -461,7 +461,7 @@ void JitX64::SUBU(InstructionData& data) {
 void JitX64::BGTZ(InstructionData& data) {
 	Label exit_bgtz = cc.new_label();
 	Label end = cc.new_label();
-	cc.cmp(r[data.rs], 0);
+	cc.test(r[data.rs], r[data.rs]);
 	cc.j(x86::CondCode::kSignedLE, exit_bgtz);
 
 	EmitJump((data.pc + 4) + (i32)((i16)data.imm << 2));
@@ -516,7 +516,7 @@ void JitX64::LHU(InstructionData& data) {
 void JitX64::BLTZ(InstructionData& data) {
 	Label exit_bltz = cc.new_label();
 	Label end = cc.new_label();
-	cc.cmp(r[data.rs], 0);
+	cc.test(r[data.rs], r[data.rs]);
 	cc.j(x86::CondCode::kSignedGE, exit_bltz);
 
 	EmitJump((data.pc + 4) + (i32)((i16)data.imm << 2));
