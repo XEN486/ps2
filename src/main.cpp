@@ -5,6 +5,7 @@
 #include "scheduler.hpp"
 #include "elf.hpp"
 
+#ifdef NDEBUG
 int main(int argc, char** argv) {
 	bool has_elf = argc > 2;
 	if (argc < 2) {
@@ -41,3 +42,27 @@ int main(int argc, char** argv) {
 	cpu.Release();
 	return 0;
 }
+#else
+int main() {
+	GraphicsSynthesizer::GS gs;
+	EmotionEngine::Core::JitX64 backend;
+	EmotionEngine::EE cpu(&backend, &gs);
+
+	gs.Reset();
+	cpu.Reset();
+	cpu.GetMemory().LoadBIOS("scph39001.bin");
+	
+	Scheduler scheduler;
+	scheduler.SetComponents(&cpu, &gs);
+	
+	while (true) {
+		scheduler.Run();
+		if (scheduler.FrameReady()) {
+			// gs.Render();
+		}
+	}
+
+	cpu.Release();
+	return 0;
+}
+#endif
