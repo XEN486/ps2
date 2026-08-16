@@ -42,6 +42,9 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 	if (address == 0x1000f000) return m_EE->GetINTC().GetSTAT();
 	if (address == 0x1000f010) return m_EE->GetINTC().GetMASK();
 
+	// GIF addresses
+	if (address == 0x10003020) return m_EE->GetGIF().ReadStat();
+
 	// undocumented registers
 	if (address == 0x1f803204) return 0x00000020;
 	if (address == 0x1a000004) return 0x00020000;
@@ -125,7 +128,9 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 	if (address == 0x1000f000) return m_EE->GetINTC().SetSTAT(word);
 	if (address == 0x1000f010) return m_EE->GetINTC().SetMASK(word);
 
-	// GIF FIFO
+	// GIF addresses
+	if (address == 0x10003000) return m_EE->GetGIF().WriteCtrl(word);
+	if (address == 0x10003010) return m_EE->GetGIF().WriteMode(word);
 	if (address >= 0x10006000 && address <= 0x1000600c) return m_EE->GetGIF().WriteFifo(address, word);
 
 	// console

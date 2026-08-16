@@ -15,7 +15,7 @@ namespace EmotionEngine::Graphics {
 	};
 	
 	enum class ActivePath {
-		None,
+		Idle,
 		Path1,
 		Path2,
 		Path3
@@ -57,12 +57,19 @@ namespace EmotionEngine::Graphics {
 		void ReceivePath3(u128 qword);
 		void ProcessQword();
 
+		void WriteCtrl(u32 word);
+		void WriteMode(u32 word);
+		u32 ReadStat();
+
 	private:
 		ActivePath m_ActivePath;
 		std::queue<u128> m_Path3Fifo;
 		Path m_Path2;
 		Path m_Path1;
 
+		bool m_ModeMaskPath3;
+		bool m_VifMaskPath3;
+		
 		u128 m_RecentGIFtag;
 
 		size_t m_CurrentReg = 0;

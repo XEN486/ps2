@@ -3,8 +3,10 @@ using namespace EmotionEngine::Graphics;
 
 void GIF::Reset() {
 	// get ready for giftag from any path
-	m_ActivePath = ActivePath::None;
+	m_ActivePath = ActivePath::Idle;
 	m_State = GIFstate::ReceiveTag;
+	m_ModeMaskPath3 = false;
+	m_VifMaskPath3 = false;
 
 	// empty queues
 	m_Path1.queued = false;
@@ -17,7 +19,7 @@ void GIF::Reset() {
 void GIF::WriteFifo(u32 address, u32 word) {
 	static u128 qword = 0;
 	u32 off = address - 0x10006000;
-	qword |= word << (off * 8);
+	qword |= (static_cast<u128>(word) << (off * 8));
 
 	// send to PATH3
 	if (off == 0xc) {
@@ -37,12 +39,13 @@ void GIF::ReceivePath2(u128 qword) {
 }
 
 void GIF::ReceivePath3(u128 qword) {
+	if (m_Path3Fifo.size() == 16) return;
 	m_Path3Fifo.push(qword);
 }
 
 void GIF::ProcessQword() {
 	// try find a path to activate
-	if (m_ActivePath == ActivePath::None) {
+	if (m_ActivePath == ActivePath::Idle) {
 		// path1
 		if (m_Path1.queued) {
 			m_ActivePath = ActivePath::Path1;
@@ -68,7 +71,7 @@ void GIF::ProcessQword() {
 	switch (m_ActivePath) {
 		case ActivePath::Path1: {
 			if (!m_Path1.queued) {
-				m_ActivePath = ActivePath::None;
+				m_ActivePath = ActivePath::Idle;
 				return;
 			}
 
@@ -79,7 +82,7 @@ void GIF::ProcessQword() {
 
 		case ActivePath::Path2: {
 			if (!m_Path2.queued) {
-				m_ActivePath = ActivePath::None;
+				m_ActivePath = ActivePath::Idle;
 				return;
 			}
 
@@ -90,7 +93,7 @@ void GIF::ProcessQword() {
 
 		case ActivePath::Path3: {
 			if (m_Path3Fifo.empty()) {
-				m_ActivePath = ActivePath::None;
+				m_ActivePath = ActivePath::Idle;
 				return;
 			}
 
@@ -107,7 +110,7 @@ void GIF::ProcessQword() {
 		m_LastTag.nloop			= lo64 & 0x7fff;
 		m_LastTag.eop			= (lo64 >> 15) & 1;
 		m_LastTag.enable_prim	= (lo64 >> 46) & 1;
-		m_LastTag.prim_data		= (lo64 >> 47) & 0x3ff;
+		m_LastTag.prim_data		= (lo64 >> 47) & 0x7ff;
 		m_LastTag.data_format	= static_cast<DataFormat>((lo64 >> 58) & 0b11);
 		m_LastTag.nregs			= (lo64 >> 60) & 0b1111;
 		if (m_LastTag.nregs == 0) m_LastTag.nregs = 16;
@@ -117,7 +120,7 @@ void GIF::ProcessQword() {
 		// NLOOP == 0 case
 		if (m_LastTag.nloop == 0) {
 			if (m_LastTag.eop) {
-				debug_log("end of packet");
+				//debug_log("end of packet");
 				return;
 			}
 
@@ -137,9 +140,9 @@ void GIF::ProcessQword() {
 
 	switch (m_LastTag.data_format) {
 		case DataFormat::Packed: {
-			//debug_log("packed data {:016x}{:016x} {} {}", (u64)(m_RecentGIFtag >> 64), (u64)m_RecentGIFtag, m_CurrentReg + 1, m_LastTag.nloop);
-			u64 reg_field = static_cast<u64>((m_RecentGIFtag >> 64) & 0xffffffffffffffff);
+			u64 reg_field = static_cast<u64>(m_RecentGIFtag >> 64);
 			u8 reg_idx = (reg_field >> (m_CurrentReg * 4)) & 0b1111;
+			//debug_log("packed data {:016x}{:016x} {} {} {:x}", (u64)(m_RecentGIFtag >> 64), (u64)m_RecentGIFtag, m_CurrentReg + 1, m_LastTag.nloop, reg_idx);
 
 			// special registers
 			switch (reg_idx) {
@@ -212,8 +215,8 @@ void GIF::ProcessQword() {
 				if (m_LastTag.nloop == 0) {
 					m_State = GIFstate::ReceiveTag;
 					if (m_LastTag.eop) {
-						debug_log("end of packet");
-						m_ActivePath = ActivePath::None;
+						//debug_log("end of packet");
+						m_ActivePath = ActivePath::Idle;
 						return;
 					}
 				}
