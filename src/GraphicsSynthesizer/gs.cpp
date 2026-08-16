@@ -78,7 +78,7 @@ void GS::WriteInternalReg(InternalRegisterID id, u64 dword) {
 
 		default: {
 			error_log("unknown internal register {:02x}", (u8)id);
-			exit(1);
+			//exit(1);
 		}
 	}
 }
