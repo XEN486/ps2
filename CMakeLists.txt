@@ -27,7 +27,7 @@ target_link_libraries(ps2
 )
 
 if(MSVC)
-	target_compile_options(ps2 PRIVATE /W4)
+	target_compile_options(ps2 PRIVATE /W4 /MP)
 else()
 	target_compile_options(ps2 PRIVATE -Wall -Wextra)
 endif()
