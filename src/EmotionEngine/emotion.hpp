@@ -273,6 +273,10 @@ namespace EmotionEngine {
 			virtual void SLLV(InstructionData& data) = 0;
 			virtual void SRAV(InstructionData& data) = 0;
 			virtual void NOR(InstructionData& data) = 0;
+			virtual void LDL(InstructionData& data) = 0;
+			virtual void LDR(InstructionData& data) = 0;
+			virtual void SDL(InstructionData& data) = 0;
+			virtual void SDR(InstructionData& data) = 0;
 
 		// COP0
 		protected:

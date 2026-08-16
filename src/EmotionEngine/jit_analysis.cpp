@@ -547,6 +547,10 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 		case 0b011110: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::LQ; break; }
 		case 0b011111: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::SQ; break; }
 		case 0b100001: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::LH; break; }
+		case 0b011010: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::LDL; break; }
+		case 0b011011: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::LDR; break; }
+		case 0b101100: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::SDL; break; }
+		case 0b101101: { UseRegisters({data.rs, data.rt}); data.ptr = &JitBackend::SDR; break; }
 
 		// don't care about emulating CACHE instructions
 		case 0b101111: { data.ptr = &JitBackend::NOP; break; }

@@ -65,6 +65,66 @@ static void IMPL_multu(EmotionEngine::Core::R5900* r5900, bool pipeline1, u8 ind
 	if (index_rd) r5900->gpr[index_rd].reg_u64[0] = lo;
 }
 
+// https://github.com/allkern/iris/blob/master/src/ee/ee_uncached.c#L964-L976
+static void IMPL_ldl(EmotionEngine::Memory* memory, EmotionEngine::Core::R5900* r5900, u8 index_rs, u8 index_rt, u16 offset) {
+	static const uint8_t ldl_shift[8] = { 56, 48, 40, 32, 24, 16, 8, 0 };
+	static const uint64_t ldl_mask[8] = {
+		0x00ffffffffffffffULL, 0x0000ffffffffffffULL, 0x000000ffffffffffULL, 0x00000000ffffffffULL,
+		0x0000000000ffffffULL, 0x000000000000ffffULL, 0x00000000000000ffULL, 0x0000000000000000ULL
+	};
+
+	u32 addr = r5900->gpr[index_rs].reg_i32[0] + (i32)(i16)offset;
+	u32 shift = addr & 7;
+	u64 data = memory->ReadVirtualMemory64(addr & ~(u32)7);
+
+	r5900->gpr[index_rt].reg_u64[0] = (r5900->gpr[index_rt].reg_u64[0] & ldl_mask[shift]) | (data << ldl_shift[shift]);
+}
+
+// https://github.com/allkern/iris/blob/master/src/ee/ee_uncached.c#L977-L989
+static void IMPL_ldr(EmotionEngine::Memory* memory, EmotionEngine::Core::R5900* r5900, u8 index_rs, u8 index_rt, u16 offset) {
+	static const uint8_t ldr_shift[8] = { 0, 8, 16, 24, 32, 40, 48, 56 };
+	static const uint64_t ldr_mask[8] = {
+		0x0000000000000000ULL, 0xff00000000000000ULL, 0xffff000000000000ULL, 0xffffff0000000000ULL,
+		0xffffffff00000000ULL, 0xffffffffff000000ULL, 0xffffffffffff0000ULL, 0xffffffffffffff00ULL
+	};
+
+	u32 addr = r5900->gpr[index_rs].reg_i32[0] + (i32)(i16)offset;
+	u32 shift = addr & 7;
+	u64 data = memory->ReadVirtualMemory64(addr & ~(u32)7);
+
+	r5900->gpr[index_rt].reg_u64[0] = (r5900->gpr[index_rt].reg_u64[0] & ldr_mask[shift]) | (data >> ldr_shift[shift]);
+}
+
+// https://github.com/allkern/iris/blob/master/src/ee/ee_uncached.c#L2507-L2519
+static void IMPL_sdl(EmotionEngine::Memory* memory, EmotionEngine::Core::R5900* r5900, u8 index_rs, u8 index_rt, u16 offset) {
+	static const uint8_t sdl_shift[8] = { 56, 48, 40, 32, 24, 16, 8, 0 };
+	static const uint64_t sdl_mask[8] = {
+		0xffffffffffffff00ULL, 0xffffffffffff0000ULL, 0xffffffffff000000ULL, 0xffffffff00000000ULL,
+		0xffffff0000000000ULL, 0xffff000000000000ULL, 0xff00000000000000ULL, 0x0000000000000000ULL
+	};
+	
+	u32 addr = r5900->gpr[index_rs].reg_i32[0] + (i32)(i16)offset;
+	u32 shift = addr & 7;
+	u64 data = memory->ReadVirtualMemory64(addr & ~(u32)7);
+
+	memory->WriteVirtualMemory64(addr & ~(u32)7, (r5900->gpr[index_rt].reg_u64[0] >> sdl_shift[shift]) | (data & sdl_mask[shift]));
+}
+
+// https://github.com/allkern/iris/blob/master/src/ee/ee_uncached.c#L2520-L2532
+static void IMPL_sdr(EmotionEngine::Memory* memory, EmotionEngine::Core::R5900* r5900, u8 index_rs, u8 index_rt, u16 offset) {
+	static const uint8_t sdr_shift[8] = { 0, 8, 16, 24, 32, 40, 48, 56 };
+	static const uint64_t sdr_mask[8] = {
+		0x0000000000000000ULL, 0x00000000000000ffULL, 0x000000000000ffffULL, 0x0000000000ffffffULL,
+		0x00000000ffffffffULL, 0x000000ffffffffffULL, 0x0000ffffffffffffULL, 0x00ffffffffffffffULL
+	};
+
+	u32 addr = r5900->gpr[index_rs].reg_i32[0] + (i32)(i16)offset;
+	u32 shift = addr & 7;
+	u64 data = memory->ReadVirtualMemory64(addr & ~(u32)7);
+
+	memory->WriteVirtualMemory64(addr & ~(u32)7, (r5900->gpr[index_rt].reg_u64[0] << sdr_shift[shift]) | (data & sdr_mask[shift]));
+}
+
 void JitX64::SLL(InstructionData& data) {
 	if (data.rd == 0) return;
 	cc.mov(r[data.rd].r32(), r[data.rt].r32());
@@ -655,4 +715,52 @@ void JitX64::NOR(InstructionData& data) {
 	cc.or_(temp, r[data.rt]);
 	cc.not_(temp);
 	cc.mov(r[data.rd], temp);
+}
+
+void JitX64::LDL(InstructionData& data) {
+	FlushRegisters({data.rs});
+	InvokeNode* node;
+	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(&IMPL_ldl), FuncSignature::build<void, Memory*, R5900*, u8, u8, u16>());
+	node->set_arg(0, m_Memory);
+	node->set_arg(1, m_R5900);
+	node->set_arg(2, data.rs);
+	node->set_arg(3, data.rt);
+	node->set_arg(4, data.imm);
+	LoadRegisters({data.rt});
+}
+
+void JitX64::LDR(InstructionData& data) {
+	FlushRegisters({data.rs});
+	InvokeNode* node;
+	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(&IMPL_ldr), FuncSignature::build<void, Memory*, R5900*, u8, u8, u16>());
+	node->set_arg(0, m_Memory);
+	node->set_arg(1, m_R5900);
+	node->set_arg(2, data.rs);
+	node->set_arg(3, data.rt);
+	node->set_arg(4, data.imm);
+	LoadRegisters({data.rt});
+}
+
+void JitX64::SDL(InstructionData& data) {
+	FlushRegisters({data.rs});
+	InvokeNode* node;
+	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(&IMPL_sdl), FuncSignature::build<void, Memory*, R5900*, u8, u8, u16>());
+	node->set_arg(0, m_Memory);
+	node->set_arg(1, m_R5900);
+	node->set_arg(2, data.rs);
+	node->set_arg(3, data.rt);
+	node->set_arg(4, data.imm);
+	LoadRegisters({data.rt});
+}
+
+void JitX64::SDR(InstructionData& data) {
+	FlushRegisters({data.rs});
+	InvokeNode* node;
+	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(&IMPL_sdr), FuncSignature::build<void, Memory*, R5900*, u8, u8, u16>());
+	node->set_arg(0, m_Memory);
+	node->set_arg(1, m_R5900);
+	node->set_arg(2, data.rs);
+	node->set_arg(3, data.rt);
+	node->set_arg(4, data.imm);
+	LoadRegisters({data.rt});
 }
