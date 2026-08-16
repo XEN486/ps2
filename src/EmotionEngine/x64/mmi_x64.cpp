@@ -5,6 +5,15 @@ using namespace asmjit;
 
 static void IMPL_lq(EmotionEngine::Core::R5900* r5900, EmotionEngine::Memory* memory, u32 addr, u8 reg) {
 	addr &= ~0xf;
+
+	// optimize load from rdram
+	u32 phys = addr & 0x1fffffff;
+	if (phys <= RDRAM_LAST_ADDR) [[likely]] {
+		__m128i vec = _mm_load_si128(reinterpret_cast<const __m128i*>(memory->rdram + phys));
+		_mm_store_si128(reinterpret_cast<__m128i*>(&r5900->gpr[reg]), vec);
+		return;
+	}
+
 	u64 lo = memory->ReadVirtualMemory64(addr);
 	u64 hi = memory->ReadVirtualMemory64(addr + 8);
 
@@ -16,6 +25,15 @@ static void IMPL_lq(EmotionEngine::Core::R5900* r5900, EmotionEngine::Memory* me
 
 static void IMPL_sq(EmotionEngine::Core::R5900* r5900, EmotionEngine::Memory* memory, u32 addr, u8 reg) {
 	addr &= ~0xf;
+
+	// optimize store to rdram
+	u32 phys = addr & 0x1fffffff;
+	if (phys <= RDRAM_LAST_ADDR) [[likely]] {
+		__m128i vec = _mm_load_si128(reinterpret_cast<const __m128i*>(&r5900->gpr[reg]));
+		_mm_store_si128(reinterpret_cast<__m128i*>(memory->rdram + phys), vec);
+		return;
+	}
+
 	memory->WriteVirtualMemory64(addr, r5900->gpr[reg].reg_u64[0]);
 	memory->WriteVirtualMemory64(addr + 8, r5900->gpr[reg].reg_u64[1]);
 }
