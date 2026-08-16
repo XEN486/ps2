@@ -82,6 +82,9 @@ namespace EmotionEngine::Core {
 
 	protected:
 		void CFC2(InstructionData& data) override;
+		void CTC2(InstructionData& data) override;
+		void QMFC2(InstructionData& data) override;
+		void QMTC2(InstructionData& data) override;
 
 	protected:
 		void LQ(InstructionData& data) override;

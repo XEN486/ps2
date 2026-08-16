@@ -334,8 +334,23 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 
 		// COP2
 		case 0b010010: {
+			if (data.rs & 0b10000) {
+				switch (instruction & 0x7ff) {
+					default: {
+						error_log("unknown vu instruction {:011b} {:08x} @ {:08x}", (instruction & 0x7ff), instruction, data.pc);
+						data.ptr = &JitBackend::NOP;
+						break;
+					}
+				}
+
+				break;
+			}
+
 			switch (data.rs) {
-				case 0b00010: { UseRegisters({data.rs, data.rd}); data.ptr = &JitBackend::CFC2; break; }
+				case 0b00010: { UseRegisters({data.rt, data.rd}); data.ptr = &JitBackend::CFC2; break; }
+				case 0b00110: { UseRegisters({data.rt, data.rd}); data.ptr = &JitBackend::CTC2; break; }
+				case 0b00001: { UseRegisters({data.rt, data.rd}); data.ptr = &JitBackend::QMFC2; break; }
+				case 0b00101: { UseRegisters({data.rt, data.rd}); data.ptr = &JitBackend::QMTC2; break; }
 
 				default: {
 					error_log("unknown cop2 opcode {:05b} {:08x} @ {:08x}", data.rs, instruction, data.pc);

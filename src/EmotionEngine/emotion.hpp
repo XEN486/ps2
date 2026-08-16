@@ -280,6 +280,9 @@ namespace EmotionEngine {
 
 		protected:
 			virtual void CFC2(InstructionData& data) = 0;
+			virtual void CTC2(InstructionData& data) = 0;
+			virtual void QMFC2(InstructionData& data) = 0;
+			virtual void QMTC2(InstructionData& data) = 0;
 
 		protected:
 			virtual void LQ(InstructionData& data) = 0;

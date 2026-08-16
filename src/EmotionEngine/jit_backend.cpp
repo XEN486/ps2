@@ -119,7 +119,6 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 }
 
 CompiledBlock& JitBackend::GetOrCompileBlock(u32 pc) {
-	//pc &= 0x1fffffff;
     auto it = m_BlockCache.find(pc);
     if (it != m_BlockCache.end() && it->second.valid) {
 		return it->second;
