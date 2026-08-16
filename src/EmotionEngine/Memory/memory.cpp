@@ -20,7 +20,7 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 	}
 
 	// timer addresses
-	if (address >= 0x10000000 && address <= 0x10002030) {
+	if (address >= 0x10000000 && address <= 0x10001830) {
 		return m_EE->GetTimers().Read(address);
 	}
 
@@ -107,7 +107,7 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 	}
 
 	// timer addresses
-	if (address >= 0x10000000 && address <= 0x10002030) {
+	if (address >= 0x10000000 && address <= 0x10001830) {
 		m_EE->GetTimers().Write(address, word);
 		return;
 	}
