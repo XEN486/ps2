@@ -258,11 +258,20 @@ void DMAC::DoSourceChainTransfer() {
 		m_ChainState = ChainState::ReadData;
 	}
 
-	if (m_ChainState == ChainState::ReadData) {
-		u32 offset = m_LastTag.scratchpad ? 0x70000000 : 0;
-		u64 lo = m_Memory->ReadVirtualMemory64(offset + m_TransferChannel->madr);
-		u64 hi = m_Memory->ReadVirtualMemory64(offset + m_TransferChannel->madr + 8);
-		SendQword(((u128)hi << 64) | lo);
+	else if (m_ChainState == ChainState::ReadData) {
+		// send from scratchpad
+		if (m_LastTag.scratchpad) {
+			u64 lo = m_Memory->ReadVirtualMemory64(0x70000000 + m_TransferChannel->madr & 0x3ff0);
+			u64 hi = m_Memory->ReadVirtualMemory64(0x70000000 + (m_TransferChannel->madr + 8) & 0x3ff0);
+			SendQword(((u128)hi << 64) | lo);
+		}
+		
+		// send from RAM
+		else {
+			u64 lo = m_Memory->ReadVirtualMemory64(m_TransferChannel->madr);
+			u64 hi = m_Memory->ReadVirtualMemory64(m_TransferChannel->madr + 8);
+			SendQword(((u128)hi << 64) | lo);
+		}
 
 		// done transferring the tag
 		if (m_TransferChannel->qwc == 0) {
@@ -310,7 +319,7 @@ void DMAC::ReadSourceTag() {
 	m_LastTag.enable_priority_control = ((lo >> 26) & 0b11) == 3 ? true : false;
 	m_LastTag.id = (lo >> 28) & 0b111;
 	m_LastTag.irq = (lo >> 31) & 1;
-	m_LastTag.addr = static_cast<u32>((lo >> 32) & 0x7fffffff);
+	m_LastTag.addr = (lo >> 32) & 0xfffffff0;
 	m_LastTag.scratchpad = (lo >> 63) & 1;
 
 	// read data if CHCR.TTE==1
