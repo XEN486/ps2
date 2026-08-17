@@ -27,8 +27,13 @@ using u8 = uint8_t;
 using i8 = int8_t;
 
 #ifdef ENABLE_LOGGING
+#ifdef __GNUC__
+#define debug_log(fmt, ...) std::println("{}(): " fmt, __PRETTY_FUNCTION__, __VA_ARGS__)
+#define error_log(fmt, ...) std::println(stderr, "{}(): " fmt, __PRETTY_FUNCTION__, __VA_ARGS__)
+#else
 #define debug_log(fmt, ...) std::println("{}(): " fmt, __func__, __VA_ARGS__)
 #define error_log(fmt, ...) std::println(stderr, "{}(): " fmt, __func__, __VA_ARGS__)
+#endif
 #else
 #define debug_log(...)
 #define error_log(...)
