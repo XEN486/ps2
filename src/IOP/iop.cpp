@@ -1,4 +1,6 @@
+#include "../SubsystemInterface/sif.hpp"
 #include "iop.hpp"
+
 #include <fstream>
 
 #define EXCEPTION_WRITE_MASK 0b11110000000000000000000001111100
@@ -13,6 +15,8 @@ IOP::IOP(JitBackend* backend, SubsystemInterface::SIF* sif)
 
 	m_Memory.Initialize(this);
 	m_INTC.Initialize(this);
+
+	m_DMAC.SetChannel(DMA::Port::SIF1, std::make_shared<DMA::SIF1>(m_SIF));
 }
 
 size_t IOP::RunOnce() {

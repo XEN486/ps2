@@ -1,7 +1,10 @@
 #ifndef SIF_HPP
 #define SIF_HPP
 
+#include "../IOP/DMAC/dmac.hpp"
 #include "../utils.hpp"
+
+#include <queue>
 
 namespace SubsystemInterface {
 	struct MailboxRegs {
@@ -12,9 +15,30 @@ namespace SubsystemInterface {
 		u32 bd6 = 0;
 	};
 
+	// EE -> IOP
+	class SIF1 {
+	public:
+		void PushFifo(u128 qword) {
+			m_FIFO.push((u32)(qword));
+			m_FIFO.push((u32)(qword >> 32));
+			m_FIFO.push((u32)(qword >> 64));
+			m_FIFO.push((u32)(qword >> 96));
+		}
+
+		u32 PopFifo() {
+			u32 v = m_FIFO.front();
+			m_FIFO.pop();
+			return v;
+		}
+
+	private:
+		std::queue<u32> m_FIFO;	
+	};
+
 	class SIF {
 	public:
 		void Initialize(u8* iop_ram);
+		SIF1* GetSIF1() { return &m_SIF1; }
 
 	// EE functions
 	public:
@@ -34,6 +58,29 @@ namespace SubsystemInterface {
 	private:
 		MailboxRegs m_MailboxRegs;
 		u8* m_IopRam;
+
+		SIF1 m_SIF1;
+	};
+}
+
+namespace IOProcessor::DMA {
+	class SIF1 : public IOProcessor::DMA::Channel {
+	public:
+		SIF1(SubsystemInterface::SIF* sif) {
+			m_SIF1 = sif->GetSIF1();
+		}
+
+		void Write(u32 word) override {
+			error_log("IOP: trying to dma {:08x} -> SIF1", word);
+			exit(1);
+		}
+
+		u32 Read(u32, u32) {
+			return m_SIF1->PopFifo();
+		}
+
+	private:
+		SubsystemInterface::SIF1* m_SIF1;
 	};
 }
 
