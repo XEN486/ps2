@@ -69,6 +69,11 @@ namespace IOProcessor {
 
 	private:
 		IOP* m_IOP;
+		
+		// SPU stubs
+		u16 stub_1f801da6;
+		u16 stub_1f801da8;
+		u16 stub_1f801daa;
 	};
 
 }

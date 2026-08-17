@@ -77,7 +77,19 @@ u16 Memory::ReadVirtualMemory16(u32 address) {
 		u32 index = address - 0x1fc00000;
 		return *reinterpret_cast<u16*>(bios + index);
 	}
-	
+
+	// INTC
+	if (address == 0x1f801070) return m_IOP->GetINTC().GetSTAT() & 0xffff;
+	if (address == 0x1f801074) return m_IOP->GetINTC().GetMASK() & 0xffff;
+	if (address == 0x1f801078) return m_IOP->GetINTC().GetCTRL() & 0xffff;
+
+	// SPU stubs
+	if (address == 0x1f801da6) return stub_1f801da6;
+	if (address == 0x1f801da8) return stub_1f801da8;
+	if (address == 0x1f801daa) return stub_1f801daa;
+	if (address == 0x1f801dae) return 0;
+	if (address == 0x1f801dac) return 0;
+
 	error_log("16-bit read <- unknown address {:08x}", address);
 	return 0;
 }
@@ -92,6 +104,16 @@ void Memory::WriteVirtualMemory16(u32 address, u16 hword) {
 		m_IOP->GetBackend()->Invalidate(address);
 		return;
 	}
+
+	// INTC
+	if (address == 0x1f801070) return m_IOP->GetINTC().SetSTAT(hword);
+	if (address == 0x1f801074) return m_IOP->GetINTC().SetMASK(hword);
+	if (address == 0x1f801078) return m_IOP->GetINTC().SetCTRL(hword);
+
+	// SPU stubs
+	if (address == 0x1f801da6) { stub_1f801da6 = hword; return; }
+	if (address == 0x1f801da8) { stub_1f801da8 = hword; return; }
+	if (address == 0x1f801daa) { stub_1f801daa = hword; return; }
 
 	error_log("16-bit write {:04x} -> unknown address {:08x}", hword, address);
 }
@@ -111,7 +133,7 @@ u8 Memory::ReadVirtualMemory8(u32 address) {
 		return *reinterpret_cast<u8*>(bios + index);
 	}
 
-	//error_log("8-bit read <- unknown address {:08x}", address);
+	error_log("8-bit read <- unknown address {:08x}", address);
 	return 0;
 }
 
@@ -126,7 +148,7 @@ void Memory::WriteVirtualMemory8(u32 address, u8 byte) {
 		return;
 	}
 
-	//error_log("8-bit write {:02x} -> unknown address {:08x}", byte, address);
+	error_log("8-bit write {:02x} -> unknown address {:08x}", byte, address);
 }
 
 void Memory::Release() {
