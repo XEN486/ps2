@@ -133,6 +133,8 @@ u8 Memory::ReadVirtualMemory8(u32 address) {
 		return *reinterpret_cast<u8*>(bios + index);
 	}
 
+	if (address == 0x1f402005) return 0;
+
 	error_log("8-bit read <- unknown address {:08x}", address);
 	return 0;
 }
