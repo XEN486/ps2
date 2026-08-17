@@ -58,11 +58,11 @@ void IOP::Reset() {
 	}
 	
 	m_R3000A.pc = 0xbfc00000;
-	m_R3000A.cop0[SR] = 0x10900000;
-	m_R3000A.cop0[PRID] = 0x00000001f;
 
 	// COP0 registers
 	memset(&m_R3000A.cop0, 0, 32 * sizeof(u32));
+	m_R3000A.cop0[SR] = 0x10900000;
+	m_R3000A.cop0[PRID] = 0x00000001f;
 
 	m_JitBackend->Reset();
 	m_INTC.Reset();
