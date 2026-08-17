@@ -1,6 +1,7 @@
 #ifndef IOP_DMAC_HPP
 #define IOP_DMAC_HPP
 
+#include "../INTC/intc.hpp"
 #include "../Memory/memory.hpp"
 #include "../../utils.hpp"
 
@@ -18,10 +19,11 @@ namespace IOProcessor::DMA {
 		Decrement = 1,
 	};
 
-	enum class Sync : u8 {
-		Manual = 0,
-		Request = 1,
+	enum class Mode : u8 {
+		Burst = 0,
+		Slice = 1,
 		LinkedList = 2,
+		ChainMode = 3,
 	};
 
 	enum class Port {
@@ -48,14 +50,14 @@ namespace IOProcessor::DMA {
 		bool enable;
 		Direction direction;
 		Step step;
-		Sync sync;
+		Mode mode;
 		bool trigger;
 		bool chop;
 		u8 chop_dma_size;
 		u8 chop_cpu_size;
-		u8 dummy;
 
 		u32 base;
+		u32 tag_address;
 
 		u16 block_size;
 		u16 block_count;
@@ -75,15 +77,15 @@ namespace IOProcessor::DMA {
 		}
 
 		bool IsActive() const {
-			bool triggered = (sync == Sync::Manual) ? trigger : true;
+			bool triggered = (mode == Mode::Burst) ? trigger : true;
 			return enable && triggered;
 		}
 
 		u32 GetTransferSize() {
-			switch (sync) {
-				case Sync::Manual: return block_size;
-				case Sync::Request: return block_size * block_count;
-				case Sync::LinkedList: return 0; // this shouldnt even be called
+			switch (mode) {
+				case Mode::Burst: return block_size;
+				case Mode::Slice: return block_size * block_count;
+				case Mode::LinkedList: return 0; // this shouldnt even be called
 			}
 
 			std::unreachable();
@@ -105,11 +107,25 @@ namespace IOProcessor::DMA {
 		u32 GetValue();
 		void SetValue(u32 value);
 		bool GetIRQStatus();
+		void TryInterrupt(Interrupt::INTC* intc);
+	};
+
+	struct InterruptRegister2 {
+		InterruptRegister* dicr;
+
+		u16 tag_irq_flags; // only 4, 9 and 10 can be set
+		u8 channel_enable_irq;
+		u8 channel_irq_flags;
+
+		u32 GetValue();
+		void SetValue(u32 value);
+		void TryInterrupt(Interrupt::INTC* intc);
+		void TryTagInterrupt(Interrupt::INTC* intc);
 	};
 
 	class DMAC {
 	public:
-		DMAC(IOProcessor::Memory* memory) : m_Memory(memory) {
+		DMAC(IOProcessor::Memory* memory, Interrupt::INTC* intc) : m_Memory(memory), m_INTC(intc) {
 			Reset();
 		}
 
@@ -128,16 +144,26 @@ namespace IOProcessor::DMA {
 		}
 
 	private:
+		std::shared_ptr<Channel> GetChannel(u32 address);
+
 		void DoDMATransfer(std::shared_ptr<Channel> channel);
 		void DoBlockCopy(std::shared_ptr<Channel> channel);
 		void DoLinkedList(std::shared_ptr<Channel> channel);
+		void RaiseInterrupt(Port port);
+		void RaiseTagInterrupt(Port port);
 
 	private:
 		u32 m_Control;
+		u32 m_Control2;
+		bool m_EnableDMA;
+		bool m_DisableInterrupt;
 
 		IOProcessor::Memory* m_Memory;
+		Interrupt::INTC* m_INTC;
+
 		std::shared_ptr<Channel> m_Channels[13];
 		InterruptRegister m_Interrupt;
+		InterruptRegister2 m_Interrupt2;
 	};
 }
 

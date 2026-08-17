@@ -4,9 +4,7 @@
 #define EXCEPTION_WRITE_MASK 0b11110000000000000000000001111100
 using namespace IOProcessor;
 
-IOP::IOP(JitBackend* backend) : m_JitBackend(backend), m_DMAC(&m_Memory) {
-	m_R3000A.cop0[PRID] = 0x00000030;
-
+IOP::IOP(JitBackend* backend) : m_JitBackend(backend), m_DMAC(&m_Memory, &m_INTC) {
 	if (!m_JitBackend->InitJit(&m_R3000A, &m_Memory)) {
 		error_log("failed to initialize backend");
 		exit(1);
@@ -23,6 +21,7 @@ size_t IOP::RunOnce() {
 	m_R3000A.next_pc = block.after_end_pc;
 	block.fn();
 	m_R3000A.pc = m_R3000A.next_pc;
+	debug_log("{:08x}", m_R3000A.pc);
 
 	// IOP console
 	if (m_R3000A.pc == 0x12c48 || m_R3000A.pc == 0x1420c || m_R3000A.pc == 0x1430c) [[unlikely]] {
@@ -59,6 +58,8 @@ void IOP::Reset() {
 	}
 	
 	m_R3000A.pc = 0xbfc00000;
+	m_R3000A.cop0[SR] = 0x10900000;
+	m_R3000A.cop0[PRID] = 0x00000001f;
 
 	// COP0 registers
 	memset(&m_R3000A.cop0, 0, 32 * sizeof(u32));

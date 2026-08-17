@@ -6,12 +6,11 @@ u32 Channel::GetControl() {
 	r |= (u8)direction;
 	r |= (u8)step << 1;
 	r |= (u8)chop << 8;
-	r |= (u8)sync << 9;
+	r |= (u8)mode << 9;
 	r |= chop_dma_size << 16;
 	r |= chop_cpu_size << 20;
 	r |= enable << 24;
 	r |= trigger << 28;
-	r |= dummy << 29;
 
 	return r;
 }
@@ -19,7 +18,7 @@ u32 Channel::GetControl() {
 void Channel::SetControl(u32 value) {
 	direction = (Direction)(value & 1);
 	step = (Step)((value >> 1) & 1);
-	sync = (Sync)((value >> 9) & 3);
+	mode = (Mode)((value >> 9) & 3);
 
 	chop = ((value >> 8) & 1);
 	chop_dma_size = (value >> 16) & 7;
@@ -27,17 +26,10 @@ void Channel::SetControl(u32 value) {
 
 	enable = (value >> 24) & 1;
 	trigger = (value >> 28) & 1;
-	
-	dummy = (value >> 29) & 3;
 }
 
 bool InterruptRegister::GetIRQStatus() {
-	bool channel_irq = channel_irq_flags & channel_enable_irq;
-
-	// there is an irq if either condition is met:
-	// 1. irq is forced to be enabled
-	// 2. irqs are enabled and there is an ongoing irq
-	return force_irq || (enable_irq && (channel_irq != 0));
+	return force_irq || (enable_irq && channel_irq_flags != 0);
 }
 
 u32 InterruptRegister::GetValue() {
@@ -62,98 +54,92 @@ void InterruptRegister::SetValue(u32 value) {
 	channel_irq_flags &= ~ack;
 }
 
+void InterruptRegister::TryInterrupt(Interrupt::INTC* intc) {
+	if (GetIRQStatus()) intc->Interrupt(Interrupt::IRQ::DMA);
+}
+
 u32 DMAC::Read(u32 address) {
-	if ((address & 0xf00) == 0x500) {
-		debug_log("read from unknown dmac address {:08x}", address);
+	if ((address & 0xff0) == 0x0f0) {
+		switch (address & 0xf) {
+			case 0x0: return m_Control;
+			case 0x4: return m_Interrupt.GetValue();
+			default: { error_log("unhandled DMAC write"); exit(1); }
+		}
+	} else if ((address & 0xff0) == 0x570) {
+		switch (address & 0xf) {
+			case 0x0: return m_Control2;
+			case 0x4: return m_Interrupt2.GetValue();
+			case 0x8: return m_EnableDMA;
+			case 0xc: return m_DisableInterrupt;
+		}
+	}
+
+	auto channel = GetChannel(address);
+	if (!channel) {
+		error_log("reading from unknown DMAC channel");
 		return 0;
 	}
 
-	u32 offset = address - 0x1f801080;
-	u8 major = (offset & 0x70) >> 4;
-	u8 minor = offset & 0xf;
-
-	if (major <= 6) {
-		auto channel = m_Channels[major];
-		if (!channel) {
-			error_log("reading unknown DMAC channel {}", major);
-			return 0;
-		}
-
-		switch (minor) {
-			case 0: return channel->base;
-			case 4: return channel->GetBlockControl();
-			case 8: return channel->GetControl();
-			default: { error_log("unhandled DMAC read"); exit(1); }
-		}
-	}
-	
-	else if (major == 7) {
-		switch (minor) {
-			case 0: return m_Control;
-			case 4: return m_Interrupt.GetValue();
-			default: { error_log("unhandled DMAC read"); exit(1); }
-		}
-	}
-
-	else {
-		error_log("unhandled DMAC read");
-		exit(1);
+	switch (address & 0xf) {
+		case 0x0: return channel->base;
+		case 0x4: return channel->GetBlockControl();
+		case 0x8: return channel->GetControl();
+		case 0xc: return channel->tag_address;
+		default: { error_log("unhandled DMAC read"); exit(1); }
 	}
 }
 
 void DMAC::Write(u32 address, u32 value) {
-	if ((address & 0xf00) == 0x500) {
-		debug_log("write {:08x} -> unknown dmac address {:08x}", value, address);
+	if ((address & 0xff0) == 0x0f0) {
+		switch (address & 0xf) {
+			case 0x0: m_Control = value; return;
+			case 0x4: m_Interrupt.SetValue(value); return;
+			default: { error_log("unhandled DMAC write"); exit(1); }
+		}
+	} else if ((address & 0xff0) == 0x570) {
+		switch (address & 0xf) {
+			case 0x0: m_Control2 = value; return;
+			case 0x4: m_Interrupt2.SetValue(value); return;
+			case 0x8: m_EnableDMA = value & 1; return;
+			case 0xc: m_DisableInterrupt = value & 1; return;
+		}
+	}
+
+	auto channel = GetChannel(address);
+	if (!channel) {
+		error_log("writing {:08x} -> unknown DMAC channel", value);
 		return;
 	}
 
-	u32 offset = address - 0x1f801080;
-	u8 major = (offset & 0x70) >> 4;
-	u8 minor = offset & 0xf;
+	switch (address & 0xf) {
+		case 0x0: channel->base = value & 0xffffff; break;
+		case 0x4: channel->SetBlockControl(value); break;
+		case 0x8: {
+			channel->SetControl(value);
 
-	if (major <= 6) {
-		auto channel = m_Channels[major];
-		if (!channel) {
-			error_log("writing {:08x} -> unknown DMAC channel {}", value, major);
-			return;
+			// execute a DMAC transfer if it has now been activated
+			if (channel->IsActive()) {
+				DoDMATransfer(channel);
+			}
+
+			break;
 		}
 
-		switch (minor) {
-			case 0: channel->base = value & 0xffffff; break;
-			case 4: channel->SetBlockControl(value); break;
-			case 8: channel->SetControl(value); break;
-			default: { error_log("unhandled DMAC write"); exit(1); }
-		}
-
-		// execute a DMAC transfer if it has now been activated
-		if (channel->IsActive()) {
-			DoDMATransfer(channel);
-		}
-	}
-	
-	else if (major == 7) {
-		switch (minor) {
-			case 0: m_Control = value; break;
-			case 4: m_Interrupt.SetValue(value); break;
-			default: { error_log("unhandled DMAC write"); exit(1); }
-		}
-	}
-
-	else {
-		error_log("unhandled DMAC write");
-		exit(1);
+		case 0xc: channel->tag_address = value & 0xffffff; break;
+		default: { error_log("unhandled DMAC write"); exit(1); }
 	}
 }
 
 void DMAC::DoDMATransfer(std::shared_ptr<Channel> channel) {
+	if (!m_EnableDMA) return;
 	if (!channel) {
 		error_log("attempting DMAC transfer to unknown port");
 		return;
 	}
 
-	switch (channel->sync) {
-		case Sync::LinkedList: DoLinkedList(channel); break;
-		case Sync::Manual: case Sync::Request: DoBlockCopy(channel); break;
+	switch (channel->mode) {
+		case Mode::LinkedList: DoLinkedList(channel); break;
+		case Mode::Burst: case Mode::Slice: DoBlockCopy(channel); break;
 	}
 
 	channel->TransferDone();
@@ -210,5 +196,65 @@ void DMAC::DoLinkedList(std::shared_ptr<Channel> channel) {
 }
 
 void DMAC::Reset() {
-	m_Control = 0x07654321;
+	m_Control = 0x07777777;
+}
+
+std::shared_ptr<Channel> DMAC::GetChannel(u32 address) {
+    if (address >= 0x1f801080 && address < 0x1f8010f0) {
+        u32 channel = (address - 0x1f801080) / 0x10;
+        return m_Channels[channel];
+    }
+
+    if (address >= 0x1f801500 && address < 0x1f801560) {
+        u32 channel = 7 + (address - 0x1f801500) / 0x10;
+        return m_Channels[channel];
+    }
+
+    return nullptr;
+}
+
+u32 InterruptRegister2::GetValue() {
+	u32 r = 0;
+	r |= tag_irq_flags << 0;
+	r |= channel_enable_irq << 16;
+	r |= channel_irq_flags << 24;
+
+	return r;
+}
+
+void InterruptRegister2::SetValue(u32 value) {
+	tag_irq_flags = value & 0b011000010000; // only bits 4, 9 and 10 can be set
+	channel_enable_irq = (value >> 16) & 0x7f;
+
+	u8 ack = (value >> 24) & 0x3f;
+	channel_irq_flags &= ~ack;
+}
+
+void InterruptRegister2::TryInterrupt(Interrupt::INTC* intc) {
+	if (!dicr->enable_irq) return;
+	if (channel_irq_flags & channel_enable_irq) intc->Interrupt(Interrupt::IRQ::DMA);
+}
+
+void InterruptRegister2::TryTagInterrupt(Interrupt::INTC* intc) {
+	if (tag_irq_flags) intc->Interrupt(Interrupt::IRQ::DMA);
+}
+
+void DMAC::RaiseInterrupt(Port port) {
+	if (m_DisableInterrupt) return;
+
+	u8 idx = static_cast<u8>(port);
+	if (idx <= 6) {
+		m_Interrupt.channel_irq_flags |= (1 << idx);
+		m_Interrupt.TryInterrupt(m_INTC);
+	} else {
+		m_Interrupt2.channel_irq_flags |= (1 << (idx - 7));
+		m_Interrupt2.TryInterrupt(m_INTC);
+	}
+}
+
+void DMAC::RaiseTagInterrupt(Port port) {
+	if (port == Port::SPU1 || port == Port::SIF0 || port == Port::SIF1) {
+		m_Interrupt2.tag_irq_flags |= (1 << static_cast<u8>(port));
+		m_Interrupt2.TryTagInterrupt(m_INTC);
+	}
 }
