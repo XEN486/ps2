@@ -76,7 +76,7 @@ u32 DMAC::Read(u32 address) {
 
 	auto channel = GetChannel(address);
 	if (!channel) {
-		error_log("reading from unknown DMAC channel");
+		error_log("reading from unknown IOP DMAC channel @ {:08x}", address);
 		return 0;
 	}
 
@@ -107,7 +107,7 @@ void DMAC::Write(u32 address, u32 value) {
 
 	auto channel = GetChannel(address);
 	if (!channel) {
-		error_log("writing {:08x} -> unknown DMAC channel", value);
+		error_log("writing {:08x} -> unknown IOP DMAC channel @ {:08x}", value, address);
 		return;
 	}
 
