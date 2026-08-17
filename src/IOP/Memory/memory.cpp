@@ -40,6 +40,15 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 	// SIF
 	if (address >= 0x1d000000 && address <= 0x1d000060) return m_IOP->GetSIF()->IOP_ReadMailbox(address);
 
+	// undocumented registers
+	if (address == 0x1f801450) return 0;
+
+	// cache control
+	if (address == 0xfffe0130) return 0xffffffff;
+
+	// memory control
+	if (address >= 0x1f801000 && address <= 0x1f801060) return 0;
+
 	error_log("IOP 32-bit read <- unknown address {:08x}", address);
 	return 0;
 }
@@ -66,6 +75,18 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 
 	// SIF
 	if (address >= 0x1d000000 && address <= 0x1d000060) return m_IOP->GetSIF()->IOP_WriteMailbox(address, word);
+
+	// undocumented registers
+	if (address == 0x1f801450) return; // SBUS interrupt on bit 1?
+	if (address == 0x1f802070) return; // POST2?
+	if (address >= 0x1f801404 && address <= 0x1f801420) return;
+	if (address >= 0x1f8014a0 && address <= 0x1f8014a8) return;
+
+	// cache control
+	if (address == 0xfffe0130) return;
+
+	// memory control
+	if (address >= 0x1f801000 && address <= 0x1f801060) return;
 
 	error_log("IOP 32-bit write {:08x} -> unknown address {:08x}", word, address);
 }
@@ -122,6 +143,9 @@ void Memory::WriteVirtualMemory16(u32 address, u16 hword) {
 	if (address == 0x1f801da8) { stub_1f801da8 = hword; return; }
 	if (address == 0x1f801daa) { stub_1f801daa = hword; return; }
 
+	// undocumented registers
+	if (address >= 0x1f8014a0 && address <= 0x1f8014a8) return;
+
 	error_log("IOP 16-bit write {:04x} -> unknown address {:08x}", hword, address);
 }
 
@@ -156,6 +180,9 @@ void Memory::WriteVirtualMemory8(u32 address, u8 byte) {
 		m_IOP->GetBackend()->Invalidate(address);
 		return;
 	}
+
+	// POST2?
+	if (address == 0x1f802070) return;
 
 	error_log("IOP 8-bit write {:02x} -> unknown address {:08x}", byte, address);
 }
