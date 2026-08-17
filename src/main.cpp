@@ -1,9 +1,7 @@
 /// @file
 #include "EmotionEngine/x64/jit_x64.hpp"
-#include "EmotionEngine/emotion.hpp"
-#include "GraphicsSynthesizer/gs.hpp"
-#include "scheduler.hpp"
-#include "elf.hpp"
+#include "IOP/x64/jit_x64.hpp"
+#include "ps2.hpp"
 
 #ifdef NDEBUG
 int main(int argc, char** argv) {
@@ -13,56 +11,45 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
-	GraphicsSynthesizer::GS gs;
-	EmotionEngine::Core::JitX64 backend;
-	EmotionEngine::EE cpu(&backend, &gs);
+	EmotionEngine::Core::JitX64 ee_backend;
+	IOProcessor::JitX64 iop_backend;
 
-	gs.Reset();
-	cpu.Reset();
-	cpu.GetMemory().LoadBIOS(argv[1]);
-	
-	Scheduler scheduler;
-	scheduler.SetComponents(&cpu, &gs);
-
-	// sideload elf
-	if (has_elf) {
-		while (cpu.GetR5900().pc != 0x82000) scheduler.Run();
-		ElfFile elf(argv[2]);
-		cpu.GetR5900().pc = elf.LoadElf(&cpu.GetMemory());
-	}
+	PlayStation2 ps2;
+	ps2.Create(&ee_backend, &iop_backend);
+	ps2.LoadBIOS(argv[1]);
+	ps2.Reset();
+	if (has_elf) ps2.SideloadElf(argv[2]);
 	
 	while (true) {
-		scheduler.Run();
+		ps2.Run();
 
-		if (scheduler.FrameReady()) {
-			// gs.Render();
+		if (ps2.FrameReady()) {
+			// ps2.Render();
 		}
 	}
 
-	cpu.Release();
+	ps2.Release();
 	return 0;
 }
 #else
 int main() {
-	GraphicsSynthesizer::GS gs;
-	EmotionEngine::Core::JitX64 backend;
-	EmotionEngine::EE cpu(&backend, &gs);
+	EmotionEngine::Core::JitX64 ee_backend;
+	IOProcessor::JitX64 iop_backend;
 
-	gs.Reset();
-	cpu.Reset();
-	cpu.GetMemory().LoadBIOS("scph39001.bin");
-	
-	Scheduler scheduler;
-	scheduler.SetComponents(&cpu, &gs);
+	PlayStation2 ps2;
+	ps2.Create(&ee_backend, &iop_backend);
+	ps2.LoadBIOS("scph39001.bin");
+	ps2.Reset();
 	
 	while (true) {
-		scheduler.Run();
-		if (scheduler.FrameReady()) {
-			// gs.Render();
+		ps2.Run();
+
+		if (ps2.FrameReady()) {
+			// ps2.Render();
 		}
 	}
 
-	cpu.Release();
+	ps2.Release();
 	return 0;
 }
 #endif

@@ -3,13 +3,15 @@
 
 #include "EmotionEngine/emotion.hpp"
 #include "GraphicsSynthesizer/gs.hpp"
+#include "IOP/iop.hpp"
 
 /// @brief Manages the clocks of every component
 class Scheduler {
 public:
-	void SetComponents(EmotionEngine::EE* ee, GraphicsSynthesizer::GS* gs) {
+	void SetComponents(EmotionEngine::EE* ee, GraphicsSynthesizer::GS* gs, IOProcessor::IOP* iop) {
 		m_EE = ee;
 		m_GS = gs;
+		m_IOP = iop;
 	}
 
 	void Run();
@@ -23,6 +25,7 @@ public:
 private:
 	EmotionEngine::EE* m_EE;
 	GraphicsSynthesizer::GS* m_GS;
+	IOProcessor::IOP* m_IOP;
 
 	bool m_FrameReady = false;
 };
