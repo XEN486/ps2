@@ -4,7 +4,8 @@
 #define EXCEPTION_WRITE_MASK 0b11110000000000000000000001111100
 using namespace IOProcessor;
 
-IOP::IOP(JitBackend* backend) : m_JitBackend(backend), m_DMAC(&m_Memory, &m_INTC) {
+IOP::IOP(JitBackend* backend, SubsystemInterface::SIF* sif)
+	: m_JitBackend(backend), m_DMAC(&m_Memory, &m_INTC), m_SIF(sif) {
 	if (!m_JitBackend->InitJit(&m_R3000A, &m_Memory)) {
 		error_log("failed to initialize backend");
 		exit(1);

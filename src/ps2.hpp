@@ -1,6 +1,7 @@
 #ifndef PS2_HPP
 #define PS2_HPP
 
+#include "SubsystemInterface/sif.hpp"
 #include "EmotionEngine/emotion.hpp"
 #include "GraphicsSynthesizer/gs.hpp"
 #include "IOP/iop.hpp"
@@ -20,6 +21,8 @@ public:
 	}
 
 private:
+	SubsystemInterface::SIF m_SIF;
+	
 	EmotionEngine::EE* m_EE;
 	GraphicsSynthesizer::GS* m_GS;
 	IOProcessor::IOP* m_IOP;

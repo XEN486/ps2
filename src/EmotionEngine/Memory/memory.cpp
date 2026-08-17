@@ -1,4 +1,5 @@
 #include "memory.hpp"
+#include "../../SubsystemInterface/sif.hpp"
 #include "../../elf.hpp"
 #include "../../utils.hpp"
 
@@ -51,6 +52,10 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 	// undocumented registers
 	if (address == 0x1f803204) return 0x00000020;
 	if (address == 0x1a000004) return 0x00020000;
+
+	// SIF
+	if (address >= 0x1c000000 && address <= 0x1c1fffff) return m_EE->GetSIF()->EE_ReadIOPMemory(address);
+	if (address >= 0x1000f200 && address <= 0x1000f260) return m_EE->GetSIF()->EE_ReadMailbox(address);
 
 	// BIOS
 	if (address >= 0x1fc00000 && address <= 0x1fffffff) {
@@ -144,6 +149,10 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 		std::print("{}", (char)(word & 0xff));
 		return;
 	}
+
+	// SIF
+	if (address >= 0x1c000000 && address <= 0x1c1fffff) return m_EE->GetSIF()->EE_WriteIOPMemory(address, word);
+	if (address >= 0x1000f200 && address <= 0x1000f260) return m_EE->GetSIF()->EE_WriteMailbox(address, word);
 
 	// RDRAM stuff (copied directly from PS2TEK)
 	if (address == 0x1000f430) {

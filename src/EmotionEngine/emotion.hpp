@@ -15,6 +15,8 @@
 #include <vector>
 #include <memory>
 
+namespace SubsystemInterface { class SIF; }
+
 /// @brief The PlayStation2's main processor unit.
 namespace EmotionEngine {
 	/// @brief The EmotionEngine's MIPS R5900 CPU core.
@@ -342,7 +344,7 @@ namespace EmotionEngine {
 	/// The EmotionEngine includes a MIPS R5900-based CPU core, two Vector Units, a DMA controller, an Image Processing Unit, and interfaces to other parts of the system.
 	class EE {
 	public:
-		EE(Core::JitBackend* jit, GraphicsSynthesizer::GS* gs);
+		EE(Core::JitBackend* jit, GraphicsSynthesizer::GS* gs, SubsystemInterface::SIF* sif);
 
 		/// @brief Returns a reference to the MIPS R5900 CPU state.
 		/// @return Reference to the CPU state.
@@ -368,6 +370,10 @@ namespace EmotionEngine {
 		/// @return Reference to the interrupt controller.
 		Interrupt::INTC& GetINTC() { return m_INTC; }
 
+		/// @brief Returns a pointer to the SIF.
+		/// @return Pointer to the SIF.
+		SubsystemInterface::SIF* GetSIF() { return m_SIF; }
+
 		/// @brief Resets the EmotionEngine's state.
 		void Reset();
 
@@ -386,6 +392,7 @@ namespace EmotionEngine {
 		Interrupt::INTC m_INTC;
 		Timers::Timers m_Timers;
 
+		SubsystemInterface::SIF* m_SIF;
 		GraphicsSynthesizer::GS* m_GS;
 		Core::JitBackend* m_JitBackend;
 	};

@@ -12,6 +12,7 @@
 #include <memory>
 #include <filesystem>
 
+namespace SubsystemInterface { class SIF; }
 namespace IOProcessor {
 	static constexpr const char* g_RegNames[32] = {
 		"zero", "at",
@@ -261,7 +262,7 @@ namespace IOProcessor {
 
 	class IOP {
 	public:
-		IOP(JitBackend* backend);
+		IOP(JitBackend* backend, SubsystemInterface::SIF* sif);
 
 		/// @brief Returns a reference to the memory map.
 		/// @return Reference to the memory map.
@@ -283,6 +284,10 @@ namespace IOProcessor {
 		/// @return Reference to the JIT backend.
 		JitBackend* GetBackend() { return m_JitBackend; }
 
+		/// @brief Returns a reference to the SIF.
+		/// @return Reference to the SIF.
+		SubsystemInterface::SIF* GetSIF() { return m_SIF; }
+
 		/// @brief Resets the IOP's state.
 		void Reset();
 
@@ -299,6 +304,7 @@ namespace IOProcessor {
 		Interrupt::INTC m_INTC;
 		DMA::DMAC m_DMAC;
 
+		SubsystemInterface::SIF* m_SIF;
 		JitBackend* m_JitBackend;
 	};
 }

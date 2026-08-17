@@ -72,7 +72,7 @@ void Core::R5900::ExceptionLevel1(Core::ExceptionCause cause, u32 epc, bool in_b
 	next_pc = ((cop0.status & 0x04000000) ? 0xbfc00200 : 0x80000000) + vec;
 }
 
-EE::EE(Core::JitBackend* backend, GraphicsSynthesizer::GS* gs) : m_JitBackend(backend), m_GS(gs), m_INTC(this) {
+EE::EE(Core::JitBackend* backend, GraphicsSynthesizer::GS* gs, SubsystemInterface::SIF* sif) : m_JitBackend(backend), m_GS(gs), m_INTC(this), m_SIF(sif) {
 	if (!m_JitBackend->InitJit(&m_R5900, &m_Memory)) {
 		error_log("failed to initialize backend");
 		exit(1);

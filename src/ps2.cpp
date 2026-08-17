@@ -3,9 +3,10 @@
 
 void PlayStation2::Create(EmotionEngine::Core::JitBackend* ee_backend, IOProcessor::JitBackend* iop_backend) {
 	m_GS = new GraphicsSynthesizer::GS();
-	m_EE = new EmotionEngine::EE(ee_backend, m_GS);
-	m_IOP = new IOProcessor::IOP(iop_backend);
+	m_EE = new EmotionEngine::EE(ee_backend, m_GS, &m_SIF);
+	m_IOP = new IOProcessor::IOP(iop_backend, &m_SIF);
 
+	m_SIF.Initialize(m_IOP->GetMemory().ram);
 	m_Scheduler.SetComponents(m_EE, m_GS, m_IOP);
 }
 
