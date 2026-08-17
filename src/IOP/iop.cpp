@@ -28,8 +28,7 @@ size_t IOP::RunOnce() {
 		u32 ptr = m_R3000A.gpr[5];
 		u32 text_size = m_R3000A.gpr[6];
 		while (text_size) {
-			auto c = (char)m_Memory.ram[ptr & 0x1fffff];
-			std::print("{}", c);
+			std::print("{}", (char)m_Memory.ReadVirtualMemory8(ptr));
 
 			ptr++;
 			text_size--;
