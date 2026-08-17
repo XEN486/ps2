@@ -21,7 +21,6 @@ size_t IOP::RunOnce() {
 	m_R3000A.next_pc = block.after_end_pc;
 	block.fn();
 	m_R3000A.pc = m_R3000A.next_pc;
-	debug_log("{:08x}", m_R3000A.pc);
 
 	// IOP console
 	if (m_R3000A.pc == 0x12c48 || m_R3000A.pc == 0x1420c || m_R3000A.pc == 0x1430c) [[unlikely]] {
