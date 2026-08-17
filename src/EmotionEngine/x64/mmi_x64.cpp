@@ -131,3 +131,17 @@ void JitX64::PEXTLW(InstructionData& data) {
 	EmitStore128(data.rd, rt);
 	LoadRegisters({data.rd});
 }
+
+void JitX64::PADDUW(InstructionData& data) {
+	asmjit::x86::Vec rs = cc.new_vec128("rs");
+	asmjit::x86::Vec rt = cc.new_vec128("rt");
+	
+	// load rs and rt
+	FlushRegisters({data.rs, data.rt});
+	EmitLoad128(rs, data.rs);
+	EmitLoad128(rt, data.rt);
+
+	cc.paddd(rs, rt);
+	EmitStore128(data.rd, rs);
+	LoadRegisters({data.rd});
+}

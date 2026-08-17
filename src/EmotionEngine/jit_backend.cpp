@@ -88,8 +88,8 @@ CompiledBlock& JitBackend::RecompileBlock(u32 pc) {
 			break;
 		}
 
-		// end the block early if this is a syscall or sync instruction
-		else if (data.type == InstructionType::Syscall || data.type == InstructionType::Sync) {
+		// end the block early if this instruction is supposed to end the block
+		else if (data.type == InstructionType::EndBlock) {
 			m_Instructions.push_back(data);
 			block.instructions++;
 

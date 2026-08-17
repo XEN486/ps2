@@ -240,14 +240,14 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				// SYSCALL
 				case 0b001100: {
 					data.ptr = &JitBackend::SYSCALL;
-					data.type = InstructionType::Syscall;
+					data.type = InstructionType::EndBlock;
 					break;
 				}
 
 				// SYNC.stype
 				case 0b001111: {
 					data.ptr = &JitBackend::NOP; // backend doesnt have to do anything
-					data.type = InstructionType::Sync;
+					data.type = InstructionType::EndBlock;
 					break;
 				}
 
@@ -320,7 +320,15 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 			switch (data.rs) {
 				case 0b10000: {
 					switch (data.funct) {
-						case 0b000010: { data.ptr = &JitBackend::NOP; break; } // TLBWI (don't care about emulating TLB)
+						case 0b000010: { data.ptr = &JitBackend::NOP; break; }	// TLBWI (don't care about emulating TLB)
+						case 0b111001: { data.ptr = &JitBackend::DI; break; }	// DI
+
+						// ERET
+						case 0b011000: {
+							data.ptr = &JitBackend::ERET;
+							data.type = InstructionType::EndBlock;
+							break;
+						}
 						
 						default: {
 							error_log("unknown C0 opcode {:06b} {:08x} @ {:08x}", data.funct, instruction, data.pc);
@@ -402,17 +410,36 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 				case 0b001000: {
 					switch (data.sa) {
 						case 0b10010: {
+							// PEXTLW
 							UseRegisters({data.rs, data.rt, data.rd});
 							data.ptr = &JitBackend::PEXTLW;
 							break;
 						}
 
 						default: {
-							error_log("unknown mmi0 opcode {:05b} {:08x} @ {:08x}", data.sa, instruction, data.sa);
+							error_log("unknown mmi0 opcode {:05b} {:08x} @ {:08x}", data.sa, instruction, data.pc);
 							exit(1);
 						}
 					}
 
+					break;
+				}
+
+				// MMI1
+				case 0b101000: {
+					switch (data.sa) {
+						// PADDUW
+						case 0b10000: {
+							UseRegisters({data.rs, data.rt, data.rd});
+							data.ptr = &JitBackend::PADDUW;
+							break;
+						}
+
+						default: {
+							error_log("unknown mmi1 opcode {:05b} {:08x} @ {:08x}", data.sa, instruction, data.pc);
+							exit(1);
+						}
+					}
 					break;
 				}
 

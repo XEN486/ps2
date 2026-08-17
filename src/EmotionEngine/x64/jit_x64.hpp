@@ -80,6 +80,8 @@ namespace EmotionEngine::Core {
 		void SDL(InstructionData& data) override;
 		void SDR(InstructionData& data) override;
 		void SRLV(InstructionData& data) override;
+		void DI(InstructionData& data) override;
+		void ERET(InstructionData& data) override;
 
 	// COP0
 	protected:
@@ -108,6 +110,7 @@ namespace EmotionEngine::Core {
 		void PCPYLD(InstructionData& data) override;
 		void PCPYHD(InstructionData& data) override;
 		void PEXTLW(InstructionData& data) override;
+		void PADDUW(InstructionData& data) override;
 
 	private:
 		template <typename T> void EmitJump(T address);

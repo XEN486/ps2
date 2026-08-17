@@ -125,6 +125,22 @@ static void IMPL_sdr(EmotionEngine::Memory* memory, EmotionEngine::Core::R5900* 
 	memory->WriteVirtualMemory64(addr & ~(u32)7, (r5900->gpr[index_rt].reg_u64[0] << sdr_shift[shift]) | (data & sdr_mask[shift]));
 }
 
+static void IMPL_di(EmotionEngine::Core::R5900* r5900) {
+	if ((r5900->cop0.status & (1 << 17)) || (r5900->cop0.status & (1 << 1)) || (r5900->cop0.status & (1 << 2)) || !(r5900->cop0.status & (3 << 3))) {
+		r5900->cop0.status &= ~(1 << 16);
+	}
+}
+
+static void IMPL_eret(EmotionEngine::Core::R5900* r5900) {
+	if (r5900->cop0.status & (1 << 2)) {
+		r5900->next_pc = r5900->cop0.error_epc;
+		r5900->cop0.status &= ~(1 << 2);
+	} else {
+		r5900->next_pc = r5900->cop0.epc;
+		r5900->cop0.status &= ~(1 << 1);
+	}
+}
+
 void JitX64::SLL(InstructionData& data) {
 	if (data.rd == 0) return;
 	cc.mov(r[data.rd].r32(), r[data.rt].r32());
@@ -772,4 +788,16 @@ void JitX64::SRLV(InstructionData& data) {
 	cc.mov(r[data.rd].r32(), r[data.rt].r32());
 	cc.shr(r[data.rd].r32(), temp.r32());
 	cc.movsxd(r[data.rd], r[data.rd].r32());
+}
+
+void JitX64::DI(InstructionData&) {
+	InvokeNode* node;
+	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(&IMPL_di), FuncSignature::build<void, R5900*>());
+	node->set_arg(0, m_R5900);
+}
+
+void JitX64::ERET(InstructionData&) {
+	InvokeNode* node;
+	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(&IMPL_eret), FuncSignature::build<void, R5900*>());
+	node->set_arg(0, m_R5900);
 }

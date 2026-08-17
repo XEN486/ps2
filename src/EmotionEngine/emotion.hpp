@@ -88,6 +88,7 @@ namespace EmotionEngine {
 			u32 epc;		// $14: Exception PC
 			u32 prid;		// $15: Processor Revision Identifier
 			u32 config;		// $16: Processor Configuration
+			u32 error_epc;	// $30: Error EPC
 		};
 
 		/// @brief The EmotionEngine's MIPS CPU core.
@@ -143,8 +144,7 @@ namespace EmotionEngine {
 		enum class InstructionType {
 			Normal,
 			Branch,
-			Syscall,
-			Sync
+			EndBlock,
 		};
 
 		class JitBackend;
@@ -280,6 +280,8 @@ namespace EmotionEngine {
 			virtual void SDL(InstructionData& data) = 0;
 			virtual void SDR(InstructionData& data) = 0;
 			virtual void SRLV(InstructionData& data) = 0;
+			virtual void DI(InstructionData& data) = 0;
+			virtual void ERET(InstructionData& data) = 0;
 
 		// COP0
 		protected:
@@ -308,6 +310,7 @@ namespace EmotionEngine {
 			virtual void PCPYLD(InstructionData& data) = 0;
 			virtual void PCPYHD(InstructionData& data) = 0;
 			virtual void PEXTLW(InstructionData& data) = 0;
+			virtual void PADDUW(InstructionData& data) = 0;
 
 		protected:
 			R5900* m_R5900;
