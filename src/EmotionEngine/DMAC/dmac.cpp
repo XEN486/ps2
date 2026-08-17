@@ -88,7 +88,8 @@ u32 DMAC::ReadMemory32(u32 address) {
 	return ReadFromReg(address);
 }
 
-void DMAC::WriteToChannel(ChannelID channel, u32 address, u32 word) {
+void DMAC::WriteToChannel(ChannelID ch, u32 address, u32 word) {
+	u8 channel = static_cast<u8>(ch);
 	ChannelReg reg = static_cast<ChannelReg>(address & 0xff);
 	//debug_log("write {:08x} -> {}({})", word, channel, reg);
 
@@ -105,7 +106,8 @@ void DMAC::WriteToChannel(ChannelID channel, u32 address, u32 word) {
 	std::unreachable();
 }
 
-u32 DMAC::ReadFromChannel(ChannelID channel, u32 address) {
+u32 DMAC::ReadFromChannel(ChannelID ch, u32 address) {
+	u8 channel = static_cast<u8>(ch);
 	ChannelReg reg = static_cast<ChannelReg>(address & 0xff);
 	//debug_log("read from {}({})", channel, reg);
 
@@ -180,25 +182,42 @@ ChannelID DMAC::GetChannelFromAddress(u8 addr) {
 
 void DMAC::DoTransfer() {
 	// only support normal transfer for now
-	assert(((m_TransferChannel->chcr & CHCRBits::MOD) >> 2) == 0);
 
-	switch (m_TransferChannel->id) {
-		case GIF: {
-			if (m_TransferChannel->qwc == 0) {
-				FinishTransfer();
-				return;
+	switch (static_cast<Mode>((m_TransferChannel->chcr & CHCRBits::MOD) >> 2)) {
+		case Mode::Normal: {
+			DoNormalTransfer();
+			break;
+		}
+
+		case Mode::Chain: {
+			m_ChainState = ChainState::ReadDMAtag;
+			m_TagEnd = false;
+
+			if ((m_TransferChannel->chcr & CHCRBits::DIR) == 0) {
+				DoSourceChainTransfer();
+			} else {
+				DoDestChainTransfer();
 			}
 
-			u32 address = m_TransferChannel->madr;
-			m_TransferChannel->qwc -= 1;
-			m_TransferChannel->madr += 16;
+			break;
+		}
 
-			u64 lo = m_Memory->ReadVirtualMemory64(address);
-			u64 hi = m_Memory->ReadVirtualMemory64(address + 8);
-			u128 qword = ((u128)hi << 64) | lo;
+		case Mode::Interleave: {
+			DoInterleaveTransfer();
+			break;
+		}
 
+		default: {
+			error_log("invalid dma mode");
+			exit(1);
+		}
+	}
+}
+
+void DMAC::SendQword(u128 qword) {
+	switch (m_TransferChannel->id) {
+		case ChannelID::GIF: {
 			m_GIF->ReceivePath3(qword);
-
 			break;
 		}
 
@@ -207,6 +226,67 @@ void DMAC::DoTransfer() {
 			exit(1);
 		}
 	}
+}
+
+void DMAC::DoNormalTransfer() {
+	if (m_TransferChannel->qwc == 0) {
+		FinishTransfer();
+		return;
+	}
+
+	u32 address = m_TransferChannel->madr;
+	m_TransferChannel->qwc -= 1;
+	m_TransferChannel->madr += 16;
+
+	u64 lo = m_Memory->ReadVirtualMemory64(address);
+	u64 hi = m_Memory->ReadVirtualMemory64(address + 8);
+	SendQword(((u128)hi << 64) | lo);
+}
+
+void DMAC::DoSourceChainTransfer() {
+	if (m_ChainState == ChainState::ReadDMAtag) {
+		// read a DMAtag and process its tag id
+		ReadSourceTag();
+		ProcessSourceChainTagID();
+
+		// "When Dn_CHCR.TTE is on, bits 64-127 are transferred BEFORE QWC."
+		if (m_TransferChannel->chcr & CHCRBits::TTE) {
+			SendQword(m_LastTag.data);
+		}
+
+		// go read data
+		m_ChainState = ChainState::ReadData;
+	}
+
+	if (m_ChainState == ChainState::ReadData) {
+		u32 offset = m_LastTag.scratchpad ? 0x70000000 : 0;
+		u64 lo = m_Memory->ReadVirtualMemory64(offset + m_TransferChannel->madr);
+		u64 hi = m_Memory->ReadVirtualMemory64(offset + m_TransferChannel->madr + 8);
+		SendQword(((u128)hi << 64) | lo);
+
+		// done transferring the tag
+		if (m_TransferChannel->qwc == 0) {
+			// check if tag ended
+			// "When both IRQ and Dn_CHCR.TIE are set, the transfer ends after QWC has been transferred."
+			if (m_TagEnd || (m_LastTag.irq && (m_TransferChannel->chcr & CHCRBits::TIE))) {
+				FinishTransfer();
+				return;
+			}
+
+			// go read another DMAtag
+			m_ChainState = ChainState::ReadDMAtag;
+		}
+	}
+}
+
+void DMAC::DoDestChainTransfer() {
+	error_log("unimplemented");
+	exit(1);
+}
+
+void DMAC::DoInterleaveTransfer() {
+	error_log("unimplemented");
+	exit(1);
 }
 
 void DMAC::FinishTransfer() {
@@ -222,4 +302,101 @@ void DMAC::CheckInterrupt() {
 	if (stat & mask) {
 		debug_log("interrupt");
 	}
+}
+
+void DMAC::ReadSourceTag() {
+	u64 lo = m_Memory->ReadVirtualMemory64(m_TransferChannel->tadr);
+	m_LastTag.qword_count = lo & 0xffff;
+	m_LastTag.enable_priority_control = ((lo >> 26) & 0b11) == 3 ? true : false;
+	m_LastTag.id = (lo >> 28) & 0b111;
+	m_LastTag.irq = (lo >> 31) & 1;
+	m_LastTag.addr = static_cast<u32>((lo >> 32) & 0x7fffffff);
+	m_LastTag.scratchpad = (lo >> 63) & 1;
+
+	// read data if CHCR.TTE==1
+	if (m_TransferChannel->chcr & CHCRBits::TTE) {
+		m_LastTag.data = m_Memory->ReadVirtualMemory64(m_TransferChannel->tadr + 8);
+	}
+}
+
+void DMAC::ProcessSourceChainTagID() {
+	switch (static_cast<SourceChainTagID>(m_LastTag.id)) {
+		case SourceChainTagID::refe: {
+			m_TransferChannel->madr = m_LastTag.addr;
+			m_TransferChannel->tadr += 16;
+			m_TagEnd = true;
+			break;
+		}
+
+		case SourceChainTagID::cnt: {
+			m_TransferChannel->madr = m_TransferChannel->tadr + 16;
+			m_TransferChannel->tadr = m_TransferChannel->madr;
+			break;
+		}
+
+		case SourceChainTagID::next: {
+			m_TransferChannel->madr = m_TransferChannel->tadr + 16;
+			m_TransferChannel->tadr = m_LastTag.addr;
+			break;
+		}
+
+		case SourceChainTagID::ref:
+		case SourceChainTagID::refs: {
+			m_TransferChannel->madr = m_LastTag.addr;
+			m_TransferChannel->tadr += 16;
+			break;
+		}
+
+		case SourceChainTagID::call: {
+			// memory address is just after DMAtag
+			m_TransferChannel->madr = m_TransferChannel->tadr + 16;
+
+			// save next DMAtag in the ASR
+			u8 asp = (m_TransferChannel->chcr & CHCRBits::ASP) >> 4;
+			u32& asr = (asp == 0) ? m_TransferChannel->asr0 : m_TransferChannel->asr1;
+			asr = m_TransferChannel->madr + (m_TransferChannel->qwc * 16);
+
+			// set next DMAtag address
+			m_TransferChannel->tadr = m_LastTag.addr;
+
+			// increment ASP
+			m_TransferChannel->chcr &= ~CHCRBits::ASP;
+			m_TransferChannel->chcr |= (asp + 1) << 4;
+			break;
+		}
+
+		case SourceChainTagID::ret: {
+			// memory address is just after DMAtag
+			m_TransferChannel->madr = m_TransferChannel->tadr + 16;
+
+			// transfer finished if ASP=0
+			u8 asp = (m_TransferChannel->chcr & CHCRBits::ASP) >> 4;
+			if (asp == 0) {
+				m_TagEnd = true;
+			}
+
+			// load TADR from the saved ASR
+			else {
+				u32& asr = (asp == 2) ? m_TransferChannel->asr1 : m_TransferChannel->asr0;
+				m_TransferChannel->tadr = asr;
+
+				// decrement ASP
+				m_TransferChannel->chcr &= ~CHCRBits::ASP;
+				m_TransferChannel->chcr |= (asp - 1) << 4;
+			}
+
+			break;
+		}
+
+		case SourceChainTagID::end: {
+			m_TransferChannel->madr = m_TransferChannel->tadr + 16;
+			m_TagEnd = true;
+			break;
+		}
+	}
+}
+
+void DMAC::ProcessDestChainTagID() {
+	error_log("unimplemented");
+	exit(1);
 }

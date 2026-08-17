@@ -1,13 +1,16 @@
 #ifndef EMOTIONENGINE_DMAC_HPP
 #define EMOTIONENGINE_DMAC_HPP
 
+#include "ids.hpp"
+
+#include "../../SubsystemInterface/sif.hpp"
 #include "../Memory/memory.hpp"
 #include "../GIF/gif.hpp"
 #include "../../utils.hpp"
 
 /// @brief The EmotionEngine's DMA subsystem.
 namespace EmotionEngine::DMA {
-	enum ChannelID : u8 {
+	enum class ChannelID : u8 {
 		VIF0,
 		VIF1,
 		GIF,
@@ -51,6 +54,12 @@ namespace EmotionEngine::DMA {
 		STR		= 0b100000000,
 	};
 
+	enum class Mode : u8 {
+		Normal		= 0,
+		Chain		= 1,
+		Interleave	= 2,
+	};
+
 	/// @brief Structure describing a DMA channel.
 	struct Channel {
 		ChannelID id;
@@ -79,13 +88,32 @@ namespace EmotionEngine::DMA {
 		u32 enable;
 	};
 
+	/// @brief Structure describing a DMAtag.
+	struct DMAtag {
+		u16 qword_count;
+		bool enable_priority_control;
+		u8 id;
+		bool irq;
+		u32 addr;
+		bool scratchpad;
+		
+		// only if CHCR.TTE==1
+		u64 data;
+	};
+
+	enum class ChainState {
+		ReadDMAtag,
+		ReadData
+	};
+
 	/// @brief The EmotionEngine's intelligent DMA controller.
 	/// The DMAC is used to access most of the system except for main memory.
 	class DMAC {
 	public:
-		void SetPointers(Memory* memory, Graphics::GIF* gif) {
+		void SetPointers(Memory* memory, Graphics::GIF* gif, SubsystemInterface::SIF* sif) {
 			m_Memory = memory;
 			m_GIF = gif;
+			m_SIF = sif;
 		}
 		
 		void Reset();
@@ -102,8 +130,18 @@ namespace EmotionEngine::DMA {
 		u32 ReadFromReg(u32 address);
 
 		ChannelID GetChannelFromAddress(u8 addr);
+		void ReadSourceTag();
 
 		void DoTransfer();
+		void DoNormalTransfer();
+		void DoSourceChainTransfer();
+		void DoDestChainTransfer();
+		void DoInterleaveTransfer();
+
+		void SendQword(u128 qword);
+		void ProcessSourceChainTagID();
+		void ProcessDestChainTagID();
+
 		void FinishTransfer();
 		void CheckInterrupt();
 
@@ -111,11 +149,17 @@ namespace EmotionEngine::DMA {
 		DmacRegisters m_Regs;
 		Channels m_Channels;
 
+		ChainState m_ChainState;
+		bool m_TagEnd;
+
 		bool m_InTransfer;
 		Channel* m_TransferChannel;
 
 		Memory* m_Memory;
 		Graphics::GIF* m_GIF;
+		SubsystemInterface::SIF* m_SIF;
+
+		DMAtag m_LastTag;
 	};
 }
 
