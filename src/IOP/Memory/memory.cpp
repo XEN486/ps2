@@ -36,7 +36,7 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 	if (address >= 0x1f801080 && address <= 0x1f8010ff) return m_IOP->GetDMAC().Read(address);
 	if (address >= 0x1f801500 && address <= 0x1f8015ff) return m_IOP->GetDMAC().Read(address);
 
-	error_log("32-bit read <- unknown address {:08x}", address);
+	error_log("IOP 32-bit read <- unknown address {:08x}", address);
 	return 0;
 }
 
@@ -60,7 +60,7 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 	if (address >= 0x1f801080 && address <= 0x1f8010ff) return m_IOP->GetDMAC().Write(address, word);
 	if (address >= 0x1f801500 && address <= 0x1f8015ff) return m_IOP->GetDMAC().Write(address, word);
 
-	error_log("32-bit write {:08x} -> unknown address {:08x}", word, address);
+	error_log("IOP 32-bit write {:08x} -> unknown address {:08x}", word, address);
 }
 
 u16 Memory::ReadVirtualMemory16(u32 address) {
@@ -90,7 +90,7 @@ u16 Memory::ReadVirtualMemory16(u32 address) {
 	if (address == 0x1f801dae) return 0;
 	if (address == 0x1f801dac) return 0;
 
-	error_log("16-bit read <- unknown address {:08x}", address);
+	error_log("IOP 16-bit read <- unknown address {:08x}", address);
 	return 0;
 }
 
@@ -115,7 +115,7 @@ void Memory::WriteVirtualMemory16(u32 address, u16 hword) {
 	if (address == 0x1f801da8) { stub_1f801da8 = hword; return; }
 	if (address == 0x1f801daa) { stub_1f801daa = hword; return; }
 
-	error_log("16-bit write {:04x} -> unknown address {:08x}", hword, address);
+	error_log("IOP 16-bit write {:04x} -> unknown address {:08x}", hword, address);
 }
 
 u8 Memory::ReadVirtualMemory8(u32 address) {
@@ -135,7 +135,7 @@ u8 Memory::ReadVirtualMemory8(u32 address) {
 
 	if (address == 0x1f402005) return 0;
 
-	error_log("8-bit read <- unknown address {:08x}", address);
+	error_log("IOP 8-bit read <- unknown address {:08x}", address);
 	return 0;
 }
 
@@ -150,7 +150,7 @@ void Memory::WriteVirtualMemory8(u32 address, u8 byte) {
 		return;
 	}
 
-	error_log("8-bit write {:02x} -> unknown address {:08x}", byte, address);
+	error_log("IOP 8-bit write {:02x} -> unknown address {:08x}", byte, address);
 }
 
 void Memory::Release() {
