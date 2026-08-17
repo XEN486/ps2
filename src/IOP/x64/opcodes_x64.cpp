@@ -382,7 +382,7 @@ void JitX64::SRL(InstructionData& data) {
 
 void JitX64::SLTIU(InstructionData& data) {
 	if (data.rt == 0) return;
-	cc.cmp(r[data.rs], (u64)(i16)data.imm);
+	cc.cmp(r[data.rs], (i32)(i16)data.imm);
 	cc.set(x86::CondCode::kUnsignedLT, r[data.rt].r8());
 	cc.movzx(r[data.rt], r[data.rt].r8());
 }
