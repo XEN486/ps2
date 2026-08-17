@@ -35,7 +35,6 @@ void JitBackend::Release() {
 }
 
 void JitBackend::Invalidate(u32 pc) {
-#ifdef ENABLE_SELF_MODIFYING_CODE
 	//pc &= 0x1fffffff;
 	for (auto& element : m_BlockCache) {
 		CompiledBlock& block = element.second;
@@ -43,11 +42,10 @@ void JitBackend::Invalidate(u32 pc) {
 
 		// invalidate if address is in block
 		if (pc >= block.start_pc && pc <= block.end_pc) {
-			debug_log("invalidating block {:08x}->{:08x}", block.start_pc, block.end_pc);
+			//debug_log("invalidating block {:08x}->{:08x}", block.start_pc, block.end_pc);
 			block.valid = false;
 		}
 	}
-#endif
 }
 
 static void nop() {
