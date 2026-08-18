@@ -3,10 +3,10 @@
 
 #include "ids.hpp"
 
-#include "../../SubsystemInterface/sif.hpp"
 #include "../Memory/memory.hpp"
-#include "../GIF/gif.hpp"
 #include "../../utils.hpp"
+
+namespace EmotionEngine { class EE; }
 
 /// @brief The EmotionEngine's DMA subsystem.
 namespace EmotionEngine::DMA {
@@ -110,10 +110,8 @@ namespace EmotionEngine::DMA {
 	/// The DMAC is used to access most of the system except for main memory.
 	class DMAC {
 	public:
-		void SetPointers(Memory* memory, Graphics::GIF* gif, SubsystemInterface::SIF* sif) {
-			m_Memory = memory;
-			m_GIF = gif;
-			m_SIF = sif;
+		void Initialize(EmotionEngine::EE* ee) {
+			m_EE = ee;
 		}
 		
 		void Reset();
@@ -155,9 +153,7 @@ namespace EmotionEngine::DMA {
 		bool m_InTransfer;
 		Channel* m_TransferChannel;
 
-		Memory* m_Memory;
-		Graphics::GIF* m_GIF;
-		SubsystemInterface::SIF* m_SIF;
+		EmotionEngine::EE* m_EE;
 
 		DMAtag m_LastTag;
 	};

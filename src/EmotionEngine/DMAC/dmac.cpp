@@ -1,6 +1,5 @@
+#include "../emotion.hpp"
 #include "dmac.hpp"
-#include "../Memory/memory.hpp"
-#include <cassert>
 
 using namespace EmotionEngine::DMA;
 
@@ -217,7 +216,7 @@ void DMAC::DoTransfer() {
 void DMAC::SendQword(u128 qword) {
 	switch (m_TransferChannel->id) {
 		case ChannelID::GIF: {
-			m_GIF->ReceivePath3(qword);
+			m_EE->GetGIF().ReceivePath3(qword);
 			break;
 		}
 
@@ -238,8 +237,8 @@ void DMAC::DoNormalTransfer() {
 	m_TransferChannel->qwc -= 1;
 	m_TransferChannel->madr += 16;
 
-	u64 lo = m_Memory->ReadVirtualMemory64(address);
-	u64 hi = m_Memory->ReadVirtualMemory64(address + 8);
+	u64 lo = m_EE->GetMemory().ReadVirtualMemory64(address);
+	u64 hi = m_EE->GetMemory().ReadVirtualMemory64(address + 8);
 	SendQword(((u128)hi << 64) | lo);
 }
 
@@ -261,15 +260,15 @@ void DMAC::DoSourceChainTransfer() {
 	else if (m_ChainState == ChainState::ReadData) {
 		// send from scratchpad
 		if (m_LastTag.scratchpad) {
-			u64 lo = m_Memory->ReadVirtualMemory64(0x70000000 + m_TransferChannel->madr & 0x3ff0);
-			u64 hi = m_Memory->ReadVirtualMemory64(0x70000000 + (m_TransferChannel->madr + 8) & 0x3ff0);
+			u64 lo = m_EE->GetMemory().ReadVirtualMemory64(0x70000000 + (m_TransferChannel->madr & 0x3ff0));
+			u64 hi = m_EE->GetMemory().ReadVirtualMemory64(0x70000000 + ((m_TransferChannel->madr + 8) & 0x3ff0));
 			SendQword(((u128)hi << 64) | lo);
 		}
 		
 		// send from RAM
 		else {
-			u64 lo = m_Memory->ReadVirtualMemory64(m_TransferChannel->madr);
-			u64 hi = m_Memory->ReadVirtualMemory64(m_TransferChannel->madr + 8);
+			u64 lo = m_EE->GetMemory().ReadVirtualMemory64(m_TransferChannel->madr);
+			u64 hi = m_EE->GetMemory().ReadVirtualMemory64(m_TransferChannel->madr + 8);
 			SendQword(((u128)hi << 64) | lo);
 		}
 
@@ -309,12 +308,12 @@ void DMAC::CheckInterrupt() {
 	u16 mask = (m_Regs.stat >> 16) & 0x3ff;
 
 	if (stat & mask) {
-		debug_log("interrupt");
+		m_EE->GetR5900().cop0.status |= (1 << 11); // INT1
 	}
 }
 
 void DMAC::ReadSourceTag() {
-	u64 lo = m_Memory->ReadVirtualMemory64(m_TransferChannel->tadr);
+	u64 lo = m_EE->GetMemory().ReadVirtualMemory64(m_TransferChannel->tadr);
 	m_LastTag.qword_count = lo & 0xffff;
 	m_LastTag.enable_priority_control = ((lo >> 26) & 0b11) == 3 ? true : false;
 	m_LastTag.id = (lo >> 28) & 0b111;
@@ -324,7 +323,7 @@ void DMAC::ReadSourceTag() {
 
 	// read data if CHCR.TTE==1
 	if (m_TransferChannel->chcr & CHCRBits::TTE) {
-		m_LastTag.data = m_Memory->ReadVirtualMemory64(m_TransferChannel->tadr + 8);
+		m_LastTag.data = m_EE->GetMemory().ReadVirtualMemory64(m_TransferChannel->tadr + 8);
 	}
 }
 
