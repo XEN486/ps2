@@ -27,11 +27,11 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 
 	// dmac addresses
 	if (address >= 0x10008000 && address <= 0x1000e060) {
-		return m_EE->GetDMAC().ReadMemory32(address);
+		return m_EE->GetDMAC().Read(address);
 	}
 
 	// D_ENABLER
-	if (address == 0x1000f520) return m_EE->GetDMAC().ReadMemory32(address);
+	if (address == 0x1000f520) return m_EE->GetDMAC().Read(address);
 
 	// readable GS privileged registers
 	if (address == 0x12001000) return m_GS->ReadLoCSR();
@@ -119,12 +119,12 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 
 	// dmac addresses
 	if (address >= 0x10008000 && address <= 0x1000e060) {
-		m_EE->GetDMAC().WriteMemory32(address, word);
+		m_EE->GetDMAC().Write(address, word);
 		return;
 	}
 
 	// D_ENABLEW
-	if (address == 0x1000f590) return m_EE->GetDMAC().WriteMemory32(address, word);
+	if (address == 0x1000f590) return m_EE->GetDMAC().Write(address, word);
 
 	// GS privileged registers
 	if (address >= 0x12000000 && address <= 0x12001080) {

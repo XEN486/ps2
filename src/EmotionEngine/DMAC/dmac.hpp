@@ -117,8 +117,8 @@ namespace EmotionEngine::DMA {
 		void Reset();
 		void Tick();
 
-		void WriteMemory32(u32 address, u32 word);
-		u32 ReadMemory32(u32 address);
+		void Write(u32 address, u32 word);
+		u32 Read(u32 address);
 
 	private:
 		void WriteToChannel(ChannelID channel, u32 address, u32 word);

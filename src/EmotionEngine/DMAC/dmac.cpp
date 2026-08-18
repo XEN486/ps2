@@ -64,7 +64,7 @@ void DMAC::Tick() {
 	}
 }
 
-void DMAC::WriteMemory32(u32 address, u32 word) {
+void DMAC::Write(u32 address, u32 word) {
 	// channel registers
 	if (address < 0x1000e000) {
 		ChannelID channel = GetChannelFromAddress((address >> 8) & 0xff);
@@ -76,7 +76,7 @@ void DMAC::WriteMemory32(u32 address, u32 word) {
 	WriteToReg(address, word);
 }
 
-u32 DMAC::ReadMemory32(u32 address) {
+u32 DMAC::Read(u32 address) {
 	// channel registers
 	if (address < 0x1000e000) {
 		ChannelID channel = GetChannelFromAddress((address >> 8) & 0xff);
