@@ -7,14 +7,7 @@
 
 namespace IOProcessor {
 	static constexpr const size_t KiB = 1024;
-	static constexpr const size_t MiB = 1024 * KiB; 
-
-	static const u32 region_mask[8] = {
-		0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
-		0x7fffffff,
-		0x1fffffff,
-		0xffffffff, 0xffffffff
-	};
+	static constexpr const size_t MiB = 1024 * KiB;
 
 	class IOP;
 	class Memory {
@@ -59,8 +52,7 @@ namespace IOProcessor {
 		void LoadBIOS(std::filesystem::path path);
 
 		u32 VirtualToPhysical(u32 vaddr) {
-			u32 index = (vaddr >> 29) & 0b111;
-			return vaddr & region_mask[index];
+			return vaddr & 0x1fffffff;
 		}
 
 	public:
@@ -69,11 +61,6 @@ namespace IOProcessor {
 
 	private:
 		IOP* m_IOP;
-		
-		// SPU stubs
-		u16 stub_1f801da6;
-		u16 stub_1f801da8;
-		u16 stub_1f801daa;
 	};
 
 }
