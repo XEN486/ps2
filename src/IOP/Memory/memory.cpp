@@ -34,8 +34,8 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 	if (address == 0x1f801078) return m_IOP->GetINTC().GetCTRL();
 
 	// DMAC
-	if (address >= 0x1f801080 && address <= 0x1f8010ff) return m_IOP->GetDMAC().Read(address);
-	if (address >= 0x1f801500 && address <= 0x1f80157f) return m_IOP->GetDMAC().Read(address);
+	if (address >= 0x1f801080 && address <= 0x1f8010f4) return m_IOP->GetDMAC().Read(address);
+	if (address >= 0x1f801500 && address <= 0x1f80157c) return m_IOP->GetDMAC().Read(address);
 
 	// SIF
 	if (address >= 0x1d000000 && address <= 0x1d000060) return m_IOP->GetSIF()->IOP_ReadMailbox(address);
@@ -70,8 +70,8 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 	if (address == 0x1f801078) return m_IOP->GetINTC().SetCTRL(word);
 
 	// DMAC
-	if (address >= 0x1f801080 && address <= 0x1f8010ef) return m_IOP->GetDMAC().Write(address, word);
-	if (address >= 0x1f801500 && address <= 0x1f80157f) return m_IOP->GetDMAC().Write(address, word);
+	if (address >= 0x1f801080 && address <= 0x1f8010f4) return m_IOP->GetDMAC().Write(address, word);
+	if (address >= 0x1f801500 && address <= 0x1f80157c) return m_IOP->GetDMAC().Write(address, word);
 
 	// SIF
 	if (address >= 0x1d000000 && address <= 0x1d000060) return m_IOP->GetSIF()->IOP_WriteMailbox(address, word);

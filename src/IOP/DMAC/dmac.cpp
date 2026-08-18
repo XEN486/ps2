@@ -1,4 +1,6 @@
 #include "dmac.hpp"
+#include <cassert>
+
 using namespace IOProcessor::DMA;
 
 void DMAC::Reset() {
@@ -22,6 +24,9 @@ void DMAC::Reset() {
 
 	// clear out registers
 	memset(&m_Regs, 0, sizeof(m_Regs));
+	m_Regs.dicr.iop = m_IOP;
+	m_Regs.dicr.icr2 = &m_Regs.dicr2;
+	m_Regs.dicr.dmacinten = &m_Regs.dmacinten;
 
 	// not in transfer
 	m_InTransfer = false;
@@ -52,28 +57,34 @@ void DMAC::Write(u32 address, u32 word) {
 	// channel registers
 	if ((address >= 0x1f801080 && address <= 0x1f8010ef) || (address >= 0x1f801500 && address <= 0x1f80155f)) {
 		ChannelID channel = GetChannelFromAddress((address >> 4) & 0xfff);
-		WriteToChannel(channel, address, word);
+		return WriteToChannel(channel, address, word);
 	}
 
 	// dmac registers
 	else if ((address >= 0x1f8010f0 && address <= 0x1f8010f4) || (address >= 0x1f801570 && address <= 0x1f80157c)) {
-		WriteToReg(address, word);
+		return WriteToReg(address, word);
 	}
 }
 
 u32 DMAC::Read(u32 address) {
 	// channel registers
-	if (address < 0x1000e000) {
+	if ((address >= 0x1f801080 && address <= 0x1f8010ef) || (address >= 0x1f801500 && address <= 0x1f80155f)) {
 		ChannelID channel = GetChannelFromAddress((address >> 4) & 0xfff);
 		return ReadFromChannel(channel, address);
 	}
 
 	// dmac registers
-	return ReadFromReg(address);
+	else if ((address >= 0x1f8010f0 && address <= 0x1f8010f4) || (address >= 0x1f801570 && address <= 0x1f80157c)) {
+		return ReadFromReg(address);
+	}
+	
+	return 0;
 }
 
 void DMAC::WriteToChannel(ChannelID ch, u32 address, u32 word) {
 	u8 channel = static_cast<u8>(ch);
+	assert(channel < 13);
+
 	ChannelReg reg = static_cast<ChannelReg>(address & 0xf);
 	//debug_log("write {:08x} -> {}({})", word, channel, reg);
 
@@ -89,6 +100,8 @@ void DMAC::WriteToChannel(ChannelID ch, u32 address, u32 word) {
 
 u32 DMAC::ReadFromChannel(ChannelID ch, u32 address) {
 	u8 channel = static_cast<u8>(ch);
+	assert(channel < 13);
+
 	ChannelReg reg = static_cast<ChannelReg>(address & 0xf);
 	//debug_log("read from {}({})", channel, reg);
 

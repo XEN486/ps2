@@ -123,10 +123,6 @@ namespace IOProcessor::DMA {
 	public:
 		void Initialize(IOProcessor::IOP* iop) {
 			m_IOP = iop;
-
-			m_Regs.dicr.iop = m_IOP;
-			m_Regs.dicr.icr2 = &m_Regs.dicr2;
-			m_Regs.dicr.dmacinten = &m_Regs.dmacinten;
 		}
 		
 		void Reset();
