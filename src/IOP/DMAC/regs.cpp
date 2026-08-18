@@ -16,7 +16,7 @@ void ICR::Write(u32 word) {
 	channel_int_on_slice_and_ll = word & 0b1111111;
 	channel_int_mask = (word >> 16) & 0b1111111;
 	master_channel_int_enable = (word >> 23) & 1;
-	channel_int_flags &= (word >> 24) & 0b1111111;
+	channel_int_flags &= ~((word >> 24) & 0b1111111);
 
 	RecalculateMIF();
 }
@@ -39,5 +39,5 @@ u32 ICR2::Read() const {
 void ICR2::Write(u32 word) {
 	int_on_tag = word & 0b0011000010000;
 	channel_int_mask = (word >> 16) & 0b111111;
-	channel_int_flags &= (word >> 24) & 0b111111;
+	channel_int_flags &= ~((word >> 24) & 0b111111);
 }
