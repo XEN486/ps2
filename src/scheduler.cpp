@@ -27,6 +27,8 @@ void Scheduler::Run() {
 		if (m_FrameReady) {
 			// notify EE timers about entering vblank
 			m_EE->GetTimers().NotifyVBlank(true);
+			m_EE->GetINTC().Interrupt(EmotionEngine::Interrupt::IRQ::VBlankStart);
+			m_IOP->GetINTC().Interrupt(IOProcessor::Interrupt::IRQ::VBlankStart);
 		}
 
 		// leave hblank
@@ -40,6 +42,8 @@ void Scheduler::Run() {
 		if (m_GS->GetLeftVBlank()) {
 			// notify EE timers about leaving vblank
 			m_EE->GetTimers().NotifyVBlank(false);
+			m_EE->GetINTC().Interrupt(EmotionEngine::Interrupt::IRQ::VBlankEnd);
+			m_IOP->GetINTC().Interrupt(IOProcessor::Interrupt::IRQ::VBlankEnd);
 		}
 	}
 }
