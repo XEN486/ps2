@@ -2,6 +2,7 @@
 ### General
 - https://psi-rockin.github.io/ps2tek
 - https://github.com/PSI-Rockin/DobieStation/wiki/Making-a-PS2-Emulator:-From-Bits-to-Pixels
+- https://gist.github.com/hrydgard/cf85faa9f0a8d0f34494feb4713bec7d
 - https://www.copetti.org/writings/consoles/playstation-2/
 - ps2tut source code
 
