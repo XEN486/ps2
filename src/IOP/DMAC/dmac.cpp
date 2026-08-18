@@ -1,260 +1,196 @@
 #include "dmac.hpp"
 using namespace IOProcessor::DMA;
 
-u32 Channel::GetControl() {
-	u32 r = 0;
-	r |= (u8)direction;
-	r |= (u8)step << 1;
-	r |= (u8)chop << 8;
-	r |= (u8)mode << 9;
-	r |= chop_dma_size << 16;
-	r |= chop_cpu_size << 20;
-	r |= enable << 24;
-	r |= trigger << 28;
+void DMAC::Reset() {
+	// clear out channels
+	memset(m_Channels.channels, 0, sizeof(m_Channels.channels));
+	m_Channels = {
+		Channel { .id = ChannelID::MDECin },
+		Channel { .id = ChannelID::MDECout },
+		Channel { .id = ChannelID::SIF2 },
+		Channel { .id = ChannelID::CDVD },
+		Channel { .id = ChannelID::SPU1 },
+		Channel { .id = ChannelID::PIO },
+		Channel { .id = ChannelID::OTC },
+		Channel { .id = ChannelID::SPU2 },
+		Channel { .id = ChannelID::DEV9 },
+		Channel { .id = ChannelID::SIF0 },
+		Channel { .id = ChannelID::SIF1 },
+		Channel { .id = ChannelID::SIO2in },
+		Channel { .id = ChannelID::SIO2out },
+	};
 
-	return r;
+	// clear out registers
+	memset(&m_Regs, 0, sizeof(m_Regs));
+
+	// not in transfer
+	m_InTransfer = false;
 }
 
-void Channel::SetControl(u32 value) {
-	direction = (Direction)(value & 1);
-	step = (Step)((value >> 1) & 1);
-	mode = (Mode)((value >> 9) & 3);
+void DMAC::Tick() {
+	// dont try do a transfer if the DMAC is disabled
+	if (!m_Regs.dmacen) return;
 
-	chop = ((value >> 8) & 1);
-	chop_dma_size = (value >> 16) & 7;
-	chop_cpu_size = (value >> 20) & 7;
+	if (m_InTransfer) {
+		DoTransfer();
+		return;
+	}
 
-	enable = (value >> 24) & 1;
-	trigger = (value >> 28) & 1;
+	for (u8 id = 0; id < 13; id++) {
+		auto& channel = m_Channels.channels[id];
+		bool condition = false; // TODO: how to calculate this?
+
+		if (condition) {
+			m_InTransfer = true;
+			m_TransferChannel = &channel;
+			return;
+		}
+	}
 }
 
-bool InterruptRegister::GetIRQStatus() {
-	return force_irq || (enable_irq && channel_irq_flags != 0);
-}
+void DMAC::Write(u32 address, u32 word) {
+	// channel registers
+	if ((address >= 0x1f801080 && address <= 0x1f8010ef) || (address >= 0x1f801500 && address <= 0x1f80155f)) {
+		ChannelID channel = GetChannelFromAddress((address >> 4) & 0xfff);
+		WriteToChannel(channel, address, word);
+	}
 
-u32 InterruptRegister::GetValue() {
-	u32 r = 0;
-	r |= dummy & 0x3f;
-	r |= force_irq << 15;
-	r |= channel_enable_irq << 16;
-	r |= enable_irq << 23;
-	r |= channel_irq_flags << 24;
-	r |= GetIRQStatus() << 31;
-
-	return r;
-}
-
-void InterruptRegister::SetValue(u32 value) {
-	dummy = value & 0x3f;
-	force_irq = (value >> 15) & 1;
-	channel_enable_irq = (value >> 16) & 0x7f;
-	enable_irq = (value >> 23) & 1;
-
-	u8 ack = (value >> 24) & 0x3f;
-	channel_irq_flags &= ~ack;
-}
-
-void InterruptRegister::TryInterrupt(Interrupt::INTC* intc) {
-	if (GetIRQStatus()) intc->Interrupt(Interrupt::IRQ::DMA);
+	// dmac registers
+	else if ((address >= 0x1f8010f0 && address <= 0x1f8010f4) || (address >= 0x1f801570 && address <= 0x1f80157c)) {
+		WriteToReg(address, word);
+	}
 }
 
 u32 DMAC::Read(u32 address) {
-	if ((address & 0xff0) == 0x0f0) {
-		switch (address & 0xf) {
-			case 0x0: return m_Control;
-			case 0x4: return m_Interrupt.GetValue();
-			default: { error_log("unhandled DMAC write"); exit(1); }
-		}
-	} else if ((address & 0xff0) == 0x570) {
-		switch (address & 0xf) {
-			case 0x0: return m_Control2;
-			case 0x4: return m_Interrupt2.GetValue();
-			case 0x8: return m_EnableDMA;
-			case 0xc: return m_DisableInterrupt;
-		}
+	// channel registers
+	if (address < 0x1000e000) {
+		ChannelID channel = GetChannelFromAddress((address >> 4) & 0xfff);
+		return ReadFromChannel(channel, address);
 	}
 
-	auto channel = GetChannel(address);
-	if (!channel) {
-		error_log("reading from unknown IOP DMAC channel @ {:08x}", address);
-		return 0;
+	// dmac registers
+	return ReadFromReg(address);
+}
+
+void DMAC::WriteToChannel(ChannelID ch, u32 address, u32 word) {
+	u8 channel = static_cast<u8>(ch);
+	ChannelReg reg = static_cast<ChannelReg>(address & 0xf);
+	//debug_log("write {:08x} -> {}({})", word, channel, reg);
+
+	switch (reg) {
+		case ChannelReg::MADR:	{ m_Channels.channels[channel].madr = word; return; }
+		case ChannelReg::BCR:	{ m_Channels.channels[channel].bcr = word; return; }
+		case ChannelReg::CHCR:	{ m_Channels.channels[channel].chcr = word; return; }
+		case ChannelReg::TADR:	{ m_Channels.channels[channel].tadr = word; return; }
 	}
 
-	switch (address & 0xf) {
-		case 0x0: return channel->base;
-		case 0x4: return channel->GetBlockControl();
-		case 0x8: return channel->GetControl();
-		case 0xc: return channel->tag_address;
-		default: { error_log("unhandled DMAC read"); exit(1); }
+	std::unreachable();
+}
+
+u32 DMAC::ReadFromChannel(ChannelID ch, u32 address) {
+	u8 channel = static_cast<u8>(ch);
+	ChannelReg reg = static_cast<ChannelReg>(address & 0xf);
+	//debug_log("read from {}({})", channel, reg);
+
+	switch (reg) {
+		case ChannelReg::MADR:	return m_Channels.channels[channel].madr;
+		case ChannelReg::BCR:	return m_Channels.channels[channel].bcr;
+		case ChannelReg::CHCR:	return m_Channels.channels[channel].chcr;
+		case ChannelReg::TADR:	return m_Channels.channels[channel].tadr;
+	}
+
+	std::unreachable();
+}
+
+void DMAC::WriteToReg(u32 address, u32 word) {
+	DmacReg reg = static_cast<DmacReg>(address & 0xffff);
+
+	switch (reg) {
+		case DmacReg::DPCR:			{ m_Regs.dpcr = word; return; }
+		case DmacReg::DPCR2:		{ m_Regs.dpcr2 = word; return; }
+		case DmacReg::DICR:			{ m_Regs.dicr.Write(word); return; }
+		case DmacReg::DICR2:		{ m_Regs.dicr2.Write(word); return; }
+		case DmacReg::DMACEN:		{ m_Regs.dmacen = word & 1; return; }
+		case DmacReg::DMACINTEN:	{ m_Regs.dmacinten = word & 1; return; }
+	}
+
+	debug_log("{:08x} -> unknown address {:08x}", word, address);
+}
+
+u32 DMAC::ReadFromReg(u32 address) {
+	DmacReg reg = static_cast<DmacReg>(address & 0xffff);
+
+	switch (reg) {
+		case DmacReg::DPCR:			{ return m_Regs.dpcr; }
+		case DmacReg::DPCR2:		{ return m_Regs.dpcr2; }
+		case DmacReg::DICR:			{ return m_Regs.dicr.Read(); }
+		case DmacReg::DICR2:		{ return m_Regs.dicr2.Read(); }
+		case DmacReg::DMACEN:		{ return m_Regs.dmacen; }
+		case DmacReg::DMACINTEN:	{ return m_Regs.dmacinten; }
+	}
+
+	debug_log("unknown address {:08x}", address);
+	return 0;
+}
+
+ChannelID DMAC::GetChannelFromAddress(u16 addr) {
+	switch (addr) {
+		// old channels
+		case 0x108: return ChannelID::MDECin;
+		case 0x109: return ChannelID::MDECout;
+		case 0x10a: return ChannelID::SIF2;
+		case 0x10b: return ChannelID::CDVD;
+		case 0x10c: return ChannelID::SPU1;
+		case 0x10d: return ChannelID::PIO;
+		case 0x10e: return ChannelID::OTC;
+
+		// new channels
+		case 0x150: return ChannelID::SPU2;
+		case 0x151: return ChannelID::DEV9;
+		case 0x152: return ChannelID::SIF0;
+		case 0x153: return ChannelID::SIF1;
+		case 0x154: return ChannelID::SIO2in;
+		case 0x155: return ChannelID::SIO2out;
+	}
+
+	std::unreachable();
+}
+
+void DMAC::DoTransfer() {
+	error_log("unimplemented");
+	exit(1);
+}
+
+void DMAC::SendWord(u32 word) {
+	switch (m_TransferChannel->id) {
+		default: {
+			error_log("unimplemented transfer for {} channel", m_TransferChannel->id);
+			exit(1);
+		}
 	}
 }
 
-void DMAC::Write(u32 address, u32 value) {
-	if ((address & 0xff0) == 0x0f0) {
-		switch (address & 0xf) {
-			case 0x0: m_Control = value; return;
-			case 0x4: m_Interrupt.SetValue(value); return;
-			default: { error_log("unhandled DMAC write"); exit(1); }
+void DMAC::RaiseInterrupt(ChannelID channel) {
+	// old channels
+	if (channel <= ChannelID::OTC) {
+		u8 bit = (1 << static_cast<u8>(channel));
+		if (m_Regs.dicr.channel_int_mask & bit) {
+			m_Regs.dicr.channel_int_flags |= bit;
+			m_Regs.dicr.RecalculateMIF();
 		}
-	} else if ((address & 0xff0) == 0x570) {
-		switch (address & 0xf) {
-			case 0x0: m_Control2 = value; return;
-			case 0x4: m_Interrupt2.SetValue(value); return;
-			case 0x8: m_EnableDMA = value & 1; return;
-			case 0xc: m_DisableInterrupt = value & 1; return;
-		}
-	}
 
-	auto channel = GetChannel(address);
-	if (!channel) {
-		error_log("writing {:08x} -> unknown IOP DMAC channel @ {:08x}", value, address);
 		return;
 	}
 
-	switch (address & 0xf) {
-		case 0x0: channel->base = value & 0xffffff; break;
-		case 0x4: channel->SetBlockControl(value); break;
-		case 0x8: {
-			channel->SetControl(value);
-
-			// execute a DMAC transfer if it has now been activated
-			if (channel->IsActive()) {
-				DoDMATransfer(channel);
-			}
-
-			break;
-		}
-
-		case 0xc: channel->tag_address = value & 0xffffff; break;
-		default: { error_log("unhandled DMAC write"); exit(1); }
+	// new channels
+	u8 bit = (1 << (static_cast<u8>(channel) - 7));
+	if (m_Regs.dicr2.channel_int_mask & bit) {
+		m_Regs.dicr2.channel_int_flags |= bit;
+		m_Regs.dicr.RecalculateMIF();
 	}
 }
 
-void DMAC::DoDMATransfer(std::shared_ptr<Channel> channel) {
-	if (!m_EnableDMA) return;
-	if (!channel) {
-		error_log("attempting DMAC transfer to unknown port");
-		return;
-	}
-
-	switch (channel->mode) {
-		case Mode::LinkedList: DoLinkedList(channel); break;
-		case Mode::Burst: case Mode::Slice: DoBlockCopy(channel); break;
-	}
-
-	channel->TransferDone();
-}
-
-void DMAC::DoBlockCopy(std::shared_ptr<Channel> channel) {
-	int increment = (channel->step == Step::Increment) ? 4 : -4;
-	u32 address = channel->base;
-	u32 transfer_size = channel->GetTransferSize();
-
-	if (channel->direction == Direction::FromRam) {
-		while (transfer_size-- > 0) {
-			channel->Write(m_Memory->ReadVirtualMemory32(address & 0x1ffffc));
-			address += increment;
-		}
-	} else {
-		while (transfer_size-- > 0) {
-			m_Memory->WriteVirtualMemory32(address & 0x1ffffc, channel->Read(address, transfer_size));
-			address += increment;
-		}
-	}
-}
-
-void DMAC::DoLinkedList(std::shared_ptr<Channel> channel) {
-	u32 address = channel->base & 0x1ffffc;
-	if (channel->direction == Direction::ToRam) {
-		error_log("invalid DMAC direction for linked list");
-		return;
-	}
-
-	while (true) {
-		// each entry starts with a header word.
-		// hi byte = number of words in packet
-		// rest = address of next entry
-		u32 header = m_Memory->ReadVirtualMemory32(address);
-		u8 remaining_words = (header >> 24) & 0xff;
-
-		// do the transfer
-		while (remaining_words > 0) {
-			address = (address + 4) & 0x1ffffc;
-			channel->Write(m_Memory->ReadVirtualMemory32(address));
-
-			remaining_words -= 1;
-		}
-
-		// only MSB is checked for the end of table marker
-		if (header & 0x800000) {
-			break;
-		}
-
-		// go to next entry in linked list
-		address = header & 0x1ffffc;
-	}
-}
-
-void DMAC::Reset() {
-	m_Control = 0x07777777;
-}
-
-std::shared_ptr<Channel> DMAC::GetChannel(u32 address) {
-    if (address >= 0x1f801080 && address < 0x1f8010f0) {
-        u32 channel = (address - 0x1f801080) / 0x10;
-        return m_Channels[channel];
-    }
-
-    if (address >= 0x1f801500 && address < 0x1f801560) {
-        u32 channel = 7 + (address - 0x1f801500) / 0x10;
-        return m_Channels[channel];
-    }
-
-    return nullptr;
-}
-
-u32 InterruptRegister2::GetValue() {
-	u32 r = 0;
-	r |= tag_irq_flags << 0;
-	r |= channel_enable_irq << 16;
-	r |= channel_irq_flags << 24;
-
-	return r;
-}
-
-void InterruptRegister2::SetValue(u32 value) {
-	tag_irq_flags = value & 0b011000010000; // only bits 4, 9 and 10 can be set
-	channel_enable_irq = (value >> 16) & 0x7f;
-
-	u8 ack = (value >> 24) & 0x3f;
-	channel_irq_flags &= ~ack;
-}
-
-void InterruptRegister2::TryInterrupt(Interrupt::INTC* intc) {
-	if (!dicr->enable_irq) return;
-	if (channel_irq_flags & channel_enable_irq) intc->Interrupt(Interrupt::IRQ::DMA);
-}
-
-void InterruptRegister2::TryTagInterrupt(Interrupt::INTC* intc) {
-	if (tag_irq_flags) intc->Interrupt(Interrupt::IRQ::DMA);
-}
-
-void DMAC::RaiseInterrupt(Port port) {
-	if (m_DisableInterrupt) return;
-
-	u8 idx = static_cast<u8>(port);
-	if (idx <= 6) {
-		m_Interrupt.channel_irq_flags |= (1 << idx);
-		m_Interrupt.TryInterrupt(m_INTC);
-	} else {
-		m_Interrupt2.channel_irq_flags |= (1 << (idx - 7));
-		m_Interrupt2.TryInterrupt(m_INTC);
-	}
-}
-
-void DMAC::RaiseTagInterrupt(Port port) {
-	if (port == Port::SPU1 || port == Port::SIF0 || port == Port::SIF1) {
-		m_Interrupt2.tag_irq_flags |= (1 << static_cast<u8>(port));
-		m_Interrupt2.TryTagInterrupt(m_INTC);
-	}
+void DMAC::FinishTransfer() {
+	m_TransferChannel->chcr &= ~static_cast<u32>(CHCRBits::StartTransfer);
+	m_TransferChannel->chcr &= ~static_cast<u32>(CHCRBits::ForceStartTransfer);
 }

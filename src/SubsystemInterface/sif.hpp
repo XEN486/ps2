@@ -63,25 +63,4 @@ namespace SubsystemInterface {
 	};
 }
 
-namespace IOProcessor::DMA {
-	class SIF1 : public IOProcessor::DMA::Channel {
-	public:
-		SIF1(SubsystemInterface::SIF* sif) {
-			m_SIF1 = sif->GetSIF1();
-		}
-
-		void Write(u32 word) override {
-			error_log("IOP: trying to dma {:08x} -> SIF1", word);
-			exit(1);
-		}
-
-		u32 Read(u32, u32) {
-			return m_SIF1->PopFifo();
-		}
-
-	private:
-		SubsystemInterface::SIF1* m_SIF1;
-	};
-}
-
 #endif

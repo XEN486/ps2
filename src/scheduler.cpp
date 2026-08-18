@@ -1,16 +1,12 @@
 #include "scheduler.hpp"
 
 void Scheduler::Run() {
-	size_t instructions = m_EE->RunOnce();
-	//size_t instructions = 1;
-	size_t cycles = instructions; // assume 1 cycle per instruction. TODO: maybe make this more accurate?
-
-	// TODO: proper iop timing
-	m_IOP->RunOnce();
+	// tick EE
+	size_t ee_cycles = m_EE->RunOnce();
 
 	// TODO: actually schedule events
 	// tick stuff connected to BUSCLK
-	for (size_t i = 0; i < (cycles / 2); i++) {
+	for (size_t i = 0; i < (ee_cycles / 2); i++) {
 		m_EE->GetTimers().Tick();
 		m_EE->GetDMAC().Tick();
 		m_EE->GetGIF().ProcessQword();
@@ -45,5 +41,12 @@ void Scheduler::Run() {
 			m_EE->GetINTC().Interrupt(EmotionEngine::Interrupt::IRQ::VBlankEnd);
 			m_IOP->GetINTC().Interrupt(IOProcessor::Interrupt::IRQ::VBlankEnd);
 		}
+	}
+
+	// tick IOP
+	// TODO: proper iop timing
+	size_t iop_cycles = m_IOP->RunOnce();
+	for (size_t i = 0; i < iop_cycles; i++) {
+		m_IOP->GetDMAC().Tick();
 	}
 }

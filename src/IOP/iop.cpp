@@ -7,16 +7,15 @@
 using namespace IOProcessor;
 
 IOP::IOP(JitBackend* backend, SubsystemInterface::SIF* sif)
-	: m_JitBackend(backend), m_DMAC(&m_Memory, &m_INTC), m_SIF(sif) {
+	: m_JitBackend(backend), m_SIF(sif) {
 	if (!m_JitBackend->InitJit(&m_R3000A, &m_Memory)) {
 		error_log("failed to initialize backend");
 		exit(1);
 	}
 
 	m_Memory.Initialize(this);
+	m_DMAC.Initialize(this);
 	m_INTC.Initialize(this);
-
-	m_DMAC.SetChannel(DMA::Port::SIF1, std::make_shared<DMA::SIF1>(m_SIF));
 }
 
 size_t IOP::RunOnce() {

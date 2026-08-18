@@ -1,32 +1,14 @@
 #ifndef IOP_DMAC_HPP
 #define IOP_DMAC_HPP
 
-#include "../INTC/intc.hpp"
 #include "../Memory/memory.hpp"
 #include "../../utils.hpp"
 
-#include <memory>
-#include <utility>
+namespace IOProcessor { class IOP; }
 
+/// @brief The IOP's DMA subsystem.
 namespace IOProcessor::DMA {
-	enum class Direction : u8 {
-		ToRam = 0,
-		FromRam = 1,
-	};
-
-	enum class Step : u8 {
-		Increment = 0,
-		Decrement = 1,
-	};
-
-	enum class Mode : u8 {
-		Burst = 0,
-		Slice = 1,
-		LinkedList = 2,
-		ChainMode = 3,
-	};
-
-	enum class Port {
+	enum class ChannelID : u8 {
 		MDECin,
 		MDECout,
 		SIF2,
@@ -42,129 +24,147 @@ namespace IOProcessor::DMA {
 		SIO2out
 	};
 
+	enum class ChannelReg : u8 {
+		MADR		= 0x0,
+		BCR			= 0x4,
+		CHCR		= 0x8,
+		TADR		= 0xc,
+	};
+
+	enum class DmacReg : u16 {
+		DPCR		= 0x10f0,
+		DPCR2		= 0x1570,
+		DICR		= 0x10f4,
+		DICR2		= 0x1574,
+		DMACEN		= 0x1578,
+		DMACINTEN	= 0x157c,
+	};
+
+	enum class CHCRBits : u32 {
+		TransferDirection	= 0b00000000000000000000000000000001, // 0=to RAM, 1=from RAM
+		DecrementMADR		= 0b00000000000000000000000000000010, // 0=MADR+4, 1=MADR-4
+		TransferTag			= 0b00000000000000000000000100000000, // transfer tag before data
+		Mode				= 0b00000000000000000000011000000000,
+		StartTransfer		= 0b00000001000000000000000000000000, // start transfer when DREQ happens and this bit is enabled
+		ForceStartTransfer	= 0b00010000000000000000000000000000, // force start transfer
+	};
+
+	enum class Mode : u8 {
+		Burst,
+		Slice,
+		LinkedList,
+		ChainMode
+	};
+
+	/// @brief Structure describing a DMA channel.
 	struct Channel {
-		virtual ~Channel() = default;
-		virtual void Write(u32 word) = 0;
-		virtual u32 Read(u32 address, u32 remaining_words) = 0;
-
-		bool enable;
-		Direction direction;
-		Step step;
-		Mode mode;
-		bool trigger;
-		bool chop;
-		u8 chop_dma_size;
-		u8 chop_cpu_size;
-
-		u32 base;
-		u32 tag_address;
-
-		u16 block_size;
-		u16 block_count;
-
-		Port port;
-
-		u32 GetControl();
-		void SetControl(u32 value);
-
-		u32 GetBlockControl() const {
-			return (block_count << 16) | block_size;
-		}
-
-		void SetBlockControl(u32 value) {
-			block_size = value & 0xffff;
-			block_count = (value >> 16) & 0xffff;
-		}
-
-		bool IsActive() const {
-			bool triggered = (mode == Mode::Burst) ? trigger : true;
-			return enable && triggered;
-		}
-
-		u32 GetTransferSize() {
-			switch (mode) {
-				case Mode::Burst: return block_size;
-				case Mode::Slice: return block_size * block_count;
-				case Mode::LinkedList: return 0; // this shouldnt even be called
-			}
-
-			std::unreachable();
-		}
-
-		void TransferDone() {
-			enable = false;
-			trigger = false;
-		}
+		ChannelID id;
+		u32 madr;
+		u32 bcr;
+		u32 chcr;
+		u32 tadr;
 	};
 
-	struct InterruptRegister {
-		bool enable_irq;
-		u8 channel_enable_irq;
-		u8 channel_irq_flags;
-		bool force_irq;
-		u8 dummy;
-
-		u32 GetValue();
-		void SetValue(u32 value);
-		bool GetIRQStatus();
-		void TryInterrupt(Interrupt::INTC* intc);
+	/// @brief Structure containing the DMA channels.
+	struct Channels {
+		Channel channels[13];
 	};
 
-	struct InterruptRegister2 {
-		InterruptRegister* dicr;
+	struct ICR2 {
+		u16 int_on_tag;
+		u8 channel_int_mask;
+		u8 channel_int_flags;
 
-		u16 tag_irq_flags; // only 4, 9 and 10 can be set
-		u8 channel_enable_irq;
-		u8 channel_irq_flags;
-
-		u32 GetValue();
-		void SetValue(u32 value);
-		void TryInterrupt(Interrupt::INTC* intc);
-		void TryTagInterrupt(Interrupt::INTC* intc);
+		u32 Read() const;
+		void Write(u32 word);
 	};
 
+	struct ICR {
+		bool* dmacinten;
+		IOP* iop;
+		ICR2* icr2;
+
+		u8 channel_int_on_slice_and_ll;
+		u8 channel_int_mask;
+		bool master_channel_int_enable;
+		u8 channel_int_flags;
+		bool master_int_flag;
+
+		u32 Read() const;
+		void Write(u32 word);
+		void RecalculateMIF();
+	};
+	
+	/// @brief Memory-mapped registers used to control the DMAC.
+	struct DmacRegisters {
+		u32 dpcr;
+		u32 dpcr2;
+		ICR dicr;
+		ICR2 dicr2;
+		bool dmacen;
+		bool dmacinten;
+	};
+
+	/// @brief Structure describing an IOP DMAtag.
+	struct DMAtag {
+		u32 start_address;
+		bool irq; // raise IQE in DICR2 when words are transferred
+		bool end; // raise transfer complete interrupt
+		u32 size;
+	};
+
+	enum class ChainState {
+		ReadDMAtag,
+		ReadData
+	};
+
+	/// @brief The IOP's DMA controller.
 	class DMAC {
 	public:
-		DMAC(IOProcessor::Memory* memory, Interrupt::INTC* intc) : m_Memory(memory), m_INTC(intc) {
-			Reset();
-		}
+		void Initialize(IOProcessor::IOP* iop) {
+			m_IOP = iop;
 
+			m_Regs.dicr.iop = m_IOP;
+			m_Regs.dicr.icr2 = &m_Regs.dicr2;
+			m_Regs.dicr.dmacinten = &m_Regs.dmacinten;
+		}
+		
 		void Reset();
+		void Tick();
 
-		u32 Read(u32 address);
 		void Write(u32 address, u32 word);
-
-		std::shared_ptr<Channel> GetChannel(Port port) {
-			return m_Channels[static_cast<u8>(port)];
-		}
-
-		void SetChannel(Port port, std::shared_ptr<Channel> channel) {
-			channel->port = port;
-			m_Channels[static_cast<u8>(port)] = channel;
-		}
+		u32 Read(u32 address);
 
 	private:
-		std::shared_ptr<Channel> GetChannel(u32 address);
+		void WriteToChannel(ChannelID channel, u32 address, u32 word);
+		u32 ReadFromChannel(ChannelID channel, u32 address);
 
-		void DoDMATransfer(std::shared_ptr<Channel> channel);
-		void DoBlockCopy(std::shared_ptr<Channel> channel);
-		void DoLinkedList(std::shared_ptr<Channel> channel);
-		void RaiseInterrupt(Port port);
-		void RaiseTagInterrupt(Port port);
+		void WriteToReg(u32 address, u32 word);
+		u32 ReadFromReg(u32 address);
+
+		ChannelID GetChannelFromAddress(u16 addr);
+
+		void DoTransfer();
+		void SendWord(u32 word);
+
+		void RaiseInterrupt(ChannelID channel);
+		void FinishTransfer();
 
 	private:
-		u32 m_Control;
-		u32 m_Control2;
-		bool m_EnableDMA;
-		bool m_DisableInterrupt;
+		DmacRegisters m_Regs;
+		Channels m_Channels;
 
-		IOProcessor::Memory* m_Memory;
-		Interrupt::INTC* m_INTC;
+		ChainState m_ChainState;
+		bool m_TagEnd;
 
-		std::shared_ptr<Channel> m_Channels[13];
-		InterruptRegister m_Interrupt;
-		InterruptRegister2 m_Interrupt2;
+		bool m_InTransfer;
+		Channel* m_TransferChannel;
+
+		IOProcessor::IOP* m_IOP;
+
+		DMAtag m_LastTag;
 	};
 }
 
+#include "dmac.inl"
 #endif
