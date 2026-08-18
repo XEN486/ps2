@@ -38,6 +38,7 @@ void Core::R5900::WriteCOP0(u8 reg, u32 val) {
 		case 10: { cop0.entryhi = val; break; }
 		case 11: { cop0.compare = val; break; }
 		case 12: { cop0.status = val; break; }
+		case 14: { cop0.epc = val; break; }
 		case 16: { cop0.config = val; break; }
 
 		default: {
