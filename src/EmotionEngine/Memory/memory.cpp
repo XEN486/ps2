@@ -9,6 +9,10 @@ using namespace EmotionEngine;
 
 u32 Memory::ReadVirtualMemory32(u32 address) {
 	u32 virt = address;
+	if (virt >= 0xffff8000 && virt <= 0xffffffff) {
+		return ReadVirtualMemory32(address - 0xfff80000);
+	}
+
 	if (virt >= 0x70000000 && virt <= 0x70003fff) {
 		return *(reinterpret_cast<u32*>(&scratchpad[virt - 0x70000000]));
 	}
@@ -97,6 +101,10 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 
 void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 	u32 virt = address;
+	if (virt >= 0xffff8000 && virt <= 0xffffffff) {
+		return WriteVirtualMemory32(address - 0xfff80000, word);
+	}
+
 	if (virt >= 0x70000000 && virt <= 0x70003fff) {
 		*(reinterpret_cast<u32*>(&scratchpad[virt - 0x70000000])) = word;
 		return;
