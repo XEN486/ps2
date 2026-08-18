@@ -44,7 +44,7 @@ u32 Memory::ReadVirtualMemory32(u32 address) {
 	if (address == 0x1f801450) return 0;
 
 	// cache control
-	if (address == 0xfffe0130) return 0xffffffff;
+	if (address == 0x1ffe0130) return 0xffffffff;
 
 	// memory control
 	if (address >= 0x1f801000 && address <= 0x1f801060) return 0;
@@ -83,7 +83,7 @@ void Memory::WriteVirtualMemory32(u32 address, u32 word) {
 	if (address >= 0x1f8014a0 && address <= 0x1f8014a8) return;
 
 	// cache control
-	if (address == 0xfffe0130) return;
+	if (address == 0x1ffe0130) return;
 
 	// memory control
 	if (address >= 0x1f801000 && address <= 0x1f801060) return;
@@ -111,6 +111,7 @@ u16 Memory::ReadVirtualMemory16(u32 address) {
 	if (address == 0x1f801074) return m_IOP->GetINTC().GetMASK() & 0xffff;
 	if (address == 0x1f801078) return m_IOP->GetINTC().GetCTRL() & 0xffff;
 
+
 	error_log("IOP 16-bit read <- unknown address {:08x}", address);
 	return 0;
 }
@@ -130,6 +131,10 @@ void Memory::WriteVirtualMemory16(u32 address, u16 hword) {
 	if (address == 0x1f801070) return m_IOP->GetINTC().SetSTAT(hword);
 	if (address == 0x1f801074) return m_IOP->GetINTC().SetMASK(hword);
 	if (address == 0x1f801078) return m_IOP->GetINTC().SetCTRL(hword);
+
+	// DMAC
+	if (address >= 0x1f801080 && address <= 0x1f8010f4) return m_IOP->GetDMAC().Write(address, hword);
+	if (address >= 0x1f801500 && address <= 0x1f80157c) return m_IOP->GetDMAC().Write(address, hword);
 
 	// undocumented registers
 	if (address >= 0x1f8014a0 && address <= 0x1f8014a8) return;
