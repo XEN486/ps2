@@ -57,6 +57,19 @@ namespace IOProcessor::DMA {
 		ChainMode
 	};
 
+	/// @brief Structure describing an IOP DMAtag.
+	struct DMAtag {
+		u32 start_address;
+		bool irq; // raise IQE in DICR2 when words are transferred
+		bool end; // raise transfer complete interrupt
+		u32 size;
+	};
+
+	enum class ChainState {
+		ReadDMAtag,
+		ReadData
+	};
+
 	/// @brief Structure describing a DMA channel.
 	struct Channel {
 		ChannelID id;
@@ -64,6 +77,9 @@ namespace IOProcessor::DMA {
 		u32 bcr;
 		u32 chcr;
 		u32 tadr;
+
+		ChainState chain;
+		DMAtag last_tag;
 	};
 
 	/// @brief Structure containing the DMA channels.
@@ -106,19 +122,6 @@ namespace IOProcessor::DMA {
 		u8 dmacinten;
 	};
 
-	/// @brief Structure describing an IOP DMAtag.
-	struct DMAtag {
-		u32 start_address;
-		bool irq; // raise IQE in DICR2 when words are transferred
-		bool end; // raise transfer complete interrupt
-		u32 size;
-	};
-
-	enum class ChainState {
-		ReadDMAtag,
-		ReadData
-	};
-
 	/// @brief The IOP's DMA controller.
 	class DMAC {
 	public:
@@ -152,14 +155,10 @@ namespace IOProcessor::DMA {
 		Channels m_Channels;
 		std::vector<Channel> m_SortedChannels;
 
-		ChainState m_ChainState;
-
 		bool m_InTransfer;
 		Channel* m_TransferChannel;
 
 		IOProcessor::IOP* m_IOP;
-
-		DMAtag m_LastTag;
 	};
 }
 

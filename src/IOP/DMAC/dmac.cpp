@@ -31,7 +31,6 @@ void DMAC::Reset() {
 	m_Regs.dicr.dmacinten = &m_Regs.dmacinten;
 
 	// not in transfer
-	m_ChainState = ChainState::ReadDMAtag;
 	m_InTransfer = false;
 }
 
@@ -186,10 +185,20 @@ ChannelID DMAC::GetChannelFromAddress(u16 addr) {
 
 void DMAC::DoTransfer() {
 	switch (m_TransferChannel->id) {
+		case ChannelID::SIF1: {
+			if (!m_IOP->GetSIF()->GetSIF1()->DataAvailable()) {
+				FinishTransfer();
+				break;
+			}
+		}
+
 		default: {
-			//error_log("IOP: unimplemented transfer for {} channel", m_TransferChannel->id);
-			//FinishTransfer();
-			//exit(1);
+			error_log("IOP: unimplemented transfer for {} channel (mode {}, bcr {:08x})",
+				m_TransferChannel->id,
+				m_TransferChannel->chcr & static_cast<u32>(CHCRBits::Mode) >> 8,
+				m_TransferChannel->bcr);
+
+			exit(1);
 		}
 	}
 }
