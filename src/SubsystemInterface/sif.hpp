@@ -43,7 +43,7 @@ namespace SubsystemInterface {
 	class SIF1 {
 	public:
 		bool DataAvailable() {
-			return !m_FIFO.empty();
+			return m_FIFO.size() >= 4;
 		}
 
 		void PushFifo(u128 qword) {
@@ -54,10 +54,6 @@ namespace SubsystemInterface {
 		}
 
 		u32 PopFifo() {
-			if (m_FIFO.empty()) {
-				return 0;
-			}
-
 			u32 v = m_FIFO.front();
 			m_FIFO.pop();
 			return v;

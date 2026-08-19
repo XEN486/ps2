@@ -63,6 +63,12 @@ void DMAC::Tick() {
 	if (channel) {
 		m_TransferChannel = channel;
 		m_InTransfer = true;
+		
+		// setup chain transfers
+		if (m_TransferChannel->id == ChannelID::SIF0 || m_TransferChannel->id == ChannelID::SIF1 || m_TransferChannel->id == ChannelID::SPU1) {
+			m_TransferChannel->chain = ChainState::ReadDMAtag;
+		}
+
 		DoTransfer();
 	}
 }
@@ -183,6 +189,49 @@ ChannelID DMAC::GetChannelFromAddress(u16 addr) {
 	std::unreachable();
 }
 
+void DMAC::DoSIF1() {
+	if (m_TransferChannel->chain == ChainState::ReadDMAtag) {
+		u32 lo = m_IOP->GetSIF()->GetSIF1()->PopFifo();
+		u32 hi = m_IOP->GetSIF()->GetSIF1()->PopFifo();
+		u32 word1 = m_IOP->GetSIF()->GetSIF1()->PopFifo();
+		u32 word2 = m_IOP->GetSIF()->GetSIF1()->PopFifo();
+
+		m_TransferChannel->last_tag.start_address = lo & 0xffffff;
+		m_TransferChannel->last_tag.irq = (lo >> 30) & 1;
+		m_TransferChannel->last_tag.end = (lo >> 31) & 1;
+		m_TransferChannel->last_tag.size = hi & 0xffffff;
+
+		m_TransferChannel->madr = m_TransferChannel->last_tag.start_address;
+		m_TransferChannel->bcr = m_TransferChannel->last_tag.size;
+
+		if (m_TransferChannel->chcr & static_cast<u32>(CHCRBits::TransferDataBeforeTag)) {
+			WriteWordToMemory(word1);
+			WriteWordToMemory(word2);
+		}
+
+		m_TransferChannel->chain = ChainState::ReadData;
+	}
+
+	else if (m_TransferChannel->chain == ChainState::ReadData) {
+		// done transfer
+		if ((m_TransferChannel->bcr & 0xffff) == 0) {
+			if (m_TransferChannel->last_tag.end) {
+				if (m_TransferChannel->last_tag.irq && !(m_Regs.dmacinten & 1)) {
+					m_IOP->GetINTC().Interrupt(IOProcessor::Interrupt::IRQ::DMA);
+				}
+
+				m_TransferChannel->chcr &= ~static_cast<u32>(CHCRBits::StartTransfer);
+				m_TransferChannel->chcr &= ~static_cast<u32>(CHCRBits::ForceStartTransfer);
+			}
+
+			m_TransferChannel->chain = ChainState::ReadDMAtag;
+			return;
+		}
+
+		WriteWordToMemory(m_IOP->GetSIF()->GetSIF1()->PopFifo());
+	}
+}
+
 void DMAC::DoTransfer() {
 	switch (m_TransferChannel->id) {
 		case ChannelID::SIF1: {
@@ -190,6 +239,9 @@ void DMAC::DoTransfer() {
 				FinishTransfer();
 				break;
 			}
+
+			DoSIF1();
+			break;
 		}
 
 		default: {
@@ -197,7 +249,6 @@ void DMAC::DoTransfer() {
 				m_TransferChannel->id,
 				m_TransferChannel->chcr & static_cast<u32>(CHCRBits::Mode) >> 8,
 				m_TransferChannel->bcr);
-
 			exit(1);
 		}
 	}
@@ -223,7 +274,13 @@ void DMAC::RaiseInterrupt(ChannelID channel) {
 	}
 }
 
+void DMAC::RaiseTagInterrupt(ChannelID channel) {
+	m_Regs.dicr2.int_on_tag |= (1 << static_cast<u8>(channel));
+	
+}
+
 void DMAC::FinishTransfer() {
+	RaiseInterrupt(m_TransferChannel->id);
 	m_TransferChannel->chcr &= ~static_cast<u32>(CHCRBits::StartTransfer);
 	m_TransferChannel->chcr &= ~static_cast<u32>(CHCRBits::ForceStartTransfer);
 }
@@ -240,4 +297,11 @@ u8 DMAC::GetChannelPriority(ChannelID channel) {
 	// new channels
 	u32 bits = 0b1111 << ((ch - 7) * 4);
 	return static_cast<u8>((m_Regs.dpcr2 & bits) >> ((ch - 7) * 4));
+}
+
+void DMAC::WriteWordToMemory(u32 word) {
+	m_IOP->GetMemory().WriteVirtualMemory32(m_TransferChannel->madr, word);
+
+	m_TransferChannel->madr += (m_TransferChannel->chcr & (u32)(CHCRBits::DecrementMADR)) ? -4 : 4;
+	m_TransferChannel->bcr--;
 }

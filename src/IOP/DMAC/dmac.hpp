@@ -145,10 +145,14 @@ namespace IOProcessor::DMA {
 		ChannelID GetChannelFromAddress(u16 addr);
 		u8 GetChannelPriority(ChannelID channel);
 
+		void DoSIF1();
 		void DoTransfer();
 
+		void RaiseTagInterrupt(ChannelID channel);
 		void RaiseInterrupt(ChannelID channel);
 		void FinishTransfer();
+
+		void WriteWordToMemory(u32 word);
 
 	private:
 		DmacRegisters m_Regs;
