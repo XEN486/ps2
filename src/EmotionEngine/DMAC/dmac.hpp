@@ -60,34 +60,6 @@ namespace EmotionEngine::DMA {
 		Interleave	= 2,
 	};
 
-	/// @brief Structure describing a DMA channel.
-	struct Channel {
-		ChannelID id;
-		u32 chcr;		// channel control
-		u32 madr;		// channel address
-		u32 tadr;		// channel tag address
-		u32 qwc;		// quadword count
-		u32 asr0;		// channel saved tag address 0
-		u32 asr1;		// channel saved tag address 1
-		u32 sadr;		// channel scratchpad address
-	};
-
-	/// @brief Structure containing the DMA channels.
-	struct Channels {
-		Channel channels[10];
-	};
-
-	/// @brief Memory-mapped registers used to control the DMAC.
-	struct DmacRegisters {
-		u32 ctrl;
-		u32 stat;
-		u32 pcr;
-		u32 sqwc;
-		u32 rbsr;
-		u32 rbor;
-		u32 enable;
-	};
-
 	/// @brief Structure describing a DMAtag.
 	struct DMAtag {
 		u16 qword_count;
@@ -104,6 +76,38 @@ namespace EmotionEngine::DMA {
 	enum class ChainState {
 		ReadDMAtag,
 		ReadData
+	};
+
+	/// @brief Structure describing a DMA channel.
+	struct Channel {
+		ChannelID id;
+		u32 chcr;		// channel control
+		u32 madr;		// channel address
+		u32 tadr;		// channel tag address
+		u32 qwc;		// quadword count
+		u32 asr0;		// channel saved tag address 0
+		u32 asr1;		// channel saved tag address 1
+		u32 sadr;		// channel scratchpad address
+
+		ChainState chain;
+		DMAtag last_tag;
+		bool tag_end;
+	};
+
+	/// @brief Structure containing the DMA channels.
+	struct Channels {
+		Channel channels[10];
+	};
+
+	/// @brief Memory-mapped registers used to control the DMAC.
+	struct DmacRegisters {
+		u32 ctrl;
+		u32 stat;
+		u32 pcr;
+		u32 sqwc;
+		u32 rbsr;
+		u32 rbor;
+		u32 enable;
 	};
 
 	/// @brief The EmotionEngine's intelligent DMA controller.
@@ -147,15 +151,10 @@ namespace EmotionEngine::DMA {
 		DmacRegisters m_Regs;
 		Channels m_Channels;
 
-		ChainState m_ChainState;
-		bool m_TagEnd;
-
 		bool m_InTransfer;
 		Channel* m_TransferChannel;
 
 		EmotionEngine::EE* m_EE;
-
-		DMAtag m_LastTag;
 	};
 }
 
