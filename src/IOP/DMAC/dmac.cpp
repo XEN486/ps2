@@ -1,4 +1,6 @@
 #include "dmac.hpp"
+#include "../iop.hpp"
+#include "../../SubsystemInterface/sif.hpp"
 #include <cassert>
 
 using namespace IOProcessor::DMA;
@@ -29,6 +31,7 @@ void DMAC::Reset() {
 	m_Regs.dicr.dmacinten = &m_Regs.dmacinten;
 
 	// not in transfer
+	m_ChainState = ChainState::ReadDMAtag;
 	m_InTransfer = false;
 }
 
@@ -41,22 +44,34 @@ void DMAC::Tick() {
 		return;
 	}
 
+	// try find the highest priority channel that needs a transfer and is enabled
+	u8 highest_priority = 7; // 0=highest, 7=lowest
+	Channel* channel = nullptr;
 	for (u8 id = 0; id < 13; id++) {
-		auto& channel = m_Channels.channels[id];
-		bool condition = false; // TODO: how to calculate this?
+		u8 priority = GetChannelPriority(static_cast<ChannelID>(id));
+		if (!(priority & 0b1000)) continue; // not enabled
+		if (!(m_Channels.channels[id].chcr & static_cast<u32>(CHCRBits::StartTransfer))) continue;
 
-		if (condition) {
-			m_InTransfer = true;
-			m_TransferChannel = &channel;
-			return;
+		// only lo 3-bits are used for priority
+		priority &= 0b111;
+		if (priority <= highest_priority) {
+			highest_priority = priority;
+			channel = &m_Channels.channels[id];
 		}
+	}
+
+	// if there was a channel found then start a transfer
+	if (channel) {
+		m_TransferChannel = channel;
+		m_InTransfer = true;
+		DoTransfer();
 	}
 }
 
 void DMAC::Write(u32 address, u32 word) {
 	// channel registers
 	if ((address >= 0x1f801080 && address <= 0x1f8010ef) || (address >= 0x1f801500 && address <= 0x1f80155f)) {
-		ChannelID channel = GetChannelFromAddress((address >> 4) & 0xfff);
+		ChannelID channel = GetChannelFromAddress((address >> 4) & 0xff);
 		return WriteToChannel(channel, address, word);
 	}
 
@@ -69,7 +84,7 @@ void DMAC::Write(u32 address, u32 word) {
 u32 DMAC::Read(u32 address) {
 	// channel registers
 	if ((address >= 0x1f801080 && address <= 0x1f8010ef) || (address >= 0x1f801500 && address <= 0x1f80155f)) {
-		ChannelID channel = GetChannelFromAddress((address >> 4) & 0xfff);
+		ChannelID channel = GetChannelFromAddress((address >> 4) & 0xff);
 		return ReadFromChannel(channel, address);
 	}
 
@@ -124,7 +139,7 @@ void DMAC::WriteToReg(u32 address, u32 word) {
 		case DmacReg::DICR:			{ m_Regs.dicr.Write(word); return; }
 		case DmacReg::DICR2:		{ m_Regs.dicr2.Write(word); return; }
 		case DmacReg::DMACEN:		{ m_Regs.dmacen = word & 1; return; }
-		case DmacReg::DMACINTEN:	{ m_Regs.dmacinten = word & 1; return; }
+		case DmacReg::DMACINTEN:	{ m_Regs.dmacinten = word & 0b11; return; }
 	}
 
 	debug_log("{:08x} -> unknown address {:08x}", word, address);
@@ -149,36 +164,32 @@ u32 DMAC::ReadFromReg(u32 address) {
 ChannelID DMAC::GetChannelFromAddress(u16 addr) {
 	switch (addr) {
 		// old channels
-		case 0x108: return ChannelID::MDECin;
-		case 0x109: return ChannelID::MDECout;
-		case 0x10a: return ChannelID::SIF2;
-		case 0x10b: return ChannelID::CDVD;
-		case 0x10c: return ChannelID::SPU1;
-		case 0x10d: return ChannelID::PIO;
-		case 0x10e: return ChannelID::OTC;
+		case 0x08: return ChannelID::MDECin;
+		case 0x09: return ChannelID::MDECout;
+		case 0x0a: return ChannelID::SIF2;
+		case 0x0b: return ChannelID::CDVD;
+		case 0x0c: return ChannelID::SPU1;
+		case 0x0d: return ChannelID::PIO;
+		case 0x0e: return ChannelID::OTC;
 
 		// new channels
-		case 0x150: return ChannelID::SPU2;
-		case 0x151: return ChannelID::DEV9;
-		case 0x152: return ChannelID::SIF0;
-		case 0x153: return ChannelID::SIF1;
-		case 0x154: return ChannelID::SIO2in;
-		case 0x155: return ChannelID::SIO2out;
+		case 0x50: return ChannelID::SPU2;
+		case 0x51: return ChannelID::DEV9;
+		case 0x52: return ChannelID::SIF0;
+		case 0x53: return ChannelID::SIF1;
+		case 0x54: return ChannelID::SIO2in;
+		case 0x55: return ChannelID::SIO2out;
 	}
 
 	std::unreachable();
 }
 
 void DMAC::DoTransfer() {
-	error_log("unimplemented");
-	exit(1);
-}
-
-void DMAC::SendWord(u32 word) {
 	switch (m_TransferChannel->id) {
 		default: {
-			error_log("unimplemented transfer for {} channel", m_TransferChannel->id);
-			exit(1);
+			//error_log("IOP: unimplemented transfer for {} channel", m_TransferChannel->id);
+			//FinishTransfer();
+			//exit(1);
 		}
 	}
 }
@@ -206,4 +217,18 @@ void DMAC::RaiseInterrupt(ChannelID channel) {
 void DMAC::FinishTransfer() {
 	m_TransferChannel->chcr &= ~static_cast<u32>(CHCRBits::StartTransfer);
 	m_TransferChannel->chcr &= ~static_cast<u32>(CHCRBits::ForceStartTransfer);
+}
+
+u8 DMAC::GetChannelPriority(ChannelID channel) {
+	u8 ch = static_cast<u8>(channel);
+	
+	// old channels
+	if (channel <= ChannelID::OTC) {
+		u32 bits = 0b1111 << (ch * 4);
+		return static_cast<u8>((m_Regs.dpcr & bits) >> (ch * 4));
+	}
+
+	// new channels
+	u32 bits = 0b1111 << ((ch - 7) * 4);
+	return static_cast<u8>((m_Regs.dpcr2 & bits) >> ((ch - 7) * 4));
 }

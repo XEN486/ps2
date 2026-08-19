@@ -41,12 +41,13 @@ namespace IOProcessor::DMA {
 	};
 
 	enum class CHCRBits : u32 {
-		TransferDirection	= 0b00000000000000000000000000000001, // 0=to RAM, 1=from RAM
-		DecrementMADR		= 0b00000000000000000000000000000010, // 0=MADR+4, 1=MADR-4
-		TransferTag			= 0b00000000000000000000000100000000, // transfer tag before data
-		Mode				= 0b00000000000000000000011000000000,
-		StartTransfer		= 0b00000001000000000000000000000000, // start transfer when DREQ happens and this bit is enabled
-		ForceStartTransfer	= 0b00010000000000000000000000000000, // force start transfer
+		TransferDirection		= 0b00000000000000000000000000000001, // 0=to RAM, 1=from RAM
+		DecrementMADR			= 0b00000000000000000000000000000010, // 0=MADR+4, 1=MADR-4
+		TransferDataBeforeTag	= 0b00000000000000000000000100000000, // transfer tag before data
+		Mode					= 0b00000000000000000000011000000000, // transfer mode
+		StartTransfer			= 0b00000001000000000000000000000000, // start transfer when DREQ happens and this bit is enabled
+		ForceStartTransfer		= 0b00010000000000000000000000000000, // force start transfer
+		DontClear28				= 0b00100000000000000000000000000000, // dont clear bit 28 after slice
 	};
 
 	enum class Mode : u8 {
@@ -80,7 +81,7 @@ namespace IOProcessor::DMA {
 	};
 
 	struct ICR {
-		bool* dmacinten;
+		u8* dmacinten;
 		IOP* iop;
 		ICR2* icr2;
 
@@ -102,7 +103,7 @@ namespace IOProcessor::DMA {
 		ICR dicr;
 		ICR2 dicr2;
 		bool dmacen;
-		bool dmacinten;
+		u8 dmacinten;
 	};
 
 	/// @brief Structure describing an IOP DMAtag.
@@ -139,9 +140,9 @@ namespace IOProcessor::DMA {
 		u32 ReadFromReg(u32 address);
 
 		ChannelID GetChannelFromAddress(u16 addr);
+		u8 GetChannelPriority(ChannelID channel);
 
 		void DoTransfer();
-		void SendWord(u32 word);
 
 		void RaiseInterrupt(ChannelID channel);
 		void FinishTransfer();
@@ -149,9 +150,9 @@ namespace IOProcessor::DMA {
 	private:
 		DmacRegisters m_Regs;
 		Channels m_Channels;
+		std::vector<Channel> m_SortedChannels;
 
 		ChainState m_ChainState;
-		bool m_TagEnd;
 
 		bool m_InTransfer;
 		Channel* m_TransferChannel;

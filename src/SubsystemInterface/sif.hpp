@@ -26,6 +26,10 @@ namespace SubsystemInterface {
 		}
 
 		u32 PopFifo() {
+			if (m_FIFO.empty()) {
+				return 0;
+			}
+
 			u32 v = m_FIFO.front();
 			m_FIFO.pop();
 			return v;

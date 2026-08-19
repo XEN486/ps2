@@ -22,8 +22,17 @@ void ICR::Write(u32 word) {
 }
 
 void ICR::RecalculateMIF() {
+	u8 int_enable = *dmacinten;
+
+	// dmacinten.0: "When 0, all channel interrupts disabled. Master interrupt flag is 0 in all cases but bus error interrupts."
+	if (!(int_enable & 1)) {
+		master_int_flag = false;
+		return;
+	}
+
+	// dmacinten.1: "When 1, DMA interrupts disabled - IRQ 3 is never sent to INTC. Does not affect master interrupt flag."
 	master_int_flag = master_channel_int_enable && (channel_int_flags || icr2->channel_int_flags);
-	if (master_int_flag && !(*dmacinten)) {
+	if (master_int_flag && !(int_enable & 0b10)) {
 		iop->GetINTC().Interrupt(IOProcessor::Interrupt::IRQ::DMA);
 	}
 }
