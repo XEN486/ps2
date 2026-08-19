@@ -131,6 +131,12 @@ static void IMPL_di(EmotionEngine::Core::R5900* r5900) {
 	}
 }
 
+static void IMPL_ei(EmotionEngine::Core::R5900* r5900) {
+	if ((r5900->cop0.status & (1 << 17)) || (r5900->cop0.status & (1 << 1)) || (r5900->cop0.status & (1 << 2)) || !(r5900->cop0.status & (3 << 3))) {
+		r5900->cop0.status |= (1 << 16);
+	}
+}
+
 static void IMPL_eret(EmotionEngine::Core::R5900* r5900) {
 	if (r5900->cop0.status & (1 << 2)) {
 		r5900->next_pc = r5900->cop0.error_epc;
@@ -799,5 +805,11 @@ void JitX64::DI(InstructionData&) {
 void JitX64::ERET(InstructionData&) {
 	InvokeNode* node;
 	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(&IMPL_eret), FuncSignature::build<void, R5900*>());
+	node->set_arg(0, m_R5900);
+}
+
+void JitX64::EI(InstructionData&) {
+	InvokeNode* node;
+	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(&IMPL_ei), FuncSignature::build<void, R5900*>());
 	node->set_arg(0, m_R5900);
 }

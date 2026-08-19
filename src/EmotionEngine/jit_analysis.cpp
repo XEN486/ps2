@@ -303,6 +303,15 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 					break;
 				}
 
+				// BGEZL
+				case 0b00011: {
+					UseRegisters({data.rs});
+					data.ptr = &JitBackend::BGEZ;
+					data.type = InstructionType::Branch;
+					data.likely = true;
+					break;
+				}
+
 				default: {
 					error_log("unknown regimm opcode {:05b} {:08x} @ {:08x}", data.rt, instruction, data.pc);
 					exit(1);
@@ -331,6 +340,7 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 					switch (data.funct) {
 						case 0b000010: { data.ptr = &JitBackend::NOP; break; }	// TLBWI (don't care about emulating TLB)
 						case 0b111001: { data.ptr = &JitBackend::DI; break; }	// DI
+						case 0b111000: { data.ptr = &JitBackend::EI; break; }	// EI
 
 						// ERET
 						case 0b011000: {

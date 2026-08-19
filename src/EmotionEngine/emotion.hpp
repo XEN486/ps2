@@ -282,6 +282,7 @@ namespace EmotionEngine {
 			virtual void SRLV(InstructionData& data) = 0;
 			virtual void DI(InstructionData& data) = 0;
 			virtual void ERET(InstructionData& data) = 0;
+			virtual void EI(InstructionData& data) = 0;
 
 		// COP0
 		protected:

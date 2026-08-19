@@ -82,6 +82,7 @@ namespace EmotionEngine::Core {
 		void SRLV(InstructionData& data) override;
 		void DI(InstructionData& data) override;
 		void ERET(InstructionData& data) override;
+		void EI(InstructionData& data) override;
 
 	// COP0
 	protected:
