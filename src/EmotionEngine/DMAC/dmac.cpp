@@ -1,4 +1,5 @@
 #include "../emotion.hpp"
+#include "../../SubsystemInterface/sif.hpp"
 #include "dmac.hpp"
 
 using namespace EmotionEngine::DMA;
@@ -196,10 +197,22 @@ void DMAC::DoTransfer() {
 		}
 
 		case Mode::Chain: {
-			if (m_TransferChannel->id == ChannelID::SIF0) {
-				DoDestChainTransfer();
-			} else {
-				DoSourceChainTransfer();
+			switch (m_TransferChannel->id) {
+				case ChannelID::SIF0: {
+					if (!m_EE->GetSIF()->GetSIF0()->DataAvailable()) return;
+					DoDestChainTransfer();
+					break;
+				}
+
+				case ChannelID::SIF1: {
+					DoSourceChainTransfer();
+					break;
+				}
+
+				default: {
+					error_log("unknown chain transfer for {}", m_TransferChannel->id);
+					exit(1);
+				}
 			}
 
 			break;
@@ -226,8 +239,51 @@ void DMAC::SendQword(u128 qword) {
 
 		default: {
 			error_log("write {:016x}{:016x} -> unknown dma channel {}", (u64)(qword >> 64), (u64)qword, m_TransferChannel->id);
-			//exit(1);
+			exit(1);
 		}
+	}
+}
+
+u128 DMAC::RecvQword() {
+	switch (m_TransferChannel->id) {
+		case ChannelID::SIF0: {
+			return m_EE->GetSIF()->GetSIF0()->PopFifo();
+		}
+
+		default: {
+			error_log("read from unknown dma channel {}", m_TransferChannel->id);
+			exit(1);
+		}
+	}
+}
+
+u128 DMAC::ReadQwordFromMemory() {
+	// send from scratchpad
+	if (m_TransferChannel->last_tag.scratchpad) {
+		u64 lo = m_EE->GetMemory().ReadVirtualMemory64(0x70000000 + (m_TransferChannel->madr & 0x3ff0));
+		u64 hi = m_EE->GetMemory().ReadVirtualMemory64(0x70000000 + ((m_TransferChannel->madr + 8) & 0x3ff0));
+		return ((u128)hi << 64) | lo;
+	}
+
+	// send from RAM
+	else {
+		u64 lo = m_EE->GetMemory().ReadVirtualMemory64(m_TransferChannel->madr);
+		u64 hi = m_EE->GetMemory().ReadVirtualMemory64(m_TransferChannel->madr + 8);
+		return ((u128)hi << 64) | lo;
+	}
+}
+
+void DMAC::WriteQwordToMemory(u128 qword) {
+	// send from scratchpad
+	if (m_TransferChannel->last_tag.scratchpad) {
+		m_EE->GetMemory().WriteVirtualMemory64(0x70000000 + (m_TransferChannel->madr & 0x3ff0), static_cast<u64>(qword));
+		m_EE->GetMemory().WriteVirtualMemory64(0x70000000 + ((m_TransferChannel->madr + 8) & 0x3ff0), static_cast<u64>(qword >> 64));
+	}
+
+	// send from RAM
+	else {
+		m_EE->GetMemory().WriteVirtualMemory64(m_TransferChannel->madr, static_cast<u64>(qword));
+		m_EE->GetMemory().WriteVirtualMemory64(m_TransferChannel->madr + 8, static_cast<u64>(qword >> 64));
 	}
 }
 
@@ -262,20 +318,7 @@ void DMAC::DoSourceChainTransfer() {
 			return;
 		}
 
-		// send from scratchpad
-		if (m_TransferChannel->last_tag.scratchpad) {
-			u64 lo = m_EE->GetMemory().ReadVirtualMemory64(0x70000000 + (m_TransferChannel->madr & 0x3ff0));
-			u64 hi = m_EE->GetMemory().ReadVirtualMemory64(0x70000000 + ((m_TransferChannel->madr + 8) & 0x3ff0));
-			SendQword(((u128)hi << 64) | lo);
-		}
-		
-		// send from RAM
-		else {
-			u64 lo = m_EE->GetMemory().ReadVirtualMemory64(m_TransferChannel->madr);
-			u64 hi = m_EE->GetMemory().ReadVirtualMemory64(m_TransferChannel->madr + 8);
-			SendQword(((u128)hi << 64) | lo);
-		}
-
+		SendQword(ReadQwordFromMemory());
 		m_TransferChannel->qwc--;
 		m_TransferChannel->madr += 16;
 	}
@@ -296,8 +339,39 @@ void DMAC::DoSourceChainTransfer() {
 }
 
 void DMAC::DoDestChainTransfer() {
-	error_log("unimplemented");
-	exit(1);
+	if (m_TransferChannel->chain == ChainState::ReadData) {
+		// done transferring the tag
+		if (m_TransferChannel->qwc == 0) {
+			// check if tag ended
+			// "When both IRQ and Dn_CHCR.TIE are set, the transfer ends after QWC has been transferred."
+			if (m_TransferChannel->tag_end || (m_TransferChannel->last_tag.irq && (m_TransferChannel->chcr & CHCRBits::TIE))) {
+				FinishTransfer();
+				return;
+			}
+
+			// go read another DMAtag
+			m_TransferChannel->chain = ChainState::ReadDMAtag;
+			return;
+		}
+
+		WriteQwordToMemory(RecvQword());
+		m_TransferChannel->qwc--;
+		m_TransferChannel->madr += 16;
+	}
+
+	if (m_TransferChannel->chain == ChainState::ReadDMAtag) {
+		// read a DMAtag and process its tag id
+		ReadDestTag();
+		ProcessDestChainTagID();
+
+		// "When Dn_CHCR.TTE is on, bits 64-127 are transferred BEFORE QWC."
+		if (m_TransferChannel->chcr & CHCRBits::TTE) {
+			WriteQwordToMemory(m_TransferChannel->last_tag.data);
+		}
+
+		// go read data
+		m_TransferChannel->chain = ChainState::ReadData;
+	}
 }
 
 void DMAC::DoInterleaveTransfer() {
@@ -335,6 +409,24 @@ void DMAC::ReadSourceTag() {
 	// read data if CHCR.TTE==1
 	if (m_TransferChannel->chcr & CHCRBits::TTE) {
 		m_TransferChannel->last_tag.data = m_EE->GetMemory().ReadVirtualMemory64(m_TransferChannel->tadr + 8);
+	}
+}
+
+void DMAC::ReadDestTag() {
+	u128 qword = RecvQword();
+	u64 lo = static_cast<u64>(qword);
+	m_TransferChannel->last_tag.qword_count = lo & 0xffff;
+	m_TransferChannel->last_tag.enable_priority_control = ((lo >> 26) & 0b11) == 3 ? true : false;
+	m_TransferChannel->last_tag.id = (lo >> 28) & 0b111;
+	m_TransferChannel->last_tag.irq = (lo >> 31) & 1;
+	m_TransferChannel->last_tag.addr = (lo >> 32) & 0xfffffff0;
+	m_TransferChannel->last_tag.scratchpad = (lo >> 63) & 1;
+
+	m_TransferChannel->qwc = m_TransferChannel->last_tag.qword_count;
+
+	// read data if CHCR.TTE==1
+	if (m_TransferChannel->chcr & CHCRBits::TTE) {
+		m_TransferChannel->last_tag.data = static_cast<u64>(qword >> 64);
 	}
 }
 
@@ -416,6 +508,17 @@ void DMAC::ProcessSourceChainTagID() {
 }
 
 void DMAC::ProcessDestChainTagID() {
-	error_log("unimplemented");
-	exit(1);
+	switch (static_cast<DestChainTagID>(m_TransferChannel->last_tag.id)) {
+		case DestChainTagID::cnt:
+		case DestChainTagID::cnts: {
+			m_TransferChannel->madr = m_TransferChannel->last_tag.addr;
+			break;
+		}
+
+		case DestChainTagID::end: {
+			m_TransferChannel->madr = m_TransferChannel->last_tag.addr;
+			m_TransferChannel->tag_end = true;
+			break;
+		}
+	}
 }

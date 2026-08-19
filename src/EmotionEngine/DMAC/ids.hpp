@@ -96,7 +96,7 @@ MADR = DMAtag.ADDR;
 MADR = DMAtag.ADDR;
 tag_end = true;
 ```*/
-	end
+	end = 7
 };
 }
 

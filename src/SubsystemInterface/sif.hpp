@@ -15,9 +15,37 @@ namespace SubsystemInterface {
 		u32 bd6 = 0;
 	};
 
+	// IOP -> EE
+	class SIF0 {
+	public:
+		bool DataAvailable() {
+			return !m_FIFO.empty();
+		}
+
+		void PushFifo(u32 word) {
+			m_FIFO.push(word);
+		}
+
+		u128 PopFifo() {
+			u128 word1 = m_FIFO.front(); m_FIFO.pop();
+			u128 word2 = m_FIFO.front(); m_FIFO.pop();
+			u128 word3 = m_FIFO.front(); m_FIFO.pop();
+			u128 word4 = m_FIFO.front(); m_FIFO.pop();
+
+			return (word4 << 96) | (word3 << 64) | (word2 << 32) | word1;
+		}
+
+	private:
+		std::queue<u32> m_FIFO;
+	};
+
 	// EE -> IOP
 	class SIF1 {
 	public:
+		bool DataAvailable() {
+			return !m_FIFO.empty();
+		}
+
 		void PushFifo(u128 qword) {
 			m_FIFO.push((u32)(qword));
 			m_FIFO.push((u32)(qword >> 32));
@@ -42,6 +70,8 @@ namespace SubsystemInterface {
 	class SIF {
 	public:
 		void Initialize(u8* iop_ram);
+
+		SIF0* GetSIF0() { return &m_SIF0; }
 		SIF1* GetSIF1() { return &m_SIF1; }
 
 	// EE functions
@@ -63,6 +93,7 @@ namespace SubsystemInterface {
 		MailboxRegs m_MailboxRegs;
 		u8* m_IopRam;
 
+		SIF0 m_SIF0;
 		SIF1 m_SIF1;
 	};
 }

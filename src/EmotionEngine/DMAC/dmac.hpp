@@ -133,6 +133,7 @@ namespace EmotionEngine::DMA {
 
 		ChannelID GetChannelFromAddress(u8 addr);
 		void ReadSourceTag();
+		void ReadDestTag();
 
 		void DoTransfer();
 		void DoNormalTransfer();
@@ -141,6 +142,11 @@ namespace EmotionEngine::DMA {
 		void DoInterleaveTransfer();
 
 		void SendQword(u128 qword);
+		u128 RecvQword();
+
+		u128 ReadQwordFromMemory();
+		void WriteQwordToMemory(u128 qword);
+
 		void ProcessSourceChainTagID();
 		void ProcessDestChainTagID();
 
