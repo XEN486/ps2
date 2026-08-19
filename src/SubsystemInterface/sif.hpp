@@ -19,7 +19,7 @@ namespace SubsystemInterface {
 	class SIF0 {
 	public:
 		bool DataAvailable() {
-			return !m_FIFO.empty();
+			return m_FIFO.size() >= 4;
 		}
 
 		void PushFifo(u32 word) {
