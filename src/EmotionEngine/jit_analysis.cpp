@@ -294,6 +294,15 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 					break;
 				}
 
+				// BLTZL
+				case 0b00010: {
+					UseRegisters({data.rs});
+					data.ptr = &JitBackend::BLTZ;
+					data.type = InstructionType::Branch;
+					data.likely = true;
+					break;
+				}
+
 				default: {
 					error_log("unknown regimm opcode {:05b} {:08x} @ {:08x}", data.rt, instruction, data.pc);
 					exit(1);
