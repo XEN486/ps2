@@ -82,6 +82,7 @@ EE::EE(Core::JitBackend* backend, GraphicsSynthesizer::GS* gs, SubsystemInterfac
 	m_Memory.Initialize(m_JitBackend, this, m_GS);
 	m_GIF.SetGS(m_GS);
 	m_DMAC.Initialize(this);
+	m_Timers.Initialize(this);
 }
 
 size_t EE::RunOnce() {

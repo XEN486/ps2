@@ -1,4 +1,5 @@
 #include "timers.hpp"
+#include "../emotion.hpp"
 using namespace EmotionEngine::Timers;
 
 void Timer::Tick() {
@@ -199,16 +200,14 @@ void Timer::Increment() {
 
 void Timer::CompareInterrupt() {
 	if (m_Mode.compare_interrupt_enable) {
-		debug_log("compare interrupt");
-		// intc->interrupt(compare)
+		m_EE->GetINTC().Interrupt((EmotionEngine::Interrupt::IRQ)((u8)(EmotionEngine::Interrupt::IRQ::Timer0) + m_TimerNo));
 		m_Mode.compare_interrupt_flag = true;
 	}
 }
 
 void Timer::OverflowInterrupt() {
 	if (m_Mode.overflow_interrupt_enable) {
-		debug_log("overflow interrupt");
-		// intc->interrupt(overflow)
+		m_EE->GetINTC().Interrupt((EmotionEngine::Interrupt::IRQ)((u8)(EmotionEngine::Interrupt::IRQ::Timer0) + m_TimerNo));
 		m_Mode.overflow_interrupt_flag = true;
 	}
 }

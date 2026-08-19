@@ -3,6 +3,8 @@
 
 #include "../../utils.hpp"
 
+namespace EmotionEngine { class EE; }
+
 /// @brief The EmotionEngine's 16-bit timers.
 namespace EmotionEngine::Timers {
 	enum class ClockType {
@@ -42,6 +44,10 @@ namespace EmotionEngine::Timers {
 	/// @brief The EmotionEngine has 4 of these timers to keep track of time.
 	class Timer {
 	public:
+		void Initialize(EmotionEngine::EE* ee) {
+			m_EE = ee;
+		}
+
 		void Tick();
 		void NotifyHBlank(bool start);
 		void NotifyVBlank(bool start);
@@ -55,11 +61,13 @@ namespace EmotionEngine::Timers {
 		void CompareInterrupt();
 		void OverflowInterrupt();
 
-		void SetTimerInterrupt() {
-			// set irq number here
+		void SetTimerNo(u8 no) {
+			m_TimerNo = no;
 		}
 
 	private:
+		u8 m_TimerNo;
+
 		u16 m_Count = 0;
 		u16 m_Compare = 0;
 		u16 m_Hold;
@@ -69,6 +77,7 @@ namespace EmotionEngine::Timers {
 
 		// BUSCLK cycle count
 		size_t m_Cycles = 0;
+		EmotionEngine::EE* m_EE;
 	
 	private:
 		friend class Timers;
@@ -78,10 +87,17 @@ namespace EmotionEngine::Timers {
 	class Timers {
 	public:
 		Timers() {
-			m_Timers[0].SetTimerInterrupt();
-			m_Timers[1].SetTimerInterrupt();
-			m_Timers[2].SetTimerInterrupt();
-			m_Timers[3].SetTimerInterrupt();
+			m_Timers[0].SetTimerNo(0);
+			m_Timers[1].SetTimerNo(1);
+			m_Timers[2].SetTimerNo(2);
+			m_Timers[3].SetTimerNo(3);
+		}
+
+		void Initialize(EmotionEngine::EE* ee) {
+			m_Timers[0].Initialize(ee);
+			m_Timers[1].Initialize(ee);
+			m_Timers[2].Initialize(ee);
+			m_Timers[3].Initialize(ee);
 		}
 
 		Timer* GetTimers() {
