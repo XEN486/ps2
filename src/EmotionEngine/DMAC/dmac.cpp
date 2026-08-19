@@ -240,6 +240,11 @@ void DMAC::SendQword(u128 qword) {
 			m_EE->GetGIF().ReceivePath3(qword);
 			break;
 		}
+		
+		case ChannelID::SIF1: {
+			m_EE->GetSIF()->GetSIF1()->PushFifo(qword);
+			break;
+		}
 
 		default: {
 			error_log("write {:016x}{:016x} -> unknown dma channel {}", (u64)(qword >> 64), (u64)qword, m_TransferChannel->id);
