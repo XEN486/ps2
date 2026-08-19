@@ -52,7 +52,7 @@ void Core::R5900::WriteCOP0(u8 reg, u32 val) {
 void Core::R5900::ExceptionLevel1(Core::ExceptionCause cause, u32 epc, bool in_branch_delay) {
 	u32 vec = 0x00000180;
 	cop0.cause &= ~(0x0000007c);
-	cop0.cause |= static_cast<u8>(cause);
+	cop0.cause |= static_cast<u8>(cause) << 2;
 
 	if (!(cop0.status & 2)) {
 		cop0.epc = epc;
@@ -61,7 +61,7 @@ void Core::R5900::ExceptionLevel1(Core::ExceptionCause cause, u32 epc, bool in_b
 			cop0.epc -= 4;
 			cop0.cause |= (1 << 31);
 		} else {
-			cop0.cause &= (1 << 31);
+			cop0.cause &= ~(1 << 31);
 		}
 	}
 
