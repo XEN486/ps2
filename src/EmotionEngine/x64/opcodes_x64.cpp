@@ -813,3 +813,10 @@ void JitX64::EI(InstructionData&) {
 	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(&IMPL_ei), FuncSignature::build<void, R5900*>());
 	node->set_arg(0, m_R5900);
 }
+
+void JitX64::DSUBU(InstructionData& data) {
+	if (data.rd == 0) return;
+	cc.mov(temp, r[data.rs]);
+	cc.sub(temp, r[data.rt]);
+	cc.mov(r[data.rd], temp);
+}

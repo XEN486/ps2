@@ -83,6 +83,7 @@ namespace EmotionEngine::Core {
 		void DI(InstructionData& data) override;
 		void ERET(InstructionData& data) override;
 		void EI(InstructionData& data) override;
+		void DSUBU(InstructionData& data) override;
 
 	// COP0
 	protected:
@@ -109,9 +110,10 @@ namespace EmotionEngine::Core {
 		void PMFHI(InstructionData& data) override;
 		void PMFLO(InstructionData& data) override;
 		void PCPYLD(InstructionData& data) override;
-		void PCPYHD(InstructionData& data) override;
+		void PCPYUD(InstructionData& data) override;
 		void PEXTLW(InstructionData& data) override;
 		void PADDUW(InstructionData& data) override;
+		void PCPYH(InstructionData& data) override;
 
 	private:
 		template <typename T> void EmitJump(T address);

@@ -104,7 +104,7 @@ void JitX64::PCPYLD(InstructionData& data) {
 	LoadRegisters({data.rd});
 }
 
-void JitX64::PCPYHD(InstructionData& data) {
+void JitX64::PCPYUD(InstructionData& data) {
 	asmjit::x86::Vec rs = cc.new_vec128("rs");
 	asmjit::x86::Vec rt = cc.new_vec128("rt");
 
@@ -142,6 +142,22 @@ void JitX64::PADDUW(InstructionData& data) {
 	EmitLoad128(rt, data.rt);
 
 	cc.paddd(rs, rt);
+	EmitStore128(data.rd, rs);
+	LoadRegisters({data.rd});
+}
+
+void JitX64::PCPYH(InstructionData& data) {
+	asmjit::x86::Vec rs = cc.new_vec128("rs");
+	asmjit::x86::Vec rt = cc.new_vec128("rt");
+	asmjit::x86::Vec rd = cc.new_vec128("rt");
+
+	// load rs and rt
+	FlushRegisters({data.rs, data.rt});
+	EmitLoad128(rs, data.rs);
+	EmitLoad128(rt, data.rt);
+
+	cc.pshuflw(rs, rs, 0); // word 0 in all lanes
+	cc.pshufhw(rs, rt, 0);
 	EmitStore128(data.rd, rs);
 	LoadRegisters({data.rd});
 }

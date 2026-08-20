@@ -283,6 +283,7 @@ namespace EmotionEngine {
 			virtual void DI(InstructionData& data) = 0;
 			virtual void ERET(InstructionData& data) = 0;
 			virtual void EI(InstructionData& data) = 0;
+			virtual void DSUBU(InstructionData& data) = 0;
 
 		// COP0
 		protected:
@@ -309,9 +310,10 @@ namespace EmotionEngine {
 			virtual void PMFHI(InstructionData& data) = 0;
 			virtual void PMFLO(InstructionData& data) = 0;
 			virtual void PCPYLD(InstructionData& data) = 0;
-			virtual void PCPYHD(InstructionData& data) = 0;
+			virtual void PCPYUD(InstructionData& data) = 0;
 			virtual void PEXTLW(InstructionData& data) = 0;
 			virtual void PADDUW(InstructionData& data) = 0;
+			virtual void PCPYH(InstructionData& data) = 0;
 
 		protected:
 			R5900* m_R5900;

@@ -237,6 +237,13 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 					break;
 				}
 
+				// DSUBU
+				case 0b101111: {
+					UseRegisters({data.rs, data.rt, data.rd});
+					data.ptr = &JitBackend::DSUBU;
+					break;
+				}
+
 				// SYSCALL
 				case 0b001100: {
 					data.ptr = &JitBackend::SYSCALL;
@@ -505,10 +512,17 @@ InstructionData JitBackend::AnalyzeOp(u32 instruction) {
 							break;
 						}
 
-						// PCPYHD
+						// PCPYUD
 						case 0b01110: {
 							UseRegisters({data.rs, data.rt, data.rd});
-							data.ptr = &JitBackend::PCPYHD;
+							data.ptr = &JitBackend::PCPYUD;
+							break;
+						}
+
+						// PCPYH
+						case 0b11011: {
+							UseRegisters({data.rs, data.rt, data.rd});
+							data.ptr = &JitBackend::PCPYH;
 							break;
 						}
 
