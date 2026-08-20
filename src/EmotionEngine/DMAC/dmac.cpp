@@ -200,8 +200,7 @@ void DMAC::DoTransfer() {
 			switch (m_TransferChannel->id) {
 				case ChannelID::SIF0: {
 					if (!m_EE->GetSIF()->GetSIF0()->DataAvailable()) {
-						FinishTransfer();
-						break;
+						return;
 					}
 					
 					DoDestChainTransfer();
