@@ -60,6 +60,7 @@ namespace IOProcessor::Interrupt {
 		/// @param word Word to write to I_STAT.
 		void SetSTAT(u32 word) {
 			m_STAT &= word; // bit=0 -> clear, bit=1 -> no change
+			TryInterrupt();
 		}
 
 		/// @brief Writes to I_MASK.

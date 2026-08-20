@@ -10,19 +10,14 @@ void INTC::Interrupt(IRQ irq) {
 }
 
 void INTC::TryInterrupt() {
-	if (!m_CTRL) return;
-	for (u8 i = 0; i <= 25; i++) {
-		u32 bit = (1 << i);
+	if (!m_CTRL) {
+		m_IOP->GetR3000A().cop0[IOProcessor::CAUSE] &= ~(1u << 10);
+		return;
+	}
 
-		if ((m_STAT & bit) && (m_MASK & bit)) {
-			// cop0r13.10 set
-			m_IOP->GetR3000A().cop0[IOProcessor::CAUSE] |= (1 << 10);
-			return;
-		}
-		
-		// clear cop0r13.10
-		else {
-			m_IOP->GetR3000A().cop0[IOProcessor::CAUSE] &= ~(u32)(1 << 10);
-		}
+	if (m_STAT & m_MASK) {
+		m_IOP->GetR3000A().cop0[IOProcessor::CAUSE] |= (1u << 10);
+	} else {
+		m_IOP->GetR3000A().cop0[IOProcessor::CAUSE] &= ~(1u << 10);
 	}
 }
