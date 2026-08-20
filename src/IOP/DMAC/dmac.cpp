@@ -217,7 +217,7 @@ void DMAC::DoSIF1() {
 		if ((m_TransferChannel->bcr & 0xffff) == 0) {
 			if (m_TransferChannel->last_tag.end) {
 				if (m_TransferChannel->last_tag.irq && !(m_Regs.dmacinten & 1)) {
-					m_IOP->GetINTC().Interrupt(IOProcessor::Interrupt::IRQ::DMA);
+					RaiseTagInterrupt(m_TransferChannel->id);
 				}
 
 				m_TransferChannel->chcr &= ~static_cast<u32>(CHCRBits::StartTransfer);
@@ -236,8 +236,7 @@ void DMAC::DoTransfer() {
 	switch (m_TransferChannel->id) {
 		case ChannelID::SIF1: {
 			if (!m_IOP->GetSIF()->GetSIF1()->DataAvailable()) {
-				FinishTransfer();
-				break;
+				return;
 			}
 
 			DoSIF1();
@@ -247,7 +246,7 @@ void DMAC::DoTransfer() {
 		default: {
 			error_log("IOP: unimplemented transfer for {} channel (mode {}, bcr {:08x})",
 				m_TransferChannel->id,
-				m_TransferChannel->chcr & static_cast<u32>(CHCRBits::Mode) >> 8,
+				(m_TransferChannel->chcr & static_cast<u32>(CHCRBits::Mode)) >> 8,
 				m_TransferChannel->bcr);
 			exit(1);
 		}
@@ -276,7 +275,7 @@ void DMAC::RaiseInterrupt(ChannelID channel) {
 
 void DMAC::RaiseTagInterrupt(ChannelID channel) {
 	m_Regs.dicr2.int_on_tag |= (1 << static_cast<u8>(channel));
-	
+	m_IOP->GetINTC().Interrupt(IOProcessor::Interrupt::IRQ::DMA);
 }
 
 void DMAC::FinishTransfer() {
