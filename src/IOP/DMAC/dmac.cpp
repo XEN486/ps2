@@ -222,6 +222,7 @@ void DMAC::DoSIF1() {
 
 				m_TransferChannel->chcr &= ~static_cast<u32>(CHCRBits::StartTransfer);
 				m_TransferChannel->chcr &= ~static_cast<u32>(CHCRBits::ForceStartTransfer);
+				m_InTransfer = false;
 			}
 
 			m_TransferChannel->chain = ChainState::ReadDMAtag;
@@ -282,6 +283,8 @@ void DMAC::FinishTransfer() {
 	RaiseInterrupt(m_TransferChannel->id);
 	m_TransferChannel->chcr &= ~static_cast<u32>(CHCRBits::StartTransfer);
 	m_TransferChannel->chcr &= ~static_cast<u32>(CHCRBits::ForceStartTransfer);
+
+	m_InTransfer = false;
 }
 
 u8 DMAC::GetChannelPriority(ChannelID channel) {
