@@ -42,6 +42,7 @@ namespace IOProcessor::Interrupt {
 		}
 
 		void Reset() {
+			m_CTRL = 0;
 			m_STAT = 0;
 			m_MASK = 0;
 		}
