@@ -27,7 +27,7 @@ namespace GraphicsSynthesizer {
 				timing.total_scanlines = 262;
 				timing.visible_scanlines = 240;
 				timing.cycles_per_scanline = 9370;
-				timing.hblank_start = 7764; // 147.456MHz * 10.9us = 1606 cycles, 9370-1606 = 7764 cycles.
+				timing.hblank_start = 7793; // 147.456MHz * 10.7us = 1577 cycles, 9370-1577 = 7793 cycles.
 				break;
 			}
 
