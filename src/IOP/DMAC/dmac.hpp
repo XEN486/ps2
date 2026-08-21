@@ -87,7 +87,10 @@ namespace IOProcessor::DMA {
 		Channel channels[13];
 	};
 
+	struct ICR;
 	struct ICR2 {
+		ICR* icr;
+		
 		u16 int_on_tag;
 		u8 channel_int_mask;
 		u8 channel_int_flags;

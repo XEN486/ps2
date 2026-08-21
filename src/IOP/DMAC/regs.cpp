@@ -49,4 +49,6 @@ void ICR2::Write(u32 word) {
 	int_on_tag = word & 0b0011000010000;
 	channel_int_mask = (word >> 16) & 0b111111;
 	channel_int_flags &= ~((word >> 24) & 0b111111);
+
+	icr->RecalculateMIF();
 }

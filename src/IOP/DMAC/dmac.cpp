@@ -7,7 +7,6 @@ using namespace IOProcessor::DMA;
 
 void DMAC::Reset() {
 	// clear out channels
-	memset(m_Channels.channels, 0, sizeof(m_Channels.channels));
 	m_Channels = {
 		Channel { .id = ChannelID::MDECin },
 		Channel { .id = ChannelID::MDECout },
@@ -29,6 +28,7 @@ void DMAC::Reset() {
 	m_Regs.dicr.iop = m_IOP;
 	m_Regs.dicr.icr2 = &m_Regs.dicr2;
 	m_Regs.dicr.dmacinten = &m_Regs.dmacinten;
+	m_Regs.dicr2.icr = &m_Regs.dicr;
 
 	// not in transfer
 	m_InTransfer = false;
@@ -44,16 +44,17 @@ void DMAC::Tick() {
 	}
 
 	// try find the highest priority channel that needs a transfer and is enabled
-	u8 highest_priority = 7; // 0=highest, 7=lowest
+	u8 highest_priority = 8; // 0=highest, 7=lowest
 	Channel* channel = nullptr;
 	for (u8 id = 0; id < 13; id++) {
 		u8 priority = GetChannelPriority(static_cast<ChannelID>(id));
+
 		if (!(priority & 0b1000)) continue; // not enabled
 		if (!(m_Channels.channels[id].chcr & static_cast<u32>(CHCRBits::StartTransfer))) continue;
 
 		// only lo 3-bits are used for priority
 		priority &= 0b111;
-		if (priority <= highest_priority) {
+		if (priority < highest_priority) {
 			highest_priority = priority;
 			channel = &m_Channels.channels[id];
 		}
@@ -106,7 +107,7 @@ void DMAC::WriteToChannel(ChannelID ch, u32 address, u32 word) {
 	assert(channel < 13);
 
 	ChannelReg reg = static_cast<ChannelReg>(address & 0xf);
-	//debug_log("write {:08x} -> {}({})", word, channel, reg);
+	debug_log("write {:08x} -> {}({})", word, ch, reg);
 
 	switch (reg) {
 		case ChannelReg::MADR:	{ m_Channels.channels[channel].madr = word; return; }
@@ -220,12 +221,10 @@ void DMAC::DoSIF1() {
 					RaiseTagInterrupt(m_TransferChannel->id);
 				}
 
-				m_TransferChannel->chcr &= ~static_cast<u32>(CHCRBits::StartTransfer);
-				m_TransferChannel->chcr &= ~static_cast<u32>(CHCRBits::ForceStartTransfer);
-				m_InTransfer = false;
+				FinishTransfer();
 			}
 
-			m_TransferChannel->chain = ChainState::ReadDMAtag;
+			m_TransferChannel->chain = ChainState::ReadData;
 			return;
 		}
 
@@ -240,6 +239,7 @@ void DMAC::DoTransfer() {
 				return;
 			}
 
+			debug_log("ok");
 			DoSIF1();
 			break;
 		}
@@ -302,6 +302,7 @@ u8 DMAC::GetChannelPriority(ChannelID channel) {
 }
 
 void DMAC::WriteWordToMemory(u32 word) {
+	debug_log("IOP: recv {:08x}", word);
 	m_IOP->GetMemory().WriteVirtualMemory32(m_TransferChannel->madr, word);
 
 	m_TransferChannel->madr += (m_TransferChannel->chcr & (u32)(CHCRBits::DecrementMADR)) ? -4 : 4;
