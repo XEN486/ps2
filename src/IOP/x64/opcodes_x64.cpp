@@ -262,9 +262,10 @@ void JitX64::BEQ(InstructionData& data) {
 }
 
 void JitX64::MFC0(InstructionData& data) {
+	if (data.rt == 0) return;
+
 	// no need to flush and load registers here
 	InvokeNode* node;
-
 	cc.invoke(Out(node), reinterpret_cast<uintptr_t>(&WRAP_ReadCOP0), FuncSignature::build<u32, R3000A*, u8>());
 	node->set_arg(0, r3000a);
 	node->set_arg(1, data.rd);
