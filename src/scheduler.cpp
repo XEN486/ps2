@@ -52,6 +52,12 @@ void Scheduler::Run() {
 	// TODO: proper iop timing
 	size_t iop_cycles = 0;
 	while (iop_cycles < ee_cycles/4) {
-		iop_cycles += m_IOP->RunOnce();
+		size_t cycles = m_IOP->RunOnce();
+		iop_cycles += cycles;
+
+		// tick DMAC
+		for (size_t i = 0; i < cycles; i++) {
+			m_IOP->GetDMAC().Tick();
+		}
 	}
 }
