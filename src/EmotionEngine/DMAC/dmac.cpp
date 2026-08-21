@@ -399,7 +399,9 @@ void DMAC::CheckInterrupt() {
 	u16 mask = (m_Regs.stat >> 16) & 0x3ff;
 
 	if (stat & mask) {
-		m_EE->GetR5900().cop0.status |= (1 << 11); // INT1
+		m_EE->GetR5900().cop0.cause |= (1 << 11); // INT1
+	} else {
+		m_EE->GetR5900().cop0.cause &= (1 << 11);
 	}
 }
 
