@@ -1,8 +1,13 @@
 #include "scheduler.hpp"
 
+#define EE_INSTRUCTIONS 20
+
 void Scheduler::Run() {
 	// tick EE
-	size_t ee_cycles = m_EE->RunOnce();
+	size_t ee_cycles = 0;
+	while (ee_cycles < EE_INSTRUCTIONS) {
+		ee_cycles += m_EE->RunOnce();
+	}
 
 	// TODO: actually schedule events
 	// tick stuff connected to BUSCLK
@@ -45,8 +50,8 @@ void Scheduler::Run() {
 
 	// tick IOP
 	// TODO: proper iop timing
-	size_t iop_cycles = m_IOP->RunOnce();
-	for (size_t i = 0; i < iop_cycles; i++) {
-		m_IOP->GetDMAC().Tick();
+	size_t iop_cycles = 0;
+	while (iop_cycles < ee_cycles/4) {
+		iop_cycles += m_IOP->RunOnce();
 	}
 }
