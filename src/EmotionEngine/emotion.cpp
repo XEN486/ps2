@@ -36,7 +36,7 @@ void Core::R5900::WriteCOP0(u8 reg, u32 val) {
 		case 6: { cop0.wired = val; break; }
 		case 9: { cop0.count = val; break; }
 		case 10: { cop0.entryhi = val; break; }
-		case 11: { cop0.compare = val; break; }
+		case 11: { cop0.compare = val; cop0.cause &= ~(1 << 15); break; } // clear INT5
 		case 12: { cop0.status = val; break; }
 		case 14: { cop0.epc = val; break; }
 		case 16: { cop0.config = val; break; }
@@ -93,17 +93,23 @@ size_t EE::RunOnce() {
 	block.fn();
 	m_R5900.pc = m_R5900.next_pc;
 
+	u32 old_count = m_R5900.cop0.count;
+	m_R5900.cop0.count += (u32)block.instructions;
+
+	// if the previous block did not go past compare, but the new one did, do the interrupt
+	if (old_count < m_R5900.cop0.compare && m_R5900.cop0.count >= m_R5900.cop0.compare) {
+		m_R5900.cop0.cause |= (1 << 15); // INT5
+	}
+
 	// check for interrupts
 	// https://github.com/allkern/iris/blob/master/src/ee/ee_uncached.c#L503-L506
 	bool irq_enabled = (m_R5900.cop0.status & 1) && (m_R5900.cop0.status & 0x10000) && (!(m_R5900.cop0.status & 2)) && (!(m_R5900.cop0.status & 4));
 	bool int0_pending = (m_R5900.cop0.status & 0x400) && (m_R5900.cop0.cause & 0x400);
 	bool int1_pending = (m_R5900.cop0.status & 0x800) && (m_R5900.cop0.cause & 0x800);
-	if (irq_enabled && (int0_pending || int1_pending)) {
+	bool int5_pending = (m_R5900.cop0.status & (1 << 15)) && (m_R5900.cop0.cause & (1 << 15));
+	if (irq_enabled && (int0_pending || int1_pending || int5_pending)) {
 		m_R5900.ExceptionLevel1(Core::ExceptionCause::Interrupt, m_R5900.pc, false);
 	}
-
-	// assume 1 instruction = 1 clock cycle.
-	m_R5900.cop0.count += (u32)block.instructions;
 
 	return block.instructions;
 }
