@@ -4,6 +4,7 @@ using namespace EmotionEngine::Core;
 using namespace asmjit;
 
 static void IMPL_lq(EmotionEngine::Core::R5900* r5900, EmotionEngine::Memory* memory, u32 addr, u8 reg) {
+	if (!reg) return;
 	addr &= ~0xf;
 
 	// optimize load from rdram
@@ -16,11 +17,8 @@ static void IMPL_lq(EmotionEngine::Core::R5900* r5900, EmotionEngine::Memory* me
 
 	u64 lo = memory->ReadVirtualMemory64(addr);
 	u64 hi = memory->ReadVirtualMemory64(addr + 8);
-
-	if (reg) {
-		r5900->gpr[reg].reg_u64[0] = lo;
-		r5900->gpr[reg].reg_u64[1] = hi;
-	}
+	r5900->gpr[reg].reg_u64[0] = lo;
+	r5900->gpr[reg].reg_u64[1] = hi;
 }
 
 static void IMPL_sq(EmotionEngine::Core::R5900* r5900, EmotionEngine::Memory* memory, u32 addr, u8 reg) {
@@ -69,14 +67,14 @@ void JitX64::POR(InstructionData& data) {
 	FlushRegisters({data.rs, data.rt});
 	EmitLoad128(rs, data.rs);
 	EmitLoad128(rt, data.rt);
-	cc.por(rs, rt);
+	cc.vpor(rs, rs, rt);
 	EmitStore128(data.rd, rs);
 	LoadRegisters({data.rd});
 }
 
 void JitX64::PMFHI(InstructionData& data) {
 	x86::Vec hi = cc.new_vec128("HI");
-	cc.movdqu(hi, x86::oword_ptr(r5900, offsetof(R5900, hi)));
+	cc.vmovdqa(hi, x86::oword_ptr(r5900, offsetof(R5900, hi)));
 
 	EmitStore128(data.rd, hi);
 	LoadRegisters({data.rd});
@@ -84,7 +82,7 @@ void JitX64::PMFHI(InstructionData& data) {
 
 void JitX64::PMFLO(InstructionData& data) {
 	x86::Vec lo = cc.new_vec128("LO");
-	cc.movdqu(lo, x86::oword_ptr(r5900, offsetof(R5900, lo)));
+	cc.vmovdqa(lo, x86::oword_ptr(r5900, offsetof(R5900, lo)));
 
 	EmitStore128(data.rd, lo);
 	LoadRegisters({data.rd});
@@ -99,7 +97,7 @@ void JitX64::PCPYLD(InstructionData& data) {
 	EmitLoad128(rs, data.rs);
 	EmitLoad128(rt, data.rt);
 
-	cc.punpcklqdq(rt, rs);
+	cc.vpunpcklqdq(rt, rt, rs);
 	EmitStore128(data.rd, rt);
 	LoadRegisters({data.rd});
 }
@@ -113,7 +111,7 @@ void JitX64::PCPYUD(InstructionData& data) {
 	EmitLoad128(rs, data.rs);
 	EmitLoad128(rt, data.rt);
 
-	cc.punpckhqdq(rt, rs);
+	cc.vpunpckhqdq(rt, rt, rs);
 	EmitStore128(data.rd, rt);
 	LoadRegisters({data.rd});
 }
@@ -127,7 +125,7 @@ void JitX64::PEXTLW(InstructionData& data) {
 	EmitLoad128(rs, data.rs);
 	EmitLoad128(rt, data.rt);
 
-	cc.punpckldq(rt, rs);
+	cc.vpunpckldq(rt, rt, rs);
 	EmitStore128(data.rd, rt);
 	LoadRegisters({data.rd});
 }
@@ -141,23 +139,20 @@ void JitX64::PADDUW(InstructionData& data) {
 	EmitLoad128(rs, data.rs);
 	EmitLoad128(rt, data.rt);
 
-	cc.paddd(rs, rt);
+	cc.vpaddd(rs, rs, rt);
 	EmitStore128(data.rd, rs);
 	LoadRegisters({data.rd});
 }
 
 void JitX64::PCPYH(InstructionData& data) {
-	asmjit::x86::Vec rs = cc.new_vec128("rs");
 	asmjit::x86::Vec rt = cc.new_vec128("rt");
-	asmjit::x86::Vec rd = cc.new_vec128("rt");
 
 	// load rs and rt
-	FlushRegisters({data.rs, data.rt});
-	EmitLoad128(rs, data.rs);
+	FlushRegisters({data.rt});
 	EmitLoad128(rt, data.rt);
 
-	cc.pshuflw(rs, rs, 0); // word 0 in all lanes
-	cc.pshufhw(rs, rt, 0);
-	EmitStore128(data.rd, rs);
+	cc.vpshuflw(rt, rt, 0); // word 0 in all lanes
+	cc.vpshufhw(rt, rt, 0);
+	EmitStore128(data.rd, rt);
 	LoadRegisters({data.rd});
 }

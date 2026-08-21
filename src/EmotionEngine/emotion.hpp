@@ -93,7 +93,7 @@ namespace EmotionEngine {
 
 		/// @brief The EmotionEngine's MIPS CPU core.
 		/// This contains the state of both the CPU core itself, aswell as COP1.
-		struct R5900 {
+		struct alignas(16) R5900 {
 			// 32 GPRs (128-bit)
 			GPR gpr[32];
 
