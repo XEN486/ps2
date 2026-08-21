@@ -6,7 +6,6 @@ using namespace EmotionEngine::DMA;
 
 void DMAC::Reset() {
 	// clear out channels
-	memset(m_Channels.channels, 0, sizeof(m_Channels.channels));
 	m_Channels = {
 		Channel { .id = ChannelID::VIF0 },
 		Channel { .id = ChannelID::VIF1 },
@@ -52,7 +51,7 @@ void DMAC::Tick() {
 			condition = ((m_Regs.pcr & (1u << (16 + static_cast<u8>(id)))) && (channel.chcr & CHCRBits::STR));
 		}
 		
-		// check all channels if priority is enabled
+		// check all channels if priority is disabled
 		else {
 			condition = channel.chcr & CHCRBits::STR;
 		}
@@ -139,6 +138,7 @@ void DMAC::WriteToReg(u32 address, u32 word) {
 		case DmacReg::STAT: {
 			m_Regs.stat &= ~(word & 0x000003ff); // channel interrupt status
 			m_Regs.stat ^=  (word & 0x03ff0000); // channel interrupt mask
+			CheckInterrupt();
 			return;
 		}
 
@@ -200,6 +200,7 @@ void DMAC::DoTransfer() {
 			switch (m_TransferChannel->id) {
 				case ChannelID::SIF0: {
 					if (!m_EE->GetSIF()->GetSIF0()->DataAvailable()) {
+						//FinishTransfer();
 						return;
 					}
 					
@@ -241,6 +242,7 @@ void DMAC::SendQword(u128 qword) {
 		}
 		
 		case ChannelID::SIF1: {
+			debug_log("EE sif1: send {:016x}{:016x}", (u64)(qword >> 64), (u64)qword);
 			m_EE->GetSIF()->GetSIF1()->PushFifo(qword);
 			break;
 		}
@@ -255,7 +257,9 @@ void DMAC::SendQword(u128 qword) {
 u128 DMAC::RecvQword() {
 	switch (m_TransferChannel->id) {
 		case ChannelID::SIF0: {
-			return m_EE->GetSIF()->GetSIF0()->PopFifo();
+			u128 qword = m_EE->GetSIF()->GetSIF0()->PopFifo();
+			debug_log("EE sif0: recv {:016x}{:016x}", (u64)(qword >> 64), (u64)qword);
+			return qword;
 		}
 
 		default: {
@@ -268,8 +272,8 @@ u128 DMAC::RecvQword() {
 u128 DMAC::ReadQwordFromMemory() {
 	// send from scratchpad
 	if (m_TransferChannel->last_tag.scratchpad) {
-		u64 lo = m_EE->GetMemory().ReadVirtualMemory64(0x70000000 + (m_TransferChannel->madr & 0x3ff0));
-		u64 hi = m_EE->GetMemory().ReadVirtualMemory64(0x70000000 + ((m_TransferChannel->madr + 8) & 0x3ff0));
+		u64 lo = m_EE->GetMemory().ReadVirtualMemory64(0x70000000 + (m_TransferChannel->madr & 0x3fff));
+		u64 hi = m_EE->GetMemory().ReadVirtualMemory64(0x70000000 + ((m_TransferChannel->madr + 8) & 0x3fff));
 		return ((u128)hi << 64) | lo;
 	}
 
@@ -284,8 +288,8 @@ u128 DMAC::ReadQwordFromMemory() {
 void DMAC::WriteQwordToMemory(u128 qword) {
 	// send from scratchpad
 	if (m_TransferChannel->last_tag.scratchpad) {
-		m_EE->GetMemory().WriteVirtualMemory64(0x70000000 + (m_TransferChannel->madr & 0x3ff0), static_cast<u64>(qword));
-		m_EE->GetMemory().WriteVirtualMemory64(0x70000000 + ((m_TransferChannel->madr + 8) & 0x3ff0), static_cast<u64>(qword >> 64));
+		m_EE->GetMemory().WriteVirtualMemory64(0x70000000 + (m_TransferChannel->madr & 0x3fff), static_cast<u64>(qword));
+		m_EE->GetMemory().WriteVirtualMemory64(0x70000000 + ((m_TransferChannel->madr + 8) & 0x3fff), static_cast<u64>(qword >> 64));
 	}
 
 	// send from RAM
@@ -375,6 +379,7 @@ void DMAC::DoDestChainTransfer() {
 		// "When Dn_CHCR.TTE is on, bits 64-127 are transferred BEFORE QWC."
 		if (m_TransferChannel->chcr & CHCRBits::TTE) {
 			WriteQwordToMemory(m_TransferChannel->last_tag.data);
+			m_TransferChannel->madr += 16;
 		}
 
 		// go read data
@@ -401,7 +406,7 @@ void DMAC::CheckInterrupt() {
 	if (stat & mask) {
 		m_EE->GetR5900().cop0.cause |= (1 << 11); // INT1
 	} else {
-		m_EE->GetR5900().cop0.cause &= (1 << 11);
+		m_EE->GetR5900().cop0.cause &= ~(1 << 11);
 	}
 }
 
