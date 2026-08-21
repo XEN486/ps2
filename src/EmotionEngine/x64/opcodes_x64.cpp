@@ -676,7 +676,7 @@ void JitX64::DSLLV(InstructionData& data) {
 void JitX64::DADDIU(InstructionData& data) {
 	if (data.rt == 0) return;
 	if (data.imm == 0) {
-		cc.mov(r[data.rd], r[data.rs]);
+		cc.mov(r[data.rt], r[data.rs]);
 		return;
 	}
 
