@@ -23,8 +23,6 @@ void DMAC::Reset() {
 	memset(&m_Regs, 0, sizeof(m_Regs));
 
 	// ps2tek says that SCPH-30001 BIOS expects this to be the reset value
-	// we are not emulating the BIOS yet, but when we do, it would be nice
-	// to have this already set up.
 	m_Regs.enable = 0x1201;
 
 	// not in transfer
